@@ -1,0 +1,5 @@
+/private/config.php
+/private/uploads/fotos/*
+!/private/uploads/fotos/.gitkeep
+.DS_Store
+Thumbs.db
