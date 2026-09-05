@@ -19,12 +19,6 @@ define('DB_PASS', 'HIER_DEIN_DB_PASSWORT');
 define('VEREIN_NAME', 'V3F e.V.');
 define('APP_NAME', 'Vereinsapp V3F');
 
-// --- Admin-Zugang (Vorstand) ---
-// Passwort-Hash erzeugen, z.B. per Terminal:
-//   php -r "echo password_hash('DeinPasswort', PASSWORD_DEFAULT), PHP_EOL;"
-// und das Ergebnis hier eintragen.
-define('ADMIN_PASSWORD_HASH', '$2y$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-
-// --- Sonstiges ---
-// Zufaelligen, langen String eintragen (fuer Session-/CSRF-Sicherheit).
-define('APP_SECRET', 'BITTE_DURCH_ZUFAELLIGEN_STRING_ERSETZEN');
+// Jedes Mitglied loggt sich mit eigener E-Mail + eigenem Passwort ein
+// (siehe Mitgliederverwaltung im Vorstandsbereich sowie scripts/create_mitglied.php
+// zum Anlegen des allerersten Vorstandszugangs).

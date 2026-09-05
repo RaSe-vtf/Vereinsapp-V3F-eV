@@ -19,6 +19,39 @@ function checkCsrfToken(?string $token): bool
     return is_string($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+const ROLLEN_LABELS = [
+    'vollmitglied' => 'Vollmitglied',
+    'trainingsmitglied' => 'Trainingsmitglied',
+    'vorstandsmitglied' => 'Vorstandsmitglied',
+    'ehrenmitglied' => 'Ehrenmitglied',
+    'foerdermitglied' => 'Fördermitglied',
+];
+
+function rollenLabel(string $rolle): string
+{
+    return ROLLEN_LABELS[$rolle] ?? $rolle;
+}
+
+function generateInitialPasswort(): string
+{
+    return bin2hex(random_bytes(5));
+}
+
+function setFlash(string $typ, string $text): void
+{
+    $_SESSION['flash'] = ['typ' => $typ, 'text' => $text];
+}
+
+function takeFlash(): ?array
+{
+    if (empty($_SESSION['flash'])) {
+        return null;
+    }
+    $flash = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+    return $flash;
+}
+
 /**
  * Validiert und speichert das hochgeladene Foto.
  * Gibt den gespeicherten Dateinamen zurueck oder wirft eine RuntimeException.

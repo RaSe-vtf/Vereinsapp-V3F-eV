@@ -35,7 +35,7 @@ require_once __DIR__ . '/../includes/functions.php';
     <footer>
         <a href="impressum.php">Impressum</a>
         <a href="datenschutz.php">Datenschutz</a>
-        <a href="admin/login.php">Vorstand-Login</a>
+        <a href="login.php">Mitglieder-Login</a>
     </footer>
 </body>
 </html>

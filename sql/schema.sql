@@ -1,8 +1,31 @@
 -- Vereinsapp V3F e.V. - Datenbankschema
 -- Import ueber phpMyAdmin im all-inkl KAS oder per mysql-CLI
 
+CREATE TABLE IF NOT EXISTS mitglieder (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    antrag_id INT UNSIGNED NULL,
+    vorname VARCHAR(100) NOT NULL,
+    nachname VARCHAR(100) NOT NULL,
+    geburtsdatum DATE NOT NULL,
+    geburtsort VARCHAR(150) NOT NULL,
+    strasse_hausnummer VARCHAR(200) NOT NULL,
+    plz VARCHAR(10) NOT NULL,
+    ort VARCHAR(150) NOT NULL,
+    telefon VARCHAR(50) NOT NULL,
+    email VARCHAR(190) NOT NULL,
+    instagram VARCHAR(100) NULL,
+    foto_dateiname VARCHAR(255) NULL,
+    rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    passwort_hash VARCHAR(255) NULL,
+    aktiv TINYINT(1) NOT NULL DEFAULT 1,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS antraege (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    mitglied_id INT UNSIGNED NULL,
     vorname VARCHAR(100) NOT NULL,
     nachname VARCHAR(100) NOT NULL,
     geburtsdatum DATE NOT NULL,
@@ -19,5 +42,7 @@ CREATE TABLE IF NOT EXISTS antraege (
     einverstaendnis_bildnutzung TINYINT(1) NOT NULL DEFAULT 0,
     status ENUM('neu', 'angenommen', 'abgelehnt') NOT NULL DEFAULT 'neu',
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    KEY idx_mitglied_id (mitglied_id),
+    CONSTRAINT fk_antraege_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
