@@ -22,3 +22,9 @@ define('APP_NAME', 'Vereinsapp V3F');
 // Jedes Mitglied loggt sich mit eigener E-Mail + eigenem Passwort ein
 // (siehe Mitgliederverwaltung im Vorstandsbereich sowie scripts/create_mitglied.php
 // zum Anlegen des allerersten Vorstandszugangs).
+
+// --- E-Mail-Verteiler ---
+// Absenderadresse fuer Rundmails an Mitglieder. Muss eine echte, zur Domain
+// gehoerende Adresse sein, sonst landen die Mails leicht im Spam-Ordner.
+define('MAIL_ABSENDER_EMAIL', 'verein@deine-domain.de');
+define('MAIL_ABSENDER_NAME', 'V3F e.V.');

@@ -104,6 +104,7 @@ $flash = takeFlash();
         <nav class="subnav">
             <a href="antraege.php" class="active">Aufnahmeanträge</a>
             <a href="mitglieder.php">Mitgliederverwaltung</a>
+            <a href="verteiler.php">E-Mail-Verteiler</a>
         </nav>
 
         <div class="card">

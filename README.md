@@ -24,8 +24,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     eigenes Passwort ändern.
   - **Vorstand**: nur sichtbar und aufrufbar für die Rolle Vorstandsmitglied.
     Enthält Aufnahmeanträge (ansehen, annehmen/ablehnen) und die
-    Mitgliederverwaltung (Rolle ändern, Konto aktivieren/deaktivieren,
-    Passwort neu vergeben).
+    Mitgliederverwaltung (Rolle ändern, Konto aktivieren/deaktivieren/
+    löschen, Passwort zurücksetzen) sowie den E-Mail-Verteiler.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
   Rolle "Vollmitglied" angelegt (noch ohne Passwort). Der Vorstand vergibt in
   der Mitgliederverwaltung ein initiales Passwort, das einmalig angezeigt und
@@ -34,8 +34,18 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   eingebaut).
 - Rollenänderungen und Deaktivierungen wirken sofort, auch bei bereits
   eingeloggten Sitzungen.
-- Ein Vorstandsmitglied kann sich nicht selbst die Vorstandsrolle entziehen
-  oder das eigene Konto deaktivieren (Schutz vor versehentlichem Aussperren).
+- Ein Vorstandsmitglied kann sich nicht selbst die Vorstandsrolle entziehen,
+  das eigene Konto deaktivieren oder löschen (Schutz vor versehentlichem
+  Aussperren).
+- **Mitglied löschen**: entfernt das Mitgliedskonto endgültig aus der
+  Datenbank (Login funktioniert danach nicht mehr). Der ursprüngliche
+  Aufnahmeantrag bleibt als historischer Datensatz erhalten, verliert aber
+  die Verknüpfung zum Konto.
+- **E-Mail-Verteiler** (`.../bereich/vorstand/verteiler.php`): Rundmail an
+  alle aktiven Mitglieder oder gezielt nach Rolle, verschickt per Bcc (die
+  Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Nutzt
+  die native PHP-`mail()`-Funktion, wie sie auf all-inkl KAS standardmäßig
+  zur Verfügung steht — siehe Hinweis zu Absenderadresse/Spam weiter unten.
 
 ## Projektstruktur
 
@@ -53,8 +63,9 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
     vorstand/                -> nur Rolle Vorstandsmitglied
       antraege.php           -> Aufnahmeanträge verwalten
       antrag_ansehen.php
-      mitglieder.php         -> Mitgliederverwaltung: Rolle, Status, Passwort
+      mitglieder.php         -> Mitgliederverwaltung: Rolle, Status, Passwort, Löschen
       mitglied_ansehen.php
+      verteiler.php          -> E-Mail-Verteiler (Rundmail per Bcc)
   assets/                   -> CSS, Logo
 
 includes/          -> gemeinsamer PHP-Code (liegt bewusst AUSSERHALB von htdocs)
@@ -81,7 +92,8 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
 2. **Tabellen importieren**: `sql/schema.sql` über phpMyAdmin (im KAS
    verlinkt) in die neu angelegte Datenbank importieren.
 3. **Konfiguration anlegen**: `config.example.php` nach `private/config.php`
-   kopieren und ausfüllen (Datenbank-Zugangsdaten, Vereinsname).
+   kopieren und ausfüllen (Datenbank-Zugangsdaten, Vereinsname,
+   Absenderadresse für den E-Mail-Verteiler).
 4. **Dateien hochladen**: Das komplette Projekt per FTP/SFTP hochladen.
    Im KAS unter "Domains verwalten" das Web-Verzeichnis der Domain/Subdomain
    auf den Ordner `htdocs/` dieses Projekts setzen (nicht auf den
@@ -107,11 +119,27 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
 
 ## Noch nicht eingebaut
 
-- Automatischer E-Mail-Versand (z.B. Zugangsdaten direkt per Mail an neue
-  Mitglieder, "Passwort vergessen"-Funktion). Aktuell übergibt der Vorstand
-  das initiale Passwort manuell.
+- Zugangsdaten/Rundmails werden über `mail()` verschickt (kein SMTP-Versand
+  über einen externen Dienst). Neue Passwörter werden dem Mitglied aktuell
+  weiterhin manuell mitgeteilt, nicht automatisch per Mail zugestellt.
+- Ein Selbstbedienungs-"Passwort vergessen" für Mitglieder gibt es nicht;
+  das Zurücksetzen läuft ausschließlich über den Vorstand
+  (Mitgliederverwaltung → "Passwort zurücksetzen").
 - Bearbeiten der eigenen Stammdaten durch Mitglieder selbst (aktuell nur
   Ansicht, Änderungen laufen über den Vorstand).
+
+## Hinweis zum E-Mail-Verteiler
+
+Der Verteiler nutzt PHPs eingebaute `mail()`-Funktion, die auf all-inkl KAS
+grundsätzlich funktioniert, aber ohne weitere Konfiguration leicht im
+Spam-Ordner der Empfänger landen kann. Für bessere Zustellbarkeit:
+
+- `MAIL_ABSENDER_EMAIL` in `private/config.php` auf eine echte Adresse der
+  eigenen Domain setzen (keine Fantasie-Adresse).
+- Im KAS-Bereich der Domain SPF (und wenn möglich DKIM) für die Absender-
+  Domain einrichten.
+- Bei größeren Mitgliederzahlen oder Zustellproblemen später auf einen
+  SMTP-Versand (z.B. über einen Transaktionsmail-Dienst) umstellen.
 
 ## Lokal testen
 

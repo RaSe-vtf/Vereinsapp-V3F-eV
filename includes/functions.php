@@ -37,6 +37,37 @@ function generateInitialPasswort(): string
     return bin2hex(random_bytes(5));
 }
 
+/**
+ * Verschickt eine Rundmail per Bcc an die angegebenen Adressen, in Bloecken
+ * von je 40 Empfaengern (schont Mailserver-Limits und schuetzt die
+ * Empfaenger-Adressen der jeweils anderen Mitglieder).
+ * Gibt zurueck, wie viele Empfaenger erfolgreich bzw. nicht erreicht wurden.
+ */
+function sendeRundmail(string $betreff, string $nachricht, array $empfaenger): array
+{
+    $betreff = str_replace(["\r", "\n"], ' ', trim($betreff));
+    $betreffKodiert = '=?UTF-8?B?' . base64_encode($betreff) . '?=';
+
+    $headers = "From: " . MAIL_ABSENDER_NAME . " <" . MAIL_ABSENDER_EMAIL . ">\r\n";
+    $headers .= "Reply-To: " . MAIL_ABSENDER_EMAIL . "\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+    $erfolgreich = 0;
+    $fehlgeschlagen = 0;
+
+    foreach (array_chunk(array_unique($empfaenger), 40) as $block) {
+        $blockHeaders = $headers . 'Bcc: ' . implode(', ', $block) . "\r\n";
+        if (mail(MAIL_ABSENDER_EMAIL, $betreffKodiert, $nachricht, $blockHeaders)) {
+            $erfolgreich += count($block);
+        } else {
+            $fehlgeschlagen += count($block);
+        }
+    }
+
+    return ['erfolgreich' => $erfolgreich, 'fehlgeschlagen' => $fehlgeschlagen];
+}
+
 function setFlash(string $typ, string $text): void
 {
     $_SESSION['flash'] = ['typ' => $typ, 'text' => $text];
