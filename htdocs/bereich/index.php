@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
         if (empty($fehler)) {
             $stmt = getPdo()->prepare('UPDATE mitglieder SET passwort_hash = :hash WHERE id = :id');
             $stmt->execute(['hash' => password_hash($neu, PASSWORD_DEFAULT), 'id' => $mitglied['id']]);
+            invalidiereAndereRememberTokens((int) $mitglied['id']);
             $erfolg = 'Dein Passwort wurde geändert.';
         }
     }

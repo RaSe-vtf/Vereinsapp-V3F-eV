@@ -46,3 +46,18 @@ CREATE TABLE IF NOT EXISTS antraege (
     KEY idx_mitglied_id (mitglied_id),
     CONSTRAINT fk_antraege_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- "Angemeldet bleiben": pro Gerät/Browser ein Token, damit Mitglieder sich
+-- nicht bei jedem Besuch erneut mit Passwort anmelden müssen.
+CREATE TABLE IF NOT EXISTS anmelde_tokens (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    mitglied_id INT UNSIGNED NOT NULL,
+    selector CHAR(24) NOT NULL,
+    validator_hash CHAR(64) NOT NULL,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    zuletzt_verwendet_am DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_selector (selector),
+    KEY idx_mitglied_id (mitglied_id),
+    CONSTRAINT fk_anmelde_tokens_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

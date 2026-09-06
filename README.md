@@ -46,6 +46,13 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Nutzt
   die native PHP-`mail()`-Funktion, wie sie auf all-inkl KAS standardmäßig
   zur Verfügung steht — siehe Hinweis zu Absenderadresse/Spam weiter unten.
+- **Angemeldet bleiben**: Nach dem Login bleibt man dauerhaft eingeloggt,
+  auch nach Schließen des Browsers oder auf einem neuen Gerätebesuch nach
+  Monaten — kein wiederholtes Passwort-Eintippen nötig. Technisch über ein
+  langlebiges, rotierendes Auto-Login-Token (Tabelle `anmelde_tokens`), das
+  serverseitig geprüft wird. Explizites Abmelden, Deaktivieren/Löschen eines
+  Kontos durch den Vorstand sowie Passwort-Änderung/-Reset beenden diesen
+  Auto-Login sofort (siehe `includes/auth.php`).
 
 ## Projektstruktur
 

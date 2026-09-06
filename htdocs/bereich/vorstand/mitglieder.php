@@ -26,12 +26,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                 setFlash('error', 'Du kannst dein eigenes Konto nicht deaktivieren.');
             } else {
                 $pdo->prepare('UPDATE mitglieder SET aktiv = NOT aktiv WHERE id = :id')->execute(['id' => $zielId]);
+                $nochAktiv = $pdo->prepare('SELECT aktiv FROM mitglieder WHERE id = :id');
+                $nochAktiv->execute(['id' => $zielId]);
+                if ((int) $nochAktiv->fetchColumn() === 0) {
+                    loescheAlleRememberTokens($zielId);
+                }
                 setFlash('success', 'Status wurde aktualisiert.');
             }
         } elseif ($_POST['aktion'] === 'passwort_vergeben') {
             $neuesPasswort = generateInitialPasswort();
             $pdo->prepare('UPDATE mitglieder SET passwort_hash = :hash WHERE id = :id')
                 ->execute(['hash' => password_hash($neuesPasswort, PASSWORD_DEFAULT), 'id' => $zielId]);
+            loescheAlleRememberTokens($zielId);
             setFlash('success', 'Neues Passwort für dieses Mitglied: "' . $neuesPasswort . '" — bitte sicher übermitteln, es wird nur einmal angezeigt.');
         } elseif ($_POST['aktion'] === 'loeschen') {
             if ($zielId === (int) $mitglied['id']) {

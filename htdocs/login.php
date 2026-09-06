@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             session_regenerate_id(true);
             $_SESSION['mitglied_id'] = (int) $mitglied['id'];
+            issueRememberToken((int) $mitglied['id']);
             header('Location: bereich/index.php');
             exit;
         }
