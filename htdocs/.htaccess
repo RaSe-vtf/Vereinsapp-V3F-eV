@@ -4,6 +4,6 @@ Options -Indexes
     php_flag display_errors off
 </IfModule>
 
-<FilesMatch "\.(sql|log|md)$">
+<FilesMatch "\.(sql|log|md|ini)$">
     Require all denied
 </FilesMatch>

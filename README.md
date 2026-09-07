@@ -140,6 +140,10 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
 5. **PHP-Version prüfen**: Im KAS unter "PHP-Einstellungen" mindestens PHP 8.0
    auswählen. Die Erweiterungen `gd` und `exif` (für die automatische
    Foto-Verkleinerung/-Drehung) sind bei all-inkl standardmäßig aktiv.
+   `htdocs/php.ini` ist bereits im Projekt enthalten und hebt beim Hochladen
+   direkt `memory_limit`, `upload_max_filesize`, `post_max_size` und
+   `max_execution_time` an (all-inkl liest eine `php.ini` im Webverzeichnis
+   automatisch, ohne dass in KAS selbst etwas eingestellt werden muss).
 6. **Ersten Vorstandszugang anlegen** (einmalig, Henne-Ei-Problem: ohne
    Vorstandsmitglied kann niemand über die App selbst eines anlegen):
    - Mit SSH-Zugriff auf den Server: `php scripts/create_mitglied.php`
