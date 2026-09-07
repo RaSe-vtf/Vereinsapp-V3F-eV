@@ -59,6 +59,13 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   serverseitig geprüft wird. Explizites Abmelden, Deaktivieren/Löschen eines
   Kontos durch den Vorstand sowie Passwort-Änderung/-Reset beenden diesen
   Auto-Login sofort (siehe `includes/auth.php`).
+- **App-Icon fürs Home-Bildschirm**: Favicon, Apple-Touch-Icon (180×180) und
+  ein Web-App-Manifest (`htdocs/manifest.json`) sind eingerichtet, alle aus
+  `htdocs/assets/img/logo.jpg` erzeugt. Fügt jemand die Seite auf dem Handy
+  zum Home-Bildschirm hinzu, erscheint das echte App-Icon statt eines
+  Seiten-Screenshots. Wird das Logo künftig ausgetauscht, müssen die
+  generierten Icon-Dateien (`favicon-16/32.png`, `apple-touch-icon.png`,
+  `icon-192/512.png`) neu erzeugt werden.
 
 ## Projektstruktur
 
