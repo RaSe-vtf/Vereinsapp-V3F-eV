@@ -19,6 +19,14 @@ function checkCsrfToken(?string $token): bool
     return is_string($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+function formatiereDateigroesse(int $bytes): string
+{
+    if ($bytes >= 1024 * 1024) {
+        return number_format($bytes / (1024 * 1024), 1, ',', '.') . ' MB';
+    }
+    return number_format($bytes / 1024, 0, ',', '.') . ' KB';
+}
+
 const ROLLEN_LABELS = [
     'vollmitglied' => 'Vollmitglied',
     'trainingsmitglied' => 'Trainingsmitglied',

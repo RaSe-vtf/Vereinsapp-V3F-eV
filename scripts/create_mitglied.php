@@ -107,9 +107,9 @@ $antragId = (int) $pdo->lastInsertId();
 
 $mitgliedStmt = $pdo->prepare(
     'INSERT INTO mitglieder
-        (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, passwort_hash, aktiv)
+        (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, ist_admin, passwort_hash, aktiv)
      VALUES
-        (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, "vorstandsmitglied", :passwort_hash, 1)'
+        (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, "vorstandsmitglied", 1, :passwort_hash, 1)'
 );
 $mitgliedStmt->execute([
     'antrag_id' => $antragId,
@@ -131,4 +131,4 @@ $mitgliedId = (int) $pdo->lastInsertId();
 $pdo->prepare('UPDATE antraege SET mitglied_id = :mitglied_id WHERE id = :id')
     ->execute(['mitglied_id' => $mitgliedId, 'id' => $antragId]);
 
-echo "Vorstandsmitglied angelegt (ID $mitgliedId) mit zugehörigem Antrag (ID $antragId). Login unter /login.php möglich.\n";
+echo "Vorstandsmitglied + Admin angelegt (ID $mitgliedId) mit zugehörigem Antrag (ID $antragId). Login unter /login.php möglich.\n";

@@ -88,6 +88,9 @@ $flash = takeFlash();
         <nav class="tabs">
             <a href="../index.php">Meine Daten</a>
             <a href="antraege.php" class="active">Geschäftsstelle</a>
+            <?php if (!empty($mitglied['ist_admin'])): ?>
+                <a href="../admin/konten.php">Admin</a>
+            <?php endif; ?>
         </nav>
 
         <nav class="subnav">

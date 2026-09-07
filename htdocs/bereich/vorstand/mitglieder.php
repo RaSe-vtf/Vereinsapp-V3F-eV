@@ -33,19 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                 }
                 setFlash('success', 'Status wurde aktualisiert.');
             }
-        } elseif ($_POST['aktion'] === 'passwort_vergeben') {
-            $neuesPasswort = generateInitialPasswort();
-            $pdo->prepare('UPDATE mitglieder SET passwort_hash = :hash WHERE id = :id')
-                ->execute(['hash' => password_hash($neuesPasswort, PASSWORD_DEFAULT), 'id' => $zielId]);
-            loescheAlleRememberTokens($zielId);
-            setFlash('success', 'Neues Passwort für dieses Mitglied: "' . $neuesPasswort . '" — bitte sicher übermitteln, es wird nur einmal angezeigt.');
-        } elseif ($_POST['aktion'] === 'loeschen') {
-            if ($zielId === (int) $mitglied['id']) {
-                setFlash('error', 'Du kannst dein eigenes Konto nicht löschen. Bitte ein anderes Vorstandsmitglied bitten.');
-            } else {
-                $pdo->prepare('DELETE FROM mitglieder WHERE id = :id')->execute(['id' => $zielId]);
-                setFlash('success', 'Mitglied wurde gelöscht.');
-            }
         }
     }
     header('Location: mitglieder.php');
@@ -86,6 +73,9 @@ $flash = takeFlash();
         <nav class="tabs">
             <a href="../index.php">Meine Daten</a>
             <a href="antraege.php" class="active">Geschäftsstelle</a>
+            <?php if (!empty($mitglied['ist_admin'])): ?>
+                <a href="../admin/konten.php">Admin</a>
+            <?php endif; ?>
         </nav>
 
         <nav class="subnav">
@@ -147,23 +137,9 @@ $flash = takeFlash();
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                         <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
-                                        <input type="hidden" name="aktion" value="passwort_vergeben">
-                                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Passwort für <?= e($m['vorname']) ?> zurücksetzen? Das alte Passwort wird ungültig.');">Passwort zurücksetzen</button>
-                                    </form>
-                                    <form method="post" class="inline-form">
-                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
-                                        <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
                                         <input type="hidden" name="aktion" value="aktiv_umschalten">
                                         <button type="submit" class="btn btn-secondary"><?= $m['aktiv'] ? 'Deaktivieren' : 'Aktivieren' ?></button>
                                     </form>
-                                    <?php if ((int) $m['id'] !== (int) $mitglied['id']): ?>
-                                        <form method="post" class="inline-form">
-                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
-                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
-                                            <input type="hidden" name="aktion" value="loeschen">
-                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('<?= e($m['vorname'] . ' ' . $m['nachname']) ?> wirklich endgültig löschen? Das kann nicht rückgängig gemacht werden.');">Löschen</button>
-                                        </form>
-                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

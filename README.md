@@ -38,9 +38,27 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     Vorstandsmitglied (Reiter heißt bewusst nicht "Vorstand", um Bereich
     und Personen-Rolle sprachlich zu trennen). Enthält Aufnahmeanträge
     (ansehen, annehmen/ablehnen) und die Mitgliederverwaltung (Rolle ändern,
-    Konto aktivieren/deaktivieren/löschen, Passwort zurücksetzen, mit
-    Profilbild-Miniaturansicht und Nachname als Link zum Datenblatt) sowie
-    den E-Mail-Verteiler.
+    Konto aktivieren/deaktivieren, mit Profilbild-Miniaturansicht und
+    Nachname als Link zum Datenblatt) sowie den E-Mail-Verteiler.
+    Konto löschen und Passwort zurücksetzen sind in den Admin-Bereich
+    umgezogen (siehe unten).
+  - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
+    Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
+    Vorstandsmitglied zusätzlich Admin sein). Enthält:
+    - **Konten**: Passwort zurücksetzen, Konto endgültig löschen und
+      Admin-Rechte an- bzw. abschalten. Ein Admin kann sich weder selbst
+      löschen noch sich selbst das Admin-Recht entziehen (Schutz vor
+      Aussperren) — das kann nur ein anderer Admin.
+    - **Bilder**: Übersicht aller aktuell verwendeten Fotos (aus
+      Aufnahmeanträgen und Mitgliederkonten) mit Verwendung, Abmessungen
+      und Dateigröße. Bilder über 1600px an der längsten Kante gelten als
+      "zu groß" und lassen sich einzeln oder alle zusammen per Button neu
+      verarbeiten (gleiche Verkleinerung/Kompression wie beim Hochladen).
+      Nach dem Verkleinern zeigt eine Meldung, wie viele Bilder geprüft,
+      wie viele tatsächlich verkleinert und wie viel Speicherplatz dadurch
+      eingespart wurde. Gedacht u.a. für Altbestände, die vor Einführung
+      der automatischen Verkleinerung z.B. per FTP/phpMyAdmin eingespielt
+      wurden.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
   Rolle "Vollmitglied" angelegt (noch ohne Passwort). Der Vorstand vergibt in
   der Mitgliederverwaltung ein initiales Passwort, das einmalig angezeigt und
@@ -52,10 +70,10 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 - Ein Vorstandsmitglied kann sich nicht selbst die Vorstandsrolle entziehen,
   das eigene Konto deaktivieren oder löschen (Schutz vor versehentlichem
   Aussperren).
-- **Mitglied löschen**: entfernt das Mitgliedskonto endgültig aus der
-  Datenbank (Login funktioniert danach nicht mehr). Der ursprüngliche
-  Aufnahmeantrag bleibt als historischer Datensatz erhalten, verliert aber
-  die Verknüpfung zum Konto.
+- **Mitglied löschen** (Admin → Konten): entfernt das Mitgliedskonto
+  endgültig aus der Datenbank (Login funktioniert danach nicht mehr). Der
+  ursprüngliche Aufnahmeantrag bleibt als historischer Datensatz erhalten,
+  verliert aber die Verknüpfung zum Konto.
 - **E-Mail-Verteiler** (`.../bereich/vorstand/verteiler.php`): Rundmail an
   alle aktiven Mitglieder oder gezielt nach Rolle, verschickt per Bcc (die
   Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Nutzt
@@ -102,9 +120,13 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
     vorstand/                -> nur Rolle Vorstandsmitglied
       antraege.php           -> Aufnahmeanträge verwalten
       antrag_ansehen.php
-      mitglieder.php         -> Mitgliederverwaltung: Rolle, Status, Passwort, Löschen
+      mitglieder.php         -> Mitgliederverwaltung: Rolle, Status
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler (Rundmail per Bcc)
+    admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
+      konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
+      bilder.php              -> Foto-Übersicht, zu große Bilder prüfen und verkleinern
+      foto.php                -> liefert Fotos für die Bilder-Übersicht aus (nur Admin)
   assets/                   -> CSS, Logo
 
 includes/          -> gemeinsamer PHP-Code (liegt bewusst AUSSERHALB von htdocs)
@@ -153,7 +175,8 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
      Aufnahmeantrag an, damit das erste Vorstandsmitglied genau wie jedes
      andere Mitglied in der Anträge-Übersicht auftaucht.
    - Ohne SSH-Zugriff: das Mitglied direkt per phpMyAdmin in die Tabelle
-     `mitglieder` eintragen, mit `rolle = 'vorstandsmitglied'` und einem
+     `mitglieder` eintragen, mit `rolle = 'vorstandsmitglied'`,
+     `ist_admin = 1` (damit der Admin-Bereich erreichbar ist) und einem
      Passwort-Hash, den du lokal per
      `php -r "echo password_hash('DeinPasswort', PASSWORD_DEFAULT);"`
      erzeugst. In diesem Fall fehlt der zugehörige Aufnahmeantrag zunächst -
@@ -173,10 +196,8 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
   über einen externen Dienst). Neue Passwörter werden dem Mitglied aktuell
   weiterhin manuell mitgeteilt, nicht automatisch per Mail zugestellt.
 - Ein Selbstbedienungs-"Passwort vergessen" für Mitglieder gibt es nicht;
-  das Zurücksetzen läuft ausschließlich über den Vorstand
-  (Mitgliederverwaltung → "Passwort zurücksetzen").
-- Bearbeiten der eigenen Stammdaten durch Mitglieder selbst (aktuell nur
-  Ansicht, Änderungen laufen über den Vorstand).
+  das Zurücksetzen läuft ausschließlich über einen Admin
+  (Admin → Konten → "Passwort zurücksetzen").
 
 ## Hinweis zum E-Mail-Verteiler
 

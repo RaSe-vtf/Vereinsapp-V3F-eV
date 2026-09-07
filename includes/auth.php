@@ -61,6 +61,21 @@ function requireVorstand(string $loginPfad = 'login.php', string $bereichPfad = 
 }
 
 /**
+ * Erzwingt das Admin-Flag, sonst Weiterleitung zum eigenen Bereich. Das
+ * Admin-Flag ist unabhaengig von der Rolle (z.B. Vorstandsmitglied UND
+ * Admin gleichzeitig).
+ */
+function requireAdmin(string $loginPfad = 'login.php', string $bereichPfad = 'index.php'): array
+{
+    $mitglied = requireMemberLogin($loginPfad);
+    if (empty($mitglied['ist_admin'])) {
+        header('Location: ' . $bereichPfad);
+        exit;
+    }
+    return $mitglied;
+}
+
+/**
  * "Angemeldet bleiben": legt fuer das Mitglied ein neues Auto-Login-Token an
  * und hinterlegt es als langlebiges Cookie im Browser. Wird nach jedem
  * erfolgreichen Passwort-Login aufgerufen.

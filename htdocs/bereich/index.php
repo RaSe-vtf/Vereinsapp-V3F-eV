@@ -186,6 +186,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
             <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
                 <a href="vorstand/antraege.php">Geschäftsstelle</a>
             <?php endif; ?>
+            <?php if (!empty($mitglied['ist_admin'])): ?>
+                <a href="admin/konten.php">Admin</a>
+            <?php endif; ?>
         </nav>
 
         <div class="card">

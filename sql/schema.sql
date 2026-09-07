@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     instagram VARCHAR(100) NULL,
     foto_dateiname VARCHAR(255) NULL,
     rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    ist_admin TINYINT(1) NOT NULL DEFAULT 0,
     passwort_hash VARCHAR(255) NULL,
     aktiv TINYINT(1) NOT NULL DEFAULT 1,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
