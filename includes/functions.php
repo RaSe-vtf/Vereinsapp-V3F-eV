@@ -103,7 +103,7 @@ function handleFotoUpload(array $file): string
         throw new RuntimeException('Beim Hochladen des Fotos ist ein Fehler aufgetreten.');
     }
     if ($file['size'] > $maxBytes) {
-        throw new RuntimeException('Das Foto darf maximal 6 MB gross sein.');
+        throw new RuntimeException('Das Foto darf maximal 6 MB groß sein.');
     }
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -115,7 +115,7 @@ function handleFotoUpload(array $file): string
 
     $zielOrdner = __DIR__ . '/../private/uploads/fotos/';
     if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
-        throw new RuntimeException('Speicherort fuer Fotos konnte nicht angelegt werden.');
+        throw new RuntimeException('Speicherort für Fotos konnte nicht angelegt werden.');
     }
 
     $dateiname = bin2hex(random_bytes(16)) . '.' . $erlaubteTypen[$mime];

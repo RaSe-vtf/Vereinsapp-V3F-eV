@@ -40,24 +40,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $datum = DateTime::createFromFormat('Y-m-d', $werte['geburtsdatum']);
         if (!$datum || $datum > new DateTime()) {
-            $fehler[] = 'Bitte gib ein gueltiges Geburtsdatum an.';
+            $fehler[] = 'Bitte gib ein gültiges Geburtsdatum an.';
         }
     }
 
     if ($werte['geburtsort'] === '') $fehler[] = 'Bitte gib deinen Geburtsort an.';
-    if ($werte['strasse_hausnummer'] === '') $fehler[] = 'Bitte gib deine Strasse und Hausnummer an.';
-    if ($werte['plz'] === '' || !preg_match('/^\d{4,5}$/', $werte['plz'])) $fehler[] = 'Bitte gib eine gueltige Postleitzahl an.';
+    if ($werte['strasse_hausnummer'] === '') $fehler[] = 'Bitte gib deine Straße und Hausnummer an.';
+    if ($werte['plz'] === '' || !preg_match('/^\d{4,5}$/', $werte['plz'])) $fehler[] = 'Bitte gib eine gültige Postleitzahl an.';
     if ($werte['ort'] === '') $fehler[] = 'Bitte gib deinen Wohnort an.';
     if ($werte['telefon'] === '') $fehler[] = 'Bitte gib deine Telefonnummer an.';
 
     if ($werte['email'] === '' || !filter_var($werte['email'], FILTER_VALIDATE_EMAIL)) {
-        $fehler[] = 'Bitte gib eine gueltige E-Mail-Adresse an.';
+        $fehler[] = 'Bitte gib eine gültige E-Mail-Adresse an.';
     }
 
     if ($werte['instagram'] !== '') {
         $werte['instagram'] = ltrim($werte['instagram'], '@');
         if (!preg_match('/^[A-Za-z0-9._]{1,60}$/', $werte['instagram'])) {
-            $fehler[] = 'Bitte gib einen gueltigen Instagram-Benutzernamen an (oder lasse das Feld leer).';
+            $fehler[] = 'Bitte gib einen gültigen Instagram-Benutzernamen an (oder lasse das Feld leer).';
         }
     }
 
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $einBildnutzung = isset($_POST['ein_bildnutzung']) ? 1 : 0;
 
     if (!$einSatzung) $fehler[] = 'Du musst der Satzung und den Ordnungen des Vereins zustimmen, um Mitglied zu werden.';
-    if (!$einDatenschutz) $fehler[] = 'Du musst das Impressum und die Datenschutzerklaerung zur Kenntnis nehmen.';
+    if (!$einDatenschutz) $fehler[] = 'Du musst das Impressum und die Datenschutzerklärung zur Kenntnis nehmen.';
 
     $fotoDateiname = null;
     if (empty($fehler)) {
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: antrag_erfolg.php');
             exit;
         } catch (PDOException $e) {
-            $fehler[] = 'Dein Antrag konnte nicht gespeichert werden. Bitte versuche es spaeter erneut.';
+            $fehler[] = 'Dein Antrag konnte nicht gespeichert werden. Bitte versuche es später erneut.';
         }
     }
 }

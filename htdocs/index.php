@@ -27,7 +27,7 @@ require_once __DIR__ . '/../includes/functions.php';
         <div class="hero">
             <img src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <h1>Willkommen bei der <?= e(APP_NAME) ?></h1>
-            <p>Hier kannst du deinen Aufnahmeantrag fuer <?= e(VEREIN_NAME) ?> ausfuellen. Der Vorstand bearbeitet deinen Antrag anschliessend.</p>
+            <p>Hier kannst du deinen Aufnahmeantrag für <?= e(VEREIN_NAME) ?> ausfüllen. Der Vorstand bearbeitet deinen Antrag anschließend.</p>
             <a class="btn" href="antrag.php">Zum Aufnahmeantrag</a>
         </div>
     </main>
