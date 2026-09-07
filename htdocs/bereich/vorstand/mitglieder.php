@@ -82,7 +82,7 @@ $flash = takeFlash();
                 <p>Noch keine Mitglieder angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table>
+                <table class="tabelle-einzeilig">
                     <thead>
                         <tr>
                             <th>Foto</th>
@@ -105,14 +105,16 @@ $flash = takeFlash();
                         <?php foreach ($mitgliederListe as $m): ?>
                             <tr>
                                 <td>
-                                    <?php if ($m['foto_dateiname']): ?>
-                                        <img class="foto-thumb foto-zoombar" src="../foto.php?typ=mitglied&id=<?= (int) $m['id'] ?>" alt="Foto von <?= e($m['vorname'] . ' ' . $m['nachname']) ?>">
-                                    <?php else: ?>
-                                        <span class="foto-thumb foto-thumb--platzhalter"><?= e(mb_substr($m['vorname'], 0, 1) . mb_substr($m['nachname'], 0, 1)) ?></span>
-                                    <?php endif; ?>
+                                    <a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>" title="Datenblatt von <?= e($m['vorname'] . ' ' . $m['nachname']) ?> ansehen">
+                                        <?php if ($m['foto_dateiname']): ?>
+                                            <img class="foto-thumb" src="../foto.php?typ=mitglied&id=<?= (int) $m['id'] ?>" alt="Foto von <?= e($m['vorname'] . ' ' . $m['nachname']) ?>">
+                                        <?php else: ?>
+                                            <span class="foto-thumb foto-thumb--platzhalter"><?= e(mb_substr($m['vorname'], 0, 1) . mb_substr($m['nachname'], 0, 1)) ?></span>
+                                        <?php endif; ?>
+                                    </a>
                                 </td>
                                 <td><?= e($m['vorname']) ?></td>
-                                <td><a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>"><?= e($m['nachname']) ?></a></td>
+                                <td><?= e($m['nachname']) ?></td>
                                 <td style="white-space:nowrap;"><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
                                 <td><?= e($m['geburtsort']) ?></td>
                                 <td><?= e($m['strasse_hausnummer']) ?>, <?= e($m['plz'] . ' ' . $m['ort']) ?></td>

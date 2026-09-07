@@ -11,7 +11,7 @@ $pdo = getPdo();
 $fehler = [];
 $betreff = '';
 $nachricht = '';
-$alleAusgewaehlt = false;
+$alleAusgewaehlt = $_SERVER['REQUEST_METHOD'] !== 'POST';
 $rollenAusgewaehlt = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

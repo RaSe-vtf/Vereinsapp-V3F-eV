@@ -38,5 +38,5 @@
     </div>
 </header>
 <?php if ($zurueck !== null): ?>
-    <div class="container zurueck-zeile"><a class="zurueck-link" href="<?= e($zurueck) ?>">&larr; Zurück</a></div>
+    <div class="container zurueck-zeile"><a class="zurueck-link" href="<?= e($zurueck) ?>" aria-label="Zurück" title="Zurück">&#8617;</a></div>
 <?php endif; ?>

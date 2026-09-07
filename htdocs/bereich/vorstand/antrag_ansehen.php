@@ -59,9 +59,6 @@ if (!$antrag) {
                         <tr><th>Datenschutz zur Kenntnis genommen</th><td><?= $antrag['einverstaendnis_datenschutz'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Bildnutzung Social Media erlaubt</th><td><?= $antrag['einverstaendnis_bildnutzung'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Eingegangen am</th><td><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
-                        <?php if ($antrag['mitglied_id']): ?>
-                            <tr><th>Mitgliedskonto</th><td><a href="mitglied_ansehen.php?id=<?= (int) $antrag['mitglied_id'] ?>">ansehen</a></td></tr>
-                        <?php endif; ?>
                     </table>
                 </div>
             </div>
