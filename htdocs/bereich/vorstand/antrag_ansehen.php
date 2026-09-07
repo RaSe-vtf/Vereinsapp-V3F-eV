@@ -36,7 +36,7 @@ if (!$antrag) {
             <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle">Vorstand</div>
+                <div class="top-header__subtitle">Geschäftsstelle</div>
             </div>
             <div style="margin-left:auto;">
                 <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
@@ -49,7 +49,7 @@ if (!$antrag) {
 
         <div class="card">
             <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
-                <img class="foto-preview" src="../foto.php?typ=antrag&id=<?= (int) $antrag['id'] ?>" alt="Foto von <?= e($antrag['vorname']) ?>">
+                <img class="foto-preview foto-zoombar" src="../foto.php?typ=antrag&id=<?= (int) $antrag['id'] ?>" alt="Foto von <?= e($antrag['vorname']) ?>">
 
                 <div style="flex:1; min-width:240px;">
                     <h2 style="margin-top:0;"><?= e($antrag['vorname'] . ' ' . $antrag['nachname']) ?></h2>
@@ -95,5 +95,6 @@ if (!$antrag) {
             </div>
         </div>
     </main>
+    <script src="../../assets/js/lightbox.js" defer></script>
 </body>
 </html>

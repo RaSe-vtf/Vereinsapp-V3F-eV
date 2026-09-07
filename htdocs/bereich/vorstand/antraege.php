@@ -78,7 +78,7 @@ $flash = takeFlash();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Anträge &ndash; Vorstand &ndash; <?= e(APP_NAME) ?></title>
+    <title>Anträge &ndash; Geschäftsstelle &ndash; <?= e(APP_NAME) ?></title>
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="icon" type="image/png" sizes="32x32" href="../../assets/img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../../assets/img/favicon-16.png">
@@ -92,7 +92,7 @@ $flash = takeFlash();
             <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Vorstand</div>
+                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Geschäftsstelle</div>
             </div>
             <div style="margin-left:auto;">
                 <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
@@ -103,7 +103,7 @@ $flash = takeFlash();
     <main class="container" style="max-width:960px;">
         <nav class="tabs">
             <a href="../index.php">Meine Daten</a>
-            <a href="antraege.php" class="active">Vorstand</a>
+            <a href="antraege.php" class="active">Geschäftsstelle</a>
         </nav>
 
         <nav class="subnav">

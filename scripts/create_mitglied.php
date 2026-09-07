@@ -27,6 +27,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 function frage(string $text): string
 {
@@ -58,14 +59,10 @@ if (!is_file($fotoPfad)) {
     die("Abbruch: Foto nicht gefunden unter: $fotoPfad\n");
 }
 
-$erlaubteTypen = [
-    'image/jpeg' => 'jpg',
-    'image/png' => 'png',
-    'image/webp' => 'webp',
-];
+$erlaubteTypen = ['image/jpeg', 'image/png', 'image/webp'];
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime = $finfo->file($fotoPfad);
-if (!isset($erlaubteTypen[$mime])) {
+if (!in_array($mime, $erlaubteTypen, true)) {
     die("Abbruch: Foto muss JPG, PNG oder WebP sein.\n");
 }
 
@@ -73,9 +70,13 @@ $zielOrdner = __DIR__ . '/../private/uploads/fotos/';
 if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
     die("Abbruch: Speicherort für Fotos konnte nicht angelegt werden.\n");
 }
-$fotoDateiname = bin2hex(random_bytes(16)) . '.' . $erlaubteTypen[$mime];
-if (!copy($fotoPfad, $zielOrdner . $fotoDateiname)) {
-    die("Abbruch: Foto konnte nicht kopiert werden.\n");
+// Gleiche Verarbeitung wie beim Web-Upload: EXIF-Ausrichtung korrigieren
+// und auf eine handhabbare Größe verkleinern (siehe includes/functions.php).
+$fotoDateiname = bin2hex(random_bytes(16)) . '.jpg';
+try {
+    verarbeiteUndSpeichereFoto($fotoPfad, $mime, $zielOrdner . $fotoDateiname);
+} catch (RuntimeException $e) {
+    die('Abbruch: ' . $e->getMessage() . "\n");
 }
 
 $pdo = getPdo();

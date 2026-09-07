@@ -3,7 +3,7 @@
 Webapp für V3F e.V.: Mitglieder stellen über ein Formular ihren Aufnahmeantrag,
 der Vorstand nimmt ihn im Mitgliederbereich an, wodurch ein Mitgliedskonto mit
 Rolle entsteht. Rollen steuern den Zugriff, z.B. sieht nur die Rolle
-Vorstandsmitglied den Reiter "Vorstand".
+Vorstandsmitglied den Reiter "Geschäftsstelle".
 
 Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 (oder jedem anderen klassischen PHP-Webhosting).
@@ -28,10 +28,13 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     Passwort-Reset bleiben Sache des Vorstands. Widerruf der
     Bildnutzungs-Einwilligung läuft bewusst nicht über einen Schalter in
     der App, sondern per E-Mail an den Vorstand (siehe Datenschutzerklärung).
-  - **Vorstand**: nur sichtbar und aufrufbar für die Rolle Vorstandsmitglied.
-    Enthält Aufnahmeanträge (ansehen, annehmen/ablehnen) und die
-    Mitgliederverwaltung (Rolle ändern, Konto aktivieren/deaktivieren/
-    löschen, Passwort zurücksetzen) sowie den E-Mail-Verteiler.
+  - **Geschäftsstelle**: nur sichtbar und aufrufbar für die Rolle
+    Vorstandsmitglied (Reiter heißt bewusst nicht "Vorstand", um Bereich
+    und Personen-Rolle sprachlich zu trennen). Enthält Aufnahmeanträge
+    (ansehen, annehmen/ablehnen) und die Mitgliederverwaltung (Rolle ändern,
+    Konto aktivieren/deaktivieren/löschen, Passwort zurücksetzen, mit
+    Profilbild-Miniaturansicht und Nachname als Link zum Datenblatt) sowie
+    den E-Mail-Verteiler.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
   Rolle "Vollmitglied" angelegt (noch ohne Passwort). Der Vorstand vergibt in
   der Mitgliederverwaltung ein initiales Passwort, das einmalig angezeigt und
@@ -66,6 +69,16 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Seiten-Screenshots. Wird das Logo künftig ausgetauscht, müssen die
   generierten Icon-Dateien (`favicon-16/32.png`, `apple-touch-icon.png`,
   `icon-192/512.png`) neu erzeugt werden.
+- **Foto-Verarbeitung beim Hochladen** (`verarbeiteUndSpeichereFoto()` in
+  `includes/functions.php`, genutzt von Aufnahmeantrag, "Meine Daten" und
+  dem Bootstrap-Skript): Fotos werden anhand der EXIF-Kameraausrichtung
+  automatisch richtig gedreht und auf maximal 1600px an der längsten Kante
+  verkleinert, als JPEG mit Qualität 82 gespeichert. Verhindert, dass
+  unbearbeitete Handyfotos (oft mehrere MB) die Seite langsam machen oder
+  seitlich/auf dem Kopf angezeigt werden.
+- **Foto-Lupe**: Ein Klick auf ein Profilbild (Mitgliederliste, Datenblatt,
+  "Meine Daten", Antrags-Ansicht) öffnet es vergrößert in einem Overlay
+  (`htdocs/assets/js/lightbox.js`, ohne externe Abhängigkeiten).
 
 ## Projektstruktur
 
@@ -119,7 +132,8 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
    auf den Ordner `htdocs/` dieses Projekts setzen (nicht auf den
    Projekt-Hauptordner!).
 5. **PHP-Version prüfen**: Im KAS unter "PHP-Einstellungen" mindestens PHP 8.0
-   auswählen.
+   auswählen. Die Erweiterungen `gd` und `exif` (für die automatische
+   Foto-Verkleinerung/-Drehung) sind bei all-inkl standardmäßig aktiv.
 6. **Ersten Vorstandszugang anlegen** (einmalig, Henne-Ei-Problem: ohne
    Vorstandsmitglied kann niemand über die App selbst eines anlegen):
    - Mit SSH-Zugriff auf den Server: `php scripts/create_mitglied.php`

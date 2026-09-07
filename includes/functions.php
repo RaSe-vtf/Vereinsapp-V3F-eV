@@ -83,17 +83,20 @@ function takeFlash(): ?array
     return $flash;
 }
 
+const FOTO_MAX_KANTE = 1600;
+const FOTO_JPEG_QUALITAET = 82;
+
 /**
- * Validiert und speichert das hochgeladene Foto.
+ * Validiert und speichert das hochgeladene Foto: richtet es anhand der
+ * EXIF-Kameraausrichtung automatisch korrekt aus, verkleinert es auf
+ * maximal FOTO_MAX_KANTE Pixel an der laengsten Kante und speichert es als
+ * komprimiertes JPEG - damit Handyfotos (oft mehrere MB) nicht unveraendert
+ * abgelegt werden und die App langsam machen.
  * Gibt den gespeicherten Dateinamen zurueck oder wirft eine RuntimeException.
  */
 function handleFotoUpload(array $file): string
 {
-    $erlaubteTypen = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
+    $erlaubteTypen = ['image/jpeg', 'image/png', 'image/webp'];
     $maxBytes = 6 * 1024 * 1024; // 6 MB
 
     if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
@@ -102,6 +105,9 @@ function handleFotoUpload(array $file): string
     if ($file['error'] !== UPLOAD_ERR_OK) {
         throw new RuntimeException('Beim Hochladen des Fotos ist ein Fehler aufgetreten.');
     }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('Ungültiger Foto-Upload.');
+    }
     if ($file['size'] > $maxBytes) {
         throw new RuntimeException('Das Foto darf maximal 6 MB groß sein.');
     }
@@ -109,7 +115,7 @@ function handleFotoUpload(array $file): string
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
 
-    if (!isset($erlaubteTypen[$mime])) {
+    if (!in_array($mime, $erlaubteTypen, true)) {
         throw new RuntimeException('Bitte nur JPG-, PNG- oder WebP-Bilder hochladen.');
     }
 
@@ -118,12 +124,79 @@ function handleFotoUpload(array $file): string
         throw new RuntimeException('Speicherort für Fotos konnte nicht angelegt werden.');
     }
 
-    $dateiname = bin2hex(random_bytes(16)) . '.' . $erlaubteTypen[$mime];
-    $zielPfad = $zielOrdner . $dateiname;
-
-    if (!move_uploaded_file($file['tmp_name'], $zielPfad)) {
-        throw new RuntimeException('Foto konnte nicht gespeichert werden.');
-    }
+    $dateiname = bin2hex(random_bytes(16)) . '.jpg';
+    verarbeiteUndSpeichereFoto($file['tmp_name'], $mime, $zielOrdner . $dateiname);
 
     return $dateiname;
+}
+
+/**
+ * Laedt ein Bild von $quellPfad, korrigiert die EXIF-Ausrichtung (nur
+ * JPEG traegt diese Information), verkleinert es bei Bedarf und speichert
+ * es als JPEG unter $zielPfad. Wird sowohl vom Web-Upload als auch vom
+ * CLI-Bootstrap-Skript genutzt, damit beide Wege gleich behandelt werden.
+ */
+function verarbeiteUndSpeichereFoto(string $quellPfad, string $mime, string $zielPfad): void
+{
+    $lader = match ($mime) {
+        'image/jpeg' => 'imagecreatefromjpeg',
+        'image/png' => 'imagecreatefrompng',
+        'image/webp' => 'imagecreatefromwebp',
+        default => null,
+    };
+    if ($lader === null || !function_exists($lader)) {
+        throw new RuntimeException('Dieses Bildformat wird auf dem Server nicht unterstützt.');
+    }
+
+    $bild = $lader($quellPfad);
+    if ($bild === false) {
+        throw new RuntimeException('Foto konnte nicht gelesen werden.');
+    }
+
+    if ($mime === 'image/jpeg' && function_exists('exif_read_data')) {
+        $exif = @exif_read_data($quellPfad);
+        $orientation = (int) ($exif['Orientation'] ?? 1);
+        $bild = korrigiereFotoAusrichtung($bild, $orientation);
+    }
+
+    $breite = imagesx($bild);
+    $hoehe = imagesy($bild);
+    if ($breite > FOTO_MAX_KANTE || $hoehe > FOTO_MAX_KANTE) {
+        $faktor = min(FOTO_MAX_KANTE / $breite, FOTO_MAX_KANTE / $hoehe);
+        $neueBreite = max(1, (int) round($breite * $faktor));
+        $neueHoehe = max(1, (int) round($hoehe * $faktor));
+
+        $verkleinert = imagecreatetruecolor($neueBreite, $neueHoehe);
+        imagecopyresampled($verkleinert, $bild, 0, 0, 0, 0, $neueBreite, $neueHoehe, $breite, $hoehe);
+        imagedestroy($bild);
+        $bild = $verkleinert;
+    }
+
+    $gespeichert = imagejpeg($bild, $zielPfad, FOTO_JPEG_QUALITAET);
+    imagedestroy($bild);
+
+    if (!$gespeichert) {
+        throw new RuntimeException('Foto konnte nicht gespeichert werden.');
+    }
+}
+
+/**
+ * Dreht ein GD-Bild passend zum EXIF-Orientation-Wert einer JPEG-Datei
+ * (z.B. seitlich oder auf dem Kopf aufgenommene Handyfotos).
+ */
+function korrigiereFotoAusrichtung(\GdImage $bild, int $orientation): \GdImage
+{
+    $gedreht = match ($orientation) {
+        3 => imagerotate($bild, 180, 0),
+        6 => imagerotate($bild, -90, 0),
+        8 => imagerotate($bild, 90, 0),
+        default => null,
+    };
+
+    if ($gedreht === false || $gedreht === null) {
+        return $bild;
+    }
+
+    imagedestroy($bild);
+    return $gedreht;
 }

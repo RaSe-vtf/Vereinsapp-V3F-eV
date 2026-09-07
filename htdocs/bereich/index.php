@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
         <nav class="tabs">
             <a href="index.php" class="active">Meine Daten</a>
             <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
-                <a href="vorstand/antraege.php">Vorstand</a>
+                <a href="vorstand/antraege.php">Geschäftsstelle</a>
             <?php endif; ?>
         </nav>
 
@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
                 <label for="foto">Foto</label>
                 <?php if ($mitglied['foto_dateiname']): ?>
                     <div style="margin-bottom:8px;">
-                        <img class="foto-preview" src="foto.php?typ=mitglied&id=<?= (int) $mitglied['id'] ?>" alt="Aktuelles Foto">
+                        <img class="foto-preview foto-zoombar" src="foto.php?typ=mitglied&id=<?= (int) $mitglied['id'] ?>" alt="Aktuelles Foto">
                     </div>
                 <?php endif; ?>
                 <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp">
@@ -291,5 +291,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
             </form>
         </div>
     </main>
+    <script src="../assets/js/lightbox.js" defer></script>
 </body>
 </html>

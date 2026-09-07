@@ -74,7 +74,7 @@ $flash = takeFlash();
             <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Vorstand</div>
+                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Geschäftsstelle</div>
             </div>
             <div style="margin-left:auto;">
                 <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
@@ -85,7 +85,7 @@ $flash = takeFlash();
     <main class="container" style="max-width:1040px;">
         <nav class="tabs">
             <a href="../index.php">Meine Daten</a>
-            <a href="antraege.php" class="active">Vorstand</a>
+            <a href="antraege.php" class="active">Geschäftsstelle</a>
         </nav>
 
         <nav class="subnav">
@@ -108,6 +108,7 @@ $flash = takeFlash();
                 <table>
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Name</th>
                             <th>E-Mail</th>
                             <th>Rolle</th>
@@ -119,7 +120,14 @@ $flash = takeFlash();
                     <tbody>
                         <?php foreach ($mitgliederListe as $m): ?>
                             <tr>
-                                <td><a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>"><?= e($m['vorname'] . ' ' . $m['nachname']) ?></a></td>
+                                <td>
+                                    <?php if ($m['foto_dateiname']): ?>
+                                        <img class="foto-thumb foto-zoombar" src="../foto.php?typ=mitglied&id=<?= (int) $m['id'] ?>" alt="Foto von <?= e($m['vorname'] . ' ' . $m['nachname']) ?>">
+                                    <?php else: ?>
+                                        <span class="foto-thumb foto-thumb--platzhalter"><?= e(mb_substr($m['vorname'], 0, 1) . mb_substr($m['nachname'], 0, 1)) ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= e($m['vorname']) ?> <a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>"><?= e($m['nachname']) ?></a></td>
                                 <td><?= e($m['email']) ?></td>
                                 <td>
                                     <form method="post" class="inline-form">
@@ -165,5 +173,6 @@ $flash = takeFlash();
             <?php endif; ?>
         </div>
     </main>
+    <script src="../../assets/js/lightbox.js" defer></script>
 </body>
 </html>

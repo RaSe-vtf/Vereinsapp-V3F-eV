@@ -36,7 +36,7 @@ if (!$angesehen) {
             <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle">Vorstand</div>
+                <div class="top-header__subtitle">Geschäftsstelle</div>
             </div>
             <div style="margin-left:auto;">
                 <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
@@ -50,7 +50,7 @@ if (!$angesehen) {
         <div class="card">
             <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
                 <?php if ($angesehen['foto_dateiname']): ?>
-                    <img class="foto-preview" src="../foto.php?typ=mitglied&id=<?= (int) $angesehen['id'] ?>" alt="Foto von <?= e($angesehen['vorname']) ?>">
+                    <img class="foto-preview foto-zoombar" src="../foto.php?typ=mitglied&id=<?= (int) $angesehen['id'] ?>" alt="Foto von <?= e($angesehen['vorname']) ?>">
                 <?php endif; ?>
 
                 <div style="flex:1; min-width:240px;">
@@ -74,5 +74,6 @@ if (!$angesehen) {
             <p style="margin-top:20px;"><a href="mitglieder.php">Rolle, Status oder Passwort in der Mitgliederverwaltung ändern &rarr;</a></p>
         </div>
     </main>
+    <script src="../../assets/js/lightbox.js" defer></script>
 </body>
 </html>
