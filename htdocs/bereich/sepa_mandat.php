@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
 $mitglied = requireMemberLogin('../login.php', false);
+$istAenderung = $mitglied['sepa_erteilt_am'] !== null;
 
 $fehler = [];
 $werte = [
@@ -49,6 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'mandatsreferenz' => $mandatsreferenz,
                 'id' => $mitglied['id'],
             ]);
+
+            if ($istAenderung) {
+                sendeEinzelMail(
+                    MAIL_ABSENDER_EMAIL,
+                    'Bankverbindung geändert: ' . $mitglied['vorname'] . ' ' . $mitglied['nachname'],
+                    $mitglied['vorname'] . ' ' . $mitglied['nachname'] . " hat soeben die Bankverbindung für das SEPA-Lastschriftmandat geändert.\n\n"
+                    . "Kontoinhaber: " . $werte['kontoinhaber'] . "\n"
+                    . "IBAN: " . $werte['iban'] . "\n"
+                    . "BIC: " . ($werte['bic'] !== '' ? $werte['bic'] : '-') . "\n"
+                    . "Mandatsreferenz: " . $mandatsreferenz
+                );
+            }
 
             header('Location: home.php');
             exit;
@@ -99,7 +112,9 @@ $zurueck = null;
                 <p class="text-muted" style="margin-bottom:0;">Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.</p>
             </div>
 
-            <p class="text-muted">Ändert sich deine Bankverbindung später, kannst du sie jederzeit selbst unter "Meine Daten" aktualisieren.</p>
+            <?php if ($istAenderung): ?>
+                <p class="text-muted">Der Vorstand wird automatisch per E-Mail über die Änderung informiert.</p>
+            <?php endif; ?>
 
             <form method="post">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -119,7 +134,7 @@ $zurueck = null;
                 </label>
 
                 <div style="margin-top:18px;">
-                    <button type="submit" class="btn">Mandat erteilen</button>
+                    <button type="submit" class="btn"><?= $istAenderung ? 'Bankverbindung ändern' : 'Mandat erteilen' ?></button>
                 </div>
             </form>
         </div>
