@@ -152,6 +152,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
         }
     }
 }
+
+$sepaFehler = [];
+$sepaErfolg = '';
+$sepaWerte = [
+    'kontoinhaber' => $mitglied['sepa_kontoinhaber'] ?? '',
+    'iban' => $mitglied['sepa_iban'] ?? '',
+    'bic' => $mitglied['sepa_bic'] ?? '',
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'sepa_aendern') {
+    if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
+        $sepaFehler[] = 'Deine Sitzung ist abgelaufen. Bitte lade die Seite neu.';
+    } else {
+        foreach ($sepaWerte as $feld => $default) {
+            $sepaWerte[$feld] = trim((string) ($_POST[$feld] ?? ''));
+        }
+        $sepaWerte['iban'] = strtoupper(str_replace(' ', '', $sepaWerte['iban']));
+        $sepaWerte['bic'] = strtoupper(str_replace(' ', '', $sepaWerte['bic']));
+
+        if ($sepaWerte['kontoinhaber'] === '') {
+            $sepaFehler[] = 'Bitte gib den Namen des Kontoinhabers an.';
+        }
+        if (!istGueltigeIban($sepaWerte['iban'])) {
+            $sepaFehler[] = 'Bitte gib eine gültige IBAN an.';
+        }
+
+        if (empty($sepaFehler)) {
+            $stmt = getPdo()->prepare(
+                'UPDATE mitglieder SET sepa_kontoinhaber = :kontoinhaber, sepa_iban = :iban, sepa_bic = :bic WHERE id = :id'
+            );
+            $stmt->execute([
+                'kontoinhaber' => $sepaWerte['kontoinhaber'],
+                'iban' => $sepaWerte['iban'],
+                'bic' => $sepaWerte['bic'] !== '' ? $sepaWerte['bic'] : null,
+                'id' => $mitglied['id'],
+            ]);
+            $sepaErfolg = 'Deine Bankverbindung wurde aktualisiert.';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -280,6 +320,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
                 </div>
             </form>
         </div>
+
+        <?php if ($mitglied['sepa_erteilt_am'] !== null): ?>
+        <div class="card" style="margin-top:20px;">
+            <h2>Bankverbindung</h2>
+            <p class="text-muted">Ändert sich deine Bankverbindung, kannst du sie hier jederzeit selbst aktualisieren &ndash; das SEPA-Lastschriftmandat vom <?= e((new DateTime($mitglied['sepa_erteilt_am']))->format('d.m.Y')) ?> (Mandatsreferenz <?= e((string) $mitglied['sepa_mandatsreferenz']) ?>) gilt unverändert weiter.</p>
+
+            <?php if (!empty($sepaFehler)): ?>
+                <div class="alert alert-error">
+                    <ul style="margin:0; padding-left:20px;">
+                        <?php foreach ($sepaFehler as $f): ?><li><?= e($f) ?></li><?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+            <?php if ($sepaErfolg !== ''): ?>
+                <div class="alert alert-success"><?= e($sepaErfolg) ?></div>
+            <?php endif; ?>
+
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="sepa_aendern">
+
+                <label class="required" for="sepa_kontoinhaber">Kontoinhaber</label>
+                <input type="text" id="sepa_kontoinhaber" name="kontoinhaber" value="<?= e($sepaWerte['kontoinhaber']) ?>" required>
+
+                <label class="required" for="sepa_iban">IBAN</label>
+                <input type="text" id="sepa_iban" name="iban" value="<?= e($sepaWerte['iban']) ?>" required>
+
+                <label for="sepa_bic">BIC (optional)</label>
+                <input type="text" id="sepa_bic" name="bic" value="<?= e($sepaWerte['bic']) ?>">
+
+                <div style="margin-top:16px;">
+                    <button type="submit" class="btn">Bankverbindung speichern</button>
+                </div>
+            </form>
+        </div>
+        <?php endif; ?>
     </main>
     <script src="../assets/js/lightbox.js" defer></script>
     <script src="../assets/js/menue.js" defer></script>

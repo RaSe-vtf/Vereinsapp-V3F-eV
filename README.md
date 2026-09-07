@@ -43,7 +43,12 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Bundesamt für Wirtschaft und Ausfuhrkontrolle beantragten Nummer befüllt
   werden**, siehe Platzhalter in `config.example.php`). Kontoinhaber, IBAN,
   BIC und Mandatsreferenz sind für den Vorstand im Datenblatt eines
-  Mitglieds einsehbar (`.../vorstand/mitglied_ansehen.php`).
+  Mitglieds einsehbar (`.../vorstand/mitglied_ansehen.php`). Ändert sich
+  später die Bankverbindung, kann das Mitglied Kontoinhaber/IBAN/BIC
+  selbst unter "Meine Daten" aktualisieren (eigene Karte "Bankverbindung",
+  erscheint dort erst nach erteiltem Mandat) — Mandatsreferenz und
+  Erteilungsdatum bleiben dabei unverändert, es handelt sich weiterhin um
+  dasselbe Mandat.
 - **Navigation im eingeloggten Bereich**: Das Logo oben links führt immer zur
   Startseite `bereich/home.php` mit einer Kachel pro Bereich (Meine Daten,
   Geschäftsstelle, Admin — je nachdem, was die Rolle/das Admin-Flag erlaubt).

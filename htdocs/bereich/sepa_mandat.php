@@ -99,6 +99,8 @@ $zurueck = null;
                 <p class="text-muted" style="margin-bottom:0;">Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.</p>
             </div>
 
+            <p class="text-muted">Ändert sich deine Bankverbindung später, kannst du sie jederzeit selbst unter "Meine Daten" aktualisieren.</p>
+
             <form method="post">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
 
