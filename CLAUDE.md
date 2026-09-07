@@ -19,6 +19,16 @@ haben Vorrang vor allgemeinen Standardverhalten.
    dieser gleiche Name erneut verwendet (überschreibt die vorherige
    gleichnamige Datei beim Nutzer).
 
+## Offene Punkte
+
+- **SEPA-Gläubiger-Identifikationsnummer**: Der Verein hat noch kein
+  Vereinskonto und daher noch keine Gläubiger-ID beim Bundesamt für
+  Wirtschaft und Ausfuhrkontrolle beantragt. `SEPA_GLAEUBIGER_ID` in
+  `private/config.php` steht deshalb bewusst noch auf dem Platzhalter
+  `DE00ZZZ00000000000` (siehe `htdocs/bereich/sepa_mandat.php`). Sobald ein
+  Vereinskonto und eine echte Gläubiger-ID vorliegen, dort eintragen –
+  nicht von selbst nachfragen/andrängen, der Nutzer meldet sich dazu.
+
 ## Marken-Farbverlauf
 
 Der Akzent-Farbverlauf orientiert sich am App-Icon und wird für Banner-Rahmen
