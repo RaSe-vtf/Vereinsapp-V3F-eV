@@ -156,7 +156,7 @@ $flash = takeFlash();
                 <p>Keine Anträge in dieser Ansicht.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-karten">
+                <table class="tabelle-einzeilig">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -169,10 +169,10 @@ $flash = takeFlash();
                     <tbody>
                         <?php foreach ($antraege as $antrag): ?>
                             <tr>
-                                <td data-label="Name"><?= e($antrag['vorname'] . ' ' . $antrag['nachname']) ?></td>
-                                <td data-label="E-Mail"><?= e($antrag['email']) ?></td>
-                                <td data-label="Eingegangen" class="nowrap-wert"><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?></td>
-                                <td data-label="Status"><span class="badge badge-<?= e($antrag['status']) ?>"><?= e($antrag['status']) ?></span></td>
+                                <td><?= e($antrag['vorname'] . ' ' . $antrag['nachname']) ?></td>
+                                <td><?= e($antrag['email']) ?></td>
+                                <td><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?></td>
+                                <td><span class="badge badge-<?= e($antrag['status']) ?>"><?= e($antrag['status']) ?></span></td>
                                 <td><a href="antrag_ansehen.php?id=<?= (int) $antrag['id'] ?>">Details ansehen &rarr;</a></td>
                             </tr>
                         <?php endforeach; ?>

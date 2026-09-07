@@ -57,7 +57,7 @@ $zurueck = '../../home.php';
                 <p>Noch keine aktiven Mitglieder vorhanden.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-einzeilig tabelle-karten">
+                <table class="tabelle-einzeilig">
                     <thead>
                         <tr>
                             <th>Nachname</th>
@@ -72,14 +72,14 @@ $zurueck = '../../home.php';
                     <tbody>
                         <?php foreach ($mitgliederListe as $m): ?>
                             <tr>
-                                <td data-label="Nachname"><?= e($m['nachname']) ?></td>
-                                <td data-label="Vorname"><?= e($m['vorname']) ?></td>
+                                <td><?= e($m['nachname']) ?></td>
+                                <td><?= e($m['vorname']) ?></td>
                                 <?php if ($m['sepa_erteilt_am'] !== null): ?>
-                                    <td data-label="Kontoinhaber"><?= e((string) $m['sepa_kontoinhaber']) ?></td>
-                                    <td data-label="IBAN" class="nowrap-wert"><?= e((string) $m['sepa_iban']) ?></td>
-                                    <td data-label="BIC" class="nowrap-wert"><?= $m['sepa_bic'] ? e($m['sepa_bic']) : '&ndash;' ?></td>
-                                    <td data-label="Mandatsreferenz" class="nowrap-wert"><?= e((string) $m['sepa_mandatsreferenz']) ?></td>
-                                    <td data-label="Erteilt am" class="nowrap-wert"><?= e((new DateTime($m['sepa_erteilt_am']))->format('d.m.Y')) ?></td>
+                                    <td><?= e((string) $m['sepa_kontoinhaber']) ?></td>
+                                    <td><?= e((string) $m['sepa_iban']) ?></td>
+                                    <td><?= $m['sepa_bic'] ? e($m['sepa_bic']) : '&ndash;' ?></td>
+                                    <td><?= e((string) $m['sepa_mandatsreferenz']) ?></td>
+                                    <td><?= e((new DateTime($m['sepa_erteilt_am']))->format('d.m.Y')) ?></td>
                                 <?php else: ?>
                                     <td colspan="5"><span class="badge badge-abgelehnt">kein Mandat hinterlegt</span></td>
                                 <?php endif; ?>

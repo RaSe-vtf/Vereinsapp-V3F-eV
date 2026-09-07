@@ -92,7 +92,7 @@ $zurueck = '../../home.php';
                 <p>Noch keine Beitragsposten angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto; margin-bottom:20px;">
-                <table class="tabelle-karten">
+                <table class="tabelle-einzeilig">
                     <thead>
                         <tr>
                             <th>Bezeichnung</th>
@@ -105,11 +105,11 @@ $zurueck = '../../home.php';
                     <tbody>
                         <?php foreach ($postenListe as $p): ?>
                             <tr>
-                                <td data-label="Bezeichnung"><?= e($p['bezeichnung']) ?></td>
-                                <td data-label="Betrag" class="nowrap-wert"><?= number_format((float) $p['betrag'], 2, ',', '.') ?> €</td>
-                                <td data-label="Rolle"><?= $p['rolle'] !== null ? e(rollenLabel($p['rolle'])) : 'Alle' ?></td>
-                                <td data-label="Status"><?= $p['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
-                                <td data-label="Aktionen">
+                                <td><?= e($p['bezeichnung']) ?></td>
+                                <td><?= number_format((float) $p['betrag'], 2, ',', '.') ?> €</td>
+                                <td><?= $p['rolle'] !== null ? e(rollenLabel($p['rolle'])) : 'Alle' ?></td>
+                                <td><?= $p['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
+                                <td>
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                         <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
