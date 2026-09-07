@@ -20,8 +20,14 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Vollmitglied, Trainingsmitglied, Vorstandsmitglied, Ehrenmitglied,
   Fördermitglied.
 - Mitgliederbereich (`htdocs/bereich/`) mit Tab-Navigation:
-  - **Meine Daten**: für alle eingeloggten Mitglieder, eigene Daten ansehen,
-    eigenes Passwort ändern.
+  - **Meine Daten**: für alle eingeloggten Mitglieder, eigene Stammdaten
+    (Name, Geburtsdatum/-ort, Adresse, Telefon, E-Mail, Instagram, Foto)
+    selbst ändern bzw. ergänzen und eigenes Passwort ändern. Pflichtfelder
+    bleiben Pflicht (gleiche Validierung wie beim Aufnahmeantrag), die
+    E-Mail-Adresse wird auf Eindeutigkeit geprüft. Rolle, Kontostatus und
+    Passwort-Reset bleiben Sache des Vorstands. Widerruf der
+    Bildnutzungs-Einwilligung läuft bewusst nicht über einen Schalter in
+    der App, sondern per E-Mail an den Vorstand (siehe Datenschutzerklärung).
   - **Vorstand**: nur sichtbar und aufrufbar für die Rolle Vorstandsmitglied.
     Enthält Aufnahmeanträge (ansehen, annehmen/ablehnen) und die
     Mitgliederverwaltung (Rolle ändern, Konto aktivieren/deaktivieren/

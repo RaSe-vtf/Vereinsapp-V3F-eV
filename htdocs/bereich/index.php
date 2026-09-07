@@ -9,6 +9,120 @@ $mitglied = requireMemberLogin('../login.php');
 
 $fehler = [];
 $erfolg = '';
+$datenFehler = [];
+$datenErfolg = '';
+$werte = [
+    'vorname' => $mitglied['vorname'],
+    'nachname' => $mitglied['nachname'],
+    'geburtsdatum' => $mitglied['geburtsdatum'],
+    'geburtsort' => $mitglied['geburtsort'],
+    'strasse_hausnummer' => $mitglied['strasse_hausnummer'],
+    'plz' => $mitglied['plz'],
+    'ort' => $mitglied['ort'],
+    'telefon' => $mitglied['telefon'],
+    'email' => $mitglied['email'],
+    'instagram' => $mitglied['instagram'] ?? '',
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'daten_aendern') {
+    if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
+        $datenFehler[] = 'Deine Sitzung ist abgelaufen. Bitte lade die Seite neu.';
+    } else {
+        foreach ($werte as $feld => $default) {
+            $werte[$feld] = trim((string) ($_POST[$feld] ?? ''));
+        }
+
+        if ($werte['vorname'] === '') $datenFehler[] = 'Bitte gib deinen Vornamen an.';
+        if ($werte['nachname'] === '') $datenFehler[] = 'Bitte gib deinen Nachnamen an.';
+
+        if ($werte['geburtsdatum'] === '') {
+            $datenFehler[] = 'Bitte gib dein Geburtsdatum an.';
+        } else {
+            $datum = DateTime::createFromFormat('Y-m-d', $werte['geburtsdatum']);
+            if (!$datum || $datum > new DateTime()) {
+                $datenFehler[] = 'Bitte gib ein gültiges Geburtsdatum an.';
+            }
+        }
+
+        if ($werte['geburtsort'] === '') $datenFehler[] = 'Bitte gib deinen Geburtsort an.';
+        if ($werte['strasse_hausnummer'] === '') $datenFehler[] = 'Bitte gib deine Straße und Hausnummer an.';
+        if ($werte['plz'] === '' || !preg_match('/^\d{4,5}$/', $werte['plz'])) $datenFehler[] = 'Bitte gib eine gültige Postleitzahl an.';
+        if ($werte['ort'] === '') $datenFehler[] = 'Bitte gib deinen Wohnort an.';
+        if ($werte['telefon'] === '') $datenFehler[] = 'Bitte gib deine Telefonnummer an.';
+
+        if ($werte['email'] === '' || !filter_var($werte['email'], FILTER_VALIDATE_EMAIL)) {
+            $datenFehler[] = 'Bitte gib eine gültige E-Mail-Adresse an.';
+        } else {
+            $stmt = getPdo()->prepare('SELECT id FROM mitglieder WHERE email = :email AND id <> :id');
+            $stmt->execute(['email' => $werte['email'], 'id' => $mitglied['id']]);
+            if ($stmt->fetch()) {
+                $datenFehler[] = 'Diese E-Mail-Adresse wird bereits von einem anderen Konto verwendet.';
+            }
+        }
+
+        if ($werte['instagram'] !== '') {
+            $werte['instagram'] = ltrim($werte['instagram'], '@');
+            if (!preg_match('/^[A-Za-z0-9._]{1,60}$/', $werte['instagram'])) {
+                $datenFehler[] = 'Bitte gib einen gültigen Instagram-Benutzernamen an (oder lasse das Feld leer).';
+            }
+        }
+
+        $neuesFoto = null;
+        $fotoDatei = $_FILES['foto'] ?? null;
+        if ($fotoDatei !== null && ($fotoDatei['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            if (empty($datenFehler)) {
+                try {
+                    $neuesFoto = handleFotoUpload($fotoDatei);
+                } catch (RuntimeException $e) {
+                    $datenFehler[] = $e->getMessage();
+                }
+            }
+        }
+
+        if (empty($datenFehler)) {
+            $altesFoto = $mitglied['foto_dateiname'];
+            $stmt = getPdo()->prepare(
+                'UPDATE mitglieder SET
+                    vorname = :vorname, nachname = :nachname, geburtsdatum = :geburtsdatum,
+                    geburtsort = :geburtsort, strasse_hausnummer = :strasse_hausnummer, plz = :plz,
+                    ort = :ort, telefon = :telefon, email = :email, instagram = :instagram
+                    ' . ($neuesFoto !== null ? ', foto_dateiname = :foto_dateiname' : '') . '
+                 WHERE id = :id'
+            );
+            $parameter = [
+                'vorname' => $werte['vorname'],
+                'nachname' => $werte['nachname'],
+                'geburtsdatum' => $werte['geburtsdatum'],
+                'geburtsort' => $werte['geburtsort'],
+                'strasse_hausnummer' => $werte['strasse_hausnummer'],
+                'plz' => $werte['plz'],
+                'ort' => $werte['ort'],
+                'telefon' => $werte['telefon'],
+                'email' => $werte['email'],
+                'instagram' => $werte['instagram'] !== '' ? $werte['instagram'] : null,
+                'id' => $mitglied['id'],
+            ];
+            if ($neuesFoto !== null) {
+                $parameter['foto_dateiname'] = $neuesFoto;
+            }
+            $stmt->execute($parameter);
+
+            if ($neuesFoto !== null && $altesFoto !== null && $altesFoto !== $neuesFoto) {
+                $altesFotoPfad = __DIR__ . '/../../private/uploads/fotos/' . basename($altesFoto);
+                if (is_file($altesFotoPfad)) {
+                    unlink($altesFotoPfad);
+                }
+            }
+
+            header('Location: index.php?daten_gespeichert=1');
+            exit;
+        }
+    }
+}
+
+if (isset($_GET['daten_gespeichert'])) {
+    $datenErfolg = 'Deine Daten wurden gespeichert.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passwort_aendern') {
     if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
@@ -69,33 +183,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
 
         <div class="card">
             <h2>Meine Daten</h2>
+            <p class="text-muted">Rolle, Status und Passwort verwaltet der Vorstand bzw. das Formular weiter unten. Alle anderen Angaben kannst du hier selbst ändern.</p>
 
-            <?php if (!empty($fehler)): ?>
+            <?php if (!empty($datenFehler)): ?>
                 <div class="alert alert-error">
                     <ul style="margin:0; padding-left:20px;">
-                        <?php foreach ($fehler as $f): ?><li><?= e($f) ?></li><?php endforeach; ?>
+                        <?php foreach ($datenFehler as $f): ?><li><?= e($f) ?></li><?php endforeach; ?>
                     </ul>
                 </div>
             <?php endif; ?>
-            <?php if ($erfolg !== ''): ?>
-                <div class="alert alert-success"><?= e($erfolg) ?></div>
+            <?php if ($datenErfolg !== ''): ?>
+                <div class="alert alert-success"><?= e($datenErfolg) ?></div>
             <?php endif; ?>
 
-            <?php if ($mitglied['foto_dateiname']): ?>
-                <img class="foto-preview" src="foto.php?typ=mitglied&id=<?= (int) $mitglied['id'] ?>" alt="Mein Foto" style="margin-bottom:16px;">
-            <?php endif; ?>
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="daten_aendern">
 
-            <table>
-                <tr><th>Name</th><td><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?></td></tr>
-                <tr><th>Rolle</th><td><?= e(rollenLabel($mitglied['rolle'])) ?></td></tr>
-                <tr><th>Geburtsdatum</th><td><?= e((new DateTime($mitglied['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
-                <tr><th>Adresse</th><td><?= e($mitglied['strasse_hausnummer']) ?>, <?= e($mitglied['plz'] . ' ' . $mitglied['ort']) ?></td></tr>
-                <tr><th>Telefon</th><td><?= e($mitglied['telefon']) ?></td></tr>
-                <tr><th>E-Mail</th><td><?= e($mitglied['email']) ?></td></tr>
-                <tr><th>Instagram</th><td><?= $mitglied['instagram'] ? '@' . e($mitglied['instagram']) : '&ndash;' ?></td></tr>
-            </table>
+                <label class="text-muted" style="font-weight:600;">Rolle</label>
+                <div style="margin-bottom:14px;"><?= e(rollenLabel($mitglied['rolle'])) ?></div>
 
-            <p class="text-muted" style="margin-top:16px;">Änderungen an deinen Daten bitte über den Vorstand vornehmen lassen.</p>
+                <div class="form-row">
+                    <div>
+                        <label class="required" for="vorname">Vorname</label>
+                        <input type="text" id="vorname" name="vorname" value="<?= e($werte['vorname']) ?>" required>
+                    </div>
+                    <div>
+                        <label class="required" for="nachname">Nachname</label>
+                        <input type="text" id="nachname" name="nachname" value="<?= e($werte['nachname']) ?>" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label class="required" for="geburtsdatum">Geburtsdatum</label>
+                        <input type="date" id="geburtsdatum" name="geburtsdatum" value="<?= e($werte['geburtsdatum']) ?>" required>
+                    </div>
+                    <div>
+                        <label class="required" for="geburtsort">Geburtsort</label>
+                        <input type="text" id="geburtsort" name="geburtsort" value="<?= e($werte['geburtsort']) ?>" required>
+                    </div>
+                </div>
+
+                <label class="required" for="strasse_hausnummer">Straße und Hausnummer</label>
+                <input type="text" id="strasse_hausnummer" name="strasse_hausnummer" value="<?= e($werte['strasse_hausnummer']) ?>" required>
+
+                <div class="form-row">
+                    <div>
+                        <label class="required" for="plz">Postleitzahl</label>
+                        <input type="text" id="plz" name="plz" inputmode="numeric" value="<?= e($werte['plz']) ?>" required>
+                    </div>
+                    <div>
+                        <label class="required" for="ort">Ort</label>
+                        <input type="text" id="ort" name="ort" value="<?= e($werte['ort']) ?>" required>
+                    </div>
+                </div>
+
+                <label class="required" for="telefon">Telefonnummer</label>
+                <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
+
+                <label class="required" for="email">E-Mail-Adresse</label>
+                <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
+
+                <label for="instagram">Instagram (optional)</label>
+                <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>">
+
+                <label for="foto">Foto</label>
+                <?php if ($mitglied['foto_dateiname']): ?>
+                    <div style="margin-bottom:8px;">
+                        <img class="foto-preview" src="foto.php?typ=mitglied&id=<?= (int) $mitglied['id'] ?>" alt="Aktuelles Foto">
+                    </div>
+                <?php endif; ?>
+                <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp">
+                <div class="hint">Nur ausfüllen, wenn du dein Foto ersetzen möchtest. JPG, PNG oder WebP, maximal 6 MB.</div>
+
+                <div style="margin-top:16px;">
+                    <button type="submit" class="btn">Daten speichern</button>
+                </div>
+            </form>
         </div>
 
         <div class="card" style="margin-top:20px;">
