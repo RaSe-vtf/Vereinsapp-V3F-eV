@@ -9,7 +9,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $pdo = getPdo();
 
 $mitgliederListe = $pdo->query(
-    "SELECT vorname, nachname, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am
+    "SELECT vorname, nachname, rolle, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am
      FROM mitglieder
      WHERE aktiv = 1
      ORDER BY nachname, vorname"
@@ -51,7 +51,7 @@ $zurueck = '../../home.php';
 
         <div class="card">
             <h2 style="margin-top:0;">Bankverbindungen</h2>
-            <p class="text-muted">Kontoinhaber und IBAN aller aktiven Mitglieder für den Beitragseinzug.</p>
+            <p class="text-muted">Kontoinhaber und IBAN aller aktiven Mitglieder für den Beitragseinzug. Admins und Vorstandsmitglieder gelten im Bankbereich als Vollmitglieder.</p>
 
             <?php if (empty($mitgliederListe)): ?>
                 <p>Noch keine aktiven Mitglieder vorhanden.</p>
@@ -62,6 +62,7 @@ $zurueck = '../../home.php';
                         <tr>
                             <th>Nachname</th>
                             <th>Vorname</th>
+                            <th>Rolle</th>
                             <th>Kontoinhaber</th>
                             <th>IBAN</th>
                             <th>BIC</th>
@@ -74,6 +75,7 @@ $zurueck = '../../home.php';
                             <tr>
                                 <td><?= e($m['nachname']) ?></td>
                                 <td><?= e($m['vorname']) ?></td>
+                                <td><?= e(rollenLabel(bankRolle($m))) ?></td>
                                 <?php if ($m['sepa_erteilt_am'] !== null): ?>
                                     <td><?= e((string) $m['sepa_kontoinhaber']) ?></td>
                                     <td><?= e((string) $m['sepa_iban']) ?></td>

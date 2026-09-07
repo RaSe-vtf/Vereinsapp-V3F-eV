@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ausgewaehltePosten = $stmtPosten->fetchAll();
 
             $mitgliederListe = $pdo->query(
-                "SELECT id, vorname, nachname, rolle, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am, sepa_erste_lastschrift_erfolgt
+                "SELECT id, vorname, nachname, rolle, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am, sepa_erste_lastschrift_erfolgt
                  FROM mitglieder WHERE aktiv = 1"
             )->fetchAll();
 
@@ -48,8 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($mitgliederListe as $m) {
                 $betrag = 0.0;
                 $bezeichnungen = [];
+                $rolleFuerBeitrag = bankRolle($m);
                 foreach ($ausgewaehltePosten as $p) {
-                    if ($p['rolle'] === null || $p['rolle'] === $m['rolle']) {
+                    if ($p['rolle'] === null || $p['rolle'] === $rolleFuerBeitrag) {
                         $betrag += (float) $p['betrag'];
                         $bezeichnungen[] = $p['bezeichnung'];
                     }
@@ -90,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $postenListe = $pdo->query('SELECT * FROM beitragsposten WHERE aktiv = 1 ORDER BY bezeichnung')->fetchAll();
-$mitgliederFuerVorschau = $pdo->query("SELECT rolle, (sepa_erteilt_am IS NOT NULL) AS hat_mandat FROM mitglieder WHERE aktiv = 1")->fetchAll();
+$mitgliederFuerVorschau = $pdo->query("SELECT rolle, ist_admin, (sepa_erteilt_am IS NOT NULL) AS hat_mandat FROM mitglieder WHERE aktiv = 1")->fetchAll();
 
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
@@ -171,7 +172,7 @@ $zurueck = '../../home.php';
         </div>
     </main>
     <script src="../../../assets/js/menue.js" defer></script>
-    <script id="mitglieder-daten" type="application/json"><?= json_encode(array_map(static fn (array $m) => ['rolle' => $m['rolle'], 'hatMandat' => (bool) $m['hat_mandat']], $mitgliederFuerVorschau), JSON_THROW_ON_ERROR) ?></script>
+    <script id="mitglieder-daten" type="application/json"><?= json_encode(array_map(static fn (array $m) => ['rolle' => bankRolle($m), 'hatMandat' => (bool) $m['hat_mandat']], $mitgliederFuerVorschau), JSON_THROW_ON_ERROR) ?></script>
     <script>
         (function () {
             var form = document.getElementById('export-form');

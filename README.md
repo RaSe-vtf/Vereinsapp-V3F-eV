@@ -97,9 +97,13 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich mit
       eigenem Sub-Menü (analog Admin → Konten/Bilder). Zugriff wie der Rest
       der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
-      - **Bankverbindungen**: Liste aller aktiven Mitglieder mit
+      - **Bankverbindungen**: Liste aller aktiven Mitglieder mit Rolle,
         Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
-        ein Mandat, steht dort "kein Mandat hinterlegt".
+        ein Mandat, steht dort "kein Mandat hinterlegt". Die angezeigte
+        Rolle ist die **Rolle im Bankbereich** (siehe `bankRolle()` in
+        `includes/functions.php`): Admins und Vorstandsmitglieder gelten
+        hier unabhängig von ihrer sonstigen Rolle als Vollmitglieder — das
+        gilt ebenso für die Beitragszuordnung im SEPA-Export.
       - **Beitragsposten**: frei anlegbare Kostenpunkte (Bezeichnung, Betrag,
         optional an eine Rolle gebunden — ohne Rolle gilt der Posten für
         alle aktiven Mitglieder mit Mandat, z.B. eine Startpassgebühr der

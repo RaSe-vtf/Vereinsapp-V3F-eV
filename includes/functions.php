@@ -40,6 +40,20 @@ function rollenLabel(string $rolle): string
     return ROLLEN_LABELS[$rolle] ?? $rolle;
 }
 
+/**
+ * Rolle eines Mitglieds fuer den Bankbereich (Bankverbindungen-Liste,
+ * Zuordnung der Beitragsposten im SEPA-Export): Admins und
+ * Vorstandsmitglieder gelten hier unabhaengig von ihrer sonstigen Rolle
+ * als Vollmitglieder.
+ */
+function bankRolle(array $mitglied): string
+{
+    if (!empty($mitglied['ist_admin']) || $mitglied['rolle'] === 'vorstandsmitglied') {
+        return 'vollmitglied';
+    }
+    return $mitglied['rolle'];
+}
+
 function generateInitialPasswort(): string
 {
     return bin2hex(random_bytes(5));
