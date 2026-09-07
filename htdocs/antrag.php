@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <legend>Foto</legend>
                     <label class="required" for="foto">Foto von dir</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp" required>
-                    <div class="hint">JPG, PNG oder WebP, maximal 6 MB.</div>
+                    <div class="hint">JPG, PNG oder WebP, maximal 10 MB.</div>
                 </fieldset>
 
                 <fieldset>

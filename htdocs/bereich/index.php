@@ -262,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
                     </div>
                 <?php endif; ?>
                 <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp">
-                <div class="hint">Nur ausfüllen, wenn du dein Foto ersetzen möchtest. JPG, PNG oder WebP, maximal 6 MB.</div>
+                <div class="hint">Nur ausfüllen, wenn du dein Foto ersetzen möchtest. JPG, PNG oder WebP, maximal 10 MB.</div>
 
                 <div style="margin-top:16px;">
                     <button type="submit" class="btn">Daten speichern</button>

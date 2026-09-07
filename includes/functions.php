@@ -134,7 +134,7 @@ function stelleAusreichendFotoSpeicherSicher(): void
 function handleFotoUpload(array $file): string
 {
     $erlaubteTypen = ['image/jpeg', 'image/png', 'image/webp'];
-    $maxBytes = 6 * 1024 * 1024; // 6 MB
+    $maxBytes = 10 * 1024 * 1024; // 10 MB
 
     if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
         throw new RuntimeException('Bitte ein Foto auswaehlen.');
@@ -146,7 +146,7 @@ function handleFotoUpload(array $file): string
         throw new RuntimeException('Ungültiger Foto-Upload.');
     }
     if ($file['size'] > $maxBytes) {
-        throw new RuntimeException('Das Foto darf maximal 6 MB groß sein.');
+        throw new RuntimeException('Das Foto darf maximal 10 MB groß sein.');
     }
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
