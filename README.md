@@ -236,7 +236,12 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
    MySQL-Datenbank anlegen und dir Datenbankname, Benutzer und Passwort
    notieren.
 2. **Tabellen importieren**: `sql/schema.sql` über phpMyAdmin (im KAS
-   verlinkt) in die neu angelegte Datenbank importieren.
+   verlinkt) in die neu angelegte Datenbank importieren. Die Datei ist
+   idempotent aufgebaut (`CREATE TABLE IF NOT EXISTS` bzw.
+   `ADD COLUMN IF NOT EXISTS`): bei jeder späteren Auslieferung mit
+   Schema-Änderung reicht es, dieselbe Datei erneut komplett zu
+   importieren – bereits vorhandene Tabellen/Spalten werden übersprungen,
+   fehlende ergänzt, bestehende Daten bleiben unangetastet.
 3. **Konfiguration anlegen**: `config.example.php` nach `private/config.php`
    kopieren und ausfüllen (Datenbank-Zugangsdaten, Vereinsname,
    Absenderadresse für den E-Mail-Verteiler).
