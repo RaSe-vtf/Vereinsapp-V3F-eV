@@ -94,6 +94,31 @@ function sendeEinzelMail(string $empfaengerEmail, string $betreff, string $nachr
     return mail($empfaengerEmail, $betreffKodiert, $nachricht, $headers);
 }
 
+/**
+ * Prueft eine IBAN auf gueltiges Format und korrekte Pruefziffer (Modulo 97
+ * nach ISO 7064), ohne bcmath oder andere Erweiterungen zu benoetigen.
+ */
+function istGueltigeIban(string $iban): bool
+{
+    $iban = strtoupper(str_replace(' ', '', $iban));
+    if (!preg_match('/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/', $iban)) {
+        return false;
+    }
+
+    $umgestellt = substr($iban, 4) . substr($iban, 0, 4);
+    $numerisch = '';
+    foreach (str_split($umgestellt) as $zeichen) {
+        $numerisch .= ctype_alpha($zeichen) ? (string) (ord($zeichen) - 55) : $zeichen;
+    }
+
+    $rest = 0;
+    foreach (str_split($numerisch) as $ziffer) {
+        $rest = ($rest * 10 + (int) $ziffer) % 97;
+    }
+
+    return $rest === 1;
+}
+
 function setFlash(string $typ, string $text): void
 {
     $_SESSION['flash'] = ['typ' => $typ, 'text' => $text];

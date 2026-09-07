@@ -28,6 +28,22 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 - Jedes Mitglied hat ein eigenes Login (E-Mail + Passwort) und eine Rolle:
   Vollmitglied, Trainingsmitglied, Vorstandsmitglied, Ehrenmitglied,
   Fördermitglied.
+- **SEPA-Lastschriftmandat** (`htdocs/bereich/sepa_mandat.php`): Beim ersten
+  Login nach der Aufnahme (und bei jedem Bestandsmitglied, das noch kein
+  Mandat erteilt hat — Rolle spielt keine Rolle, betrifft auch Vorstand/
+  Admin) führt die App zwingend zu dieser Seite, bevor irgendetwas anderes
+  in der App möglich ist. Erfasst Kontoinhaber, IBAN (mit Format- und
+  Prüfziffer-Validierung) und optional BIC, generiert eine Mandatsreferenz
+  und zeigt den SEPA-Mandatstext mit Bezug auf Beitragsordnung und
+  Startpassregelung der DTU. Das Gate sitzt zentral in
+  `requireMemberLogin()` (`includes/auth.php`) und greift dadurch
+  automatisch auf allen geschützten Seiten. Die Gläubiger-
+  Identifikationsnummer wird über die Konstante `SEPA_GLAEUBIGER_ID` in
+  `private/config.php` gepflegt (**muss noch mit der echten, beim
+  Bundesamt für Wirtschaft und Ausfuhrkontrolle beantragten Nummer befüllt
+  werden**, siehe Platzhalter in `config.example.php`). Kontoinhaber, IBAN,
+  BIC und Mandatsreferenz sind für den Vorstand im Datenblatt eines
+  Mitglieds einsehbar (`.../vorstand/mitglied_ansehen.php`).
 - **Navigation im eingeloggten Bereich**: Das Logo oben links führt immer zur
   Startseite `bereich/home.php` mit einer Kachel pro Bereich (Meine Daten,
   Geschäftsstelle, Admin — je nachdem, was die Rolle/das Admin-Flag erlaubt).
@@ -147,6 +163,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
   bereich/                  -> eingeloggter Bereich (alle Mitglieder)
     home.php                -> Startseite mit Kacheln (Logo-Ziel, Menü-Ziel bei "Meine Daten" etc.)
     index.php               -> "Meine Daten" + Passwort ändern
+    sepa_mandat.php         -> Pflicht-Gate: SEPA-Lastschriftmandat vor erstem Zugriff
     foto.php                -> liefert Fotos aus (eigenes Foto oder, für Vorstand, alle)
     vorstand/                -> nur Rolle Vorstandsmitglied
       antraege.php           -> Aufnahmeanträge verwalten (Standardfilter: alle)

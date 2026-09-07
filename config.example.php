@@ -28,3 +28,10 @@ define('APP_NAME', 'Vereinsapp V3F');
 // gehoerende Adresse sein, sonst landen die Mails leicht im Spam-Ordner.
 define('MAIL_ABSENDER_EMAIL', 'verein@deine-domain.de');
 define('MAIL_ABSENDER_NAME', 'Vonsys Tri Family e.V.');
+
+// --- SEPA-Lastschriftmandat ---
+// Gläubiger-Identifikationsnummer des Vereins (beim Bundesamt für Wirtschaft
+// und Ausfuhrkontrolle zu beantragen: https://extranet.bundesbank.de/scpm/).
+// Erscheint auf dem SEPA-Mandat, das neue Mitglieder beim ersten Login
+// ausfüllen müssen (siehe htdocs/bereich/sepa_mandat.php).
+define('SEPA_GLAEUBIGER_ID', 'DE00ZZZ00000000000');

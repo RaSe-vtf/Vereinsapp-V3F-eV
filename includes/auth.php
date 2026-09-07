@@ -36,14 +36,28 @@ function currentMitglied(): ?array
 /**
  * Erzwingt ein eingeloggtes Mitglied, sonst Weiterleitung zum Login.
  * $loginPfad ist relativ zur aufrufenden Datei (unterschiedliche Verzeichnistiefe).
+ *
+ * Erzwingt zusaetzlich das SEPA-Lastschriftmandat (siehe
+ * htdocs/bereich/sepa_mandat.php): Ist es noch nicht erteilt, wird dorthin
+ * umgeleitet, bevor irgendeine andere Aktion moeglich ist. $sepaGatePruefen
+ * wird von der Mandatsseite selbst auf false gesetzt, um eine Endlos-
+ * Weiterleitung zu vermeiden. Der relative Pfad zur Mandatsseite wird aus
+ * $loginPfad abgeleitet (liegt immer eine Ebene "naeher" als login.php).
  */
-function requireMemberLogin(string $loginPfad = 'login.php'): array
+function requireMemberLogin(string $loginPfad = 'login.php', bool $sepaGatePruefen = true): array
 {
     $mitglied = currentMitglied();
     if ($mitglied === null) {
         header('Location: ' . $loginPfad);
         exit;
     }
+
+    if ($sepaGatePruefen && empty($mitglied['sepa_erteilt_am'])) {
+        $ebenenHoch = max(0, substr_count($loginPfad, '../') - 1);
+        header('Location: ' . str_repeat('../', $ebenenHoch) . 'sepa_mandat.php');
+        exit;
+    }
+
     return $mitglied;
 }
 

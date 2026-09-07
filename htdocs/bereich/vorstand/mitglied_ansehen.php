@@ -64,6 +64,19 @@ if (!$angesehen) {
                 </div>
             </div>
 
+            <h3>SEPA-Lastschriftmandat</h3>
+            <?php if ($angesehen['sepa_erteilt_am'] !== null): ?>
+                <table>
+                    <tr><th>Kontoinhaber</th><td><?= e((string) $angesehen['sepa_kontoinhaber']) ?></td></tr>
+                    <tr><th>IBAN</th><td><?= e((string) $angesehen['sepa_iban']) ?></td></tr>
+                    <tr><th>BIC</th><td><?= $angesehen['sepa_bic'] ? e($angesehen['sepa_bic']) : '&ndash;' ?></td></tr>
+                    <tr><th>Mandatsreferenz</th><td><?= e((string) $angesehen['sepa_mandatsreferenz']) ?></td></tr>
+                    <tr><th>Erteilt am</th><td><?= e((new DateTime($angesehen['sepa_erteilt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
+                </table>
+            <?php else: ?>
+                <p class="text-muted">Noch nicht erteilt &ndash; das Mitglied wird beim nächsten Login zur Mandatsseite geführt.</p>
+            <?php endif; ?>
+
             <p style="margin-top:20px;"><a href="mitglieder.php">Rolle, Status oder Passwort in der Mitgliederverwaltung ändern &rarr;</a></p>
         </div>
     </main>
