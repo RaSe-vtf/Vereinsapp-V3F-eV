@@ -95,11 +95,28 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       der tatsächlichen Empfänger (Nachname, Vorname, E-Mail), darunter
       Betreff/Nachricht und der Senden-Button.
     - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich mit
-      eigenem Sub-Menü (analog Admin → Konten/Bilder), aktuell mit der
-      Unterseite **Bankverbindungen** — Liste aller aktiven Mitglieder mit
-      Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
-      ein Mandat, steht dort "kein Mandat hinterlegt". Zugriff wie der
-      Rest der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
+      eigenem Sub-Menü (analog Admin → Konten/Bilder). Zugriff wie der Rest
+      der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
+      - **Bankverbindungen**: Liste aller aktiven Mitglieder mit
+        Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
+        ein Mandat, steht dort "kein Mandat hinterlegt".
+      - **Beitragsposten**: frei anlegbare Kostenpunkte (Bezeichnung, Betrag,
+        optional an eine Rolle gebunden — ohne Rolle gilt der Posten für
+        alle aktiven Mitglieder mit Mandat, z.B. eine Startpassgebühr der
+        DTU). Aktivieren/Deaktivieren/Löschen einzeln möglich.
+      - **SEPA-Export**: Checkbox-Auswahl, welche aktiven Beitragsposten in
+        diesen Lauf einfließen, plus Fälligkeitstermin (mind. 5 Tage
+        Vorlauf). Eine Live-Vorschau (ohne Neuladen) zeigt Anzahl und
+        Gesamtbetrag der einbezogenen Mitglieder sowie, wie viele mangels
+        Mandat übersprungen werden. Der Button erzeugt eine
+        SEPA-Sammellastschrift-Datei im Format **pain.008.001.02** (ISO
+        20022) zum direkten Hochladen im Online-Banking
+        (`erzeugeSepaLastschriftDatei()` in `includes/functions.php`).
+        Erst- und Folgelastschriften (FRST/RCUR) werden dabei automatisch
+        pro Mitglied unterschieden (`sepa_erste_lastschrift_erfolgt`) und
+        stehen laut Spezifikation in getrennten Blöcken. Benötigt eine
+        gültige Vereins-IBAN (`VEREIN_IBAN`, optional `VEREIN_BIC`) in
+        `private/config.php` — noch Platzhalter, siehe `CLAUDE.md`.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
@@ -186,6 +203,8 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
       kassenwart/
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
+        beitragsposten.php    -> Kostenpunkte anlegen/verwalten
+        export.php             -> SEPA-Sammellastschrift (pain.008.001.02) erzeugen
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern

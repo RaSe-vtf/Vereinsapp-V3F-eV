@@ -35,3 +35,10 @@ define('MAIL_ABSENDER_NAME', 'Vonsys Tri Family e.V.');
 // Erscheint auf dem SEPA-Mandat, das neue Mitglieder beim ersten Login
 // ausfüllen müssen (siehe htdocs/bereich/sepa_mandat.php).
 define('SEPA_GLAEUBIGER_ID', 'DE00ZZZ00000000000');
+
+// --- SEPA-Export (Vereinskonto) ---
+// IBAN (und optional BIC) des Vereinskontos, auf das die per SEPA-Export
+// erzeugten Lastschriften eingezogen werden (Kassenwart-Bereich). BIC kann
+// leer bleiben, dann wird in der Exportdatei "NOTPROVIDED" eingetragen.
+define('VEREIN_IBAN', 'DE00000000000000000000');
+define('VEREIN_BIC', '');

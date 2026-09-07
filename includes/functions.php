@@ -119,6 +119,165 @@ function istGueltigeIban(string $iban): bool
     return $rest === 1;
 }
 
+/**
+ * Erzeugt eine SEPA-Lastschrift-Sammeldatei im Format pain.008.001.02 zum
+ * Hochladen im Online-Banking. $lastschriften ist eine Liste von Arrays mit
+ * den Schluesseln: name, iban, bic (kann leer sein), betrag (float),
+ * mandatsreferenz, mandatsdatum (Y-m-d), sequenztyp ('FRST'|'RCUR') und
+ * verwendungszweck. Erst- (FRST) und Folgelastschriften (RCUR) muessen laut
+ * Spezifikation in getrennten PmtInf-Bloecken stehen und werden hier
+ * automatisch entsprechend gruppiert.
+ */
+function erzeugeSepaLastschriftDatei(string $faelligkeitsdatum, array $lastschriften): string
+{
+    $dok = new DOMDocument('1.0', 'UTF-8');
+    $dok->formatOutput = true;
+
+    $root = $dok->createElementNS('urn:iso:std:iso:20022:tech:xsd:pain.008.001.02', 'Document');
+    $dok->appendChild($root);
+
+    $init = $dok->createElement('CstmrDrctDbtInitn');
+    $root->appendChild($init);
+
+    $jetzt = new DateTime();
+    $msgId = 'MSG' . $jetzt->format('YmdHis');
+    $gesamtbetrag = array_sum(array_column($lastschriften, 'betrag'));
+
+    $grpHdr = $dok->createElement('GrpHdr');
+    $grpHdr->appendChild($dok->createElement('MsgId', $msgId));
+    $grpHdr->appendChild($dok->createElement('CreDtTm', $jetzt->format('Y-m-d\TH:i:s')));
+    $grpHdr->appendChild($dok->createElement('NbOfTxs', (string) count($lastschriften)));
+    $grpHdr->appendChild($dok->createElement('CtrlSum', number_format($gesamtbetrag, 2, '.', '')));
+    $initgPty = $dok->createElement('InitgPty');
+    $initgPty->appendChild($dok->createElement('Nm', VEREIN_NAME));
+    $grpHdr->appendChild($initgPty);
+    $init->appendChild($grpHdr);
+
+    $gruppen = ['FRST' => [], 'RCUR' => []];
+    foreach ($lastschriften as $l) {
+        $gruppen[$l['sequenztyp']][] = $l;
+    }
+
+    $blockNr = 0;
+    foreach ($gruppen as $sequenztyp => $eintraege) {
+        if (empty($eintraege)) {
+            continue;
+        }
+        $blockNr++;
+        $blockBetrag = array_sum(array_column($eintraege, 'betrag'));
+
+        $pmtInf = $dok->createElement('PmtInf');
+        $pmtInf->appendChild($dok->createElement('PmtInfId', $msgId . '-' . $blockNr));
+        $pmtInf->appendChild($dok->createElement('PmtMtd', 'DD'));
+        $pmtInf->appendChild($dok->createElement('BtchBookg', 'true'));
+        $pmtInf->appendChild($dok->createElement('NbOfTxs', (string) count($eintraege)));
+        $pmtInf->appendChild($dok->createElement('CtrlSum', number_format($blockBetrag, 2, '.', '')));
+
+        $pmtTpInf = $dok->createElement('PmtTpInf');
+        $svcLvl = $dok->createElement('SvcLvl');
+        $svcLvl->appendChild($dok->createElement('Cd', 'SEPA'));
+        $pmtTpInf->appendChild($svcLvl);
+        $lclInstrm = $dok->createElement('LclInstrm');
+        $lclInstrm->appendChild($dok->createElement('Cd', 'CORE'));
+        $pmtTpInf->appendChild($lclInstrm);
+        $pmtTpInf->appendChild($dok->createElement('SeqTp', $sequenztyp));
+        $pmtInf->appendChild($pmtTpInf);
+
+        $pmtInf->appendChild($dok->createElement('ReqdColltnDt', $faelligkeitsdatum));
+
+        $cdtr = $dok->createElement('Cdtr');
+        $cdtr->appendChild($dok->createElement('Nm', VEREIN_NAME));
+        $pmtInf->appendChild($cdtr);
+
+        $cdtrAcct = $dok->createElement('CdtrAcct');
+        $cdtrAcctId = $dok->createElement('Id');
+        $cdtrAcctId->appendChild($dok->createElement('IBAN', str_replace(' ', '', defined('VEREIN_IBAN') ? VEREIN_IBAN : '')));
+        $cdtrAcct->appendChild($cdtrAcctId);
+        $pmtInf->appendChild($cdtrAcct);
+
+        $cdtrAgt = $dok->createElement('CdtrAgt');
+        $cdtrFinInstnId = $dok->createElement('FinInstnId');
+        $vereinBic = defined('VEREIN_BIC') ? VEREIN_BIC : '';
+        if ($vereinBic !== '') {
+            $cdtrFinInstnId->appendChild($dok->createElement('BIC', $vereinBic));
+        } else {
+            $othr = $dok->createElement('Othr');
+            $othr->appendChild($dok->createElement('Id', 'NOTPROVIDED'));
+            $cdtrFinInstnId->appendChild($othr);
+        }
+        $cdtrAgt->appendChild($cdtrFinInstnId);
+        $pmtInf->appendChild($cdtrAgt);
+
+        $pmtInf->appendChild($dok->createElement('ChrgBr', 'SLEV'));
+
+        $cdtrSchmeId = $dok->createElement('CdtrSchmeId');
+        $id = $dok->createElement('Id');
+        $prvtId = $dok->createElement('PrvtId');
+        $othrScheme = $dok->createElement('Othr');
+        $othrScheme->appendChild($dok->createElement('Id', defined('SEPA_GLAEUBIGER_ID') ? SEPA_GLAEUBIGER_ID : ''));
+        $schmeNm = $dok->createElement('SchmeNm');
+        $schmeNm->appendChild($dok->createElement('Prtry', 'SEPA'));
+        $othrScheme->appendChild($schmeNm);
+        $prvtId->appendChild($othrScheme);
+        $id->appendChild($prvtId);
+        $cdtrSchmeId->appendChild($id);
+        $pmtInf->appendChild($cdtrSchmeId);
+
+        foreach ($eintraege as $index => $l) {
+            $txInf = $dok->createElement('DrctDbtTxInf');
+
+            $pmtId = $dok->createElement('PmtId');
+            $pmtId->appendChild($dok->createElement('EndToEndId', $msgId . '-' . $blockNr . '-' . ($index + 1)));
+            $txInf->appendChild($pmtId);
+
+            $instdAmt = $dok->createElement('InstdAmt', number_format($l['betrag'], 2, '.', ''));
+            $instdAmt->setAttribute('Ccy', 'EUR');
+            $txInf->appendChild($instdAmt);
+
+            $drctDbtTx = $dok->createElement('DrctDbtTx');
+            $mndtRltdInf = $dok->createElement('MndtRltdInf');
+            $mndtRltdInf->appendChild($dok->createElement('MndtId', $l['mandatsreferenz']));
+            $mndtRltdInf->appendChild($dok->createElement('DtOfSgntr', $l['mandatsdatum']));
+            $drctDbtTx->appendChild($mndtRltdInf);
+            $txInf->appendChild($drctDbtTx);
+
+            $dbtrAgt = $dok->createElement('DbtrAgt');
+            $dbtrFinInstnId = $dok->createElement('FinInstnId');
+            if (!empty($l['bic'])) {
+                $dbtrFinInstnId->appendChild($dok->createElement('BIC', $l['bic']));
+            } else {
+                $othrDbtr = $dok->createElement('Othr');
+                $othrDbtr->appendChild($dok->createElement('Id', 'NOTPROVIDED'));
+                $dbtrFinInstnId->appendChild($othrDbtr);
+            }
+            $dbtrAgt->appendChild($dbtrFinInstnId);
+            $txInf->appendChild($dbtrAgt);
+
+            $dbtr = $dok->createElement('Dbtr');
+            $dbtr->appendChild($dok->createElement('Nm', $l['name']));
+            $txInf->appendChild($dbtr);
+
+            $dbtrAcct = $dok->createElement('DbtrAcct');
+            $dbtrAcctId = $dok->createElement('Id');
+            $dbtrAcctId->appendChild($dok->createElement('IBAN', str_replace(' ', '', $l['iban'])));
+            $dbtrAcct->appendChild($dbtrAcctId);
+            $txInf->appendChild($dbtrAcct);
+
+            if (!empty($l['verwendungszweck'])) {
+                $rmtInf = $dok->createElement('RmtInf');
+                $rmtInf->appendChild($dok->createElement('Ustrd', $l['verwendungszweck']));
+                $txInf->appendChild($rmtInf);
+            }
+
+            $pmtInf->appendChild($txInf);
+        }
+
+        $init->appendChild($pmtInf);
+    }
+
+    return $dok->saveXML();
+}
+
 function setFlash(string $typ, string $text): void
 {
     $_SESSION['flash'] = ['typ' => $typ, 'text' => $text];

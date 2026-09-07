@@ -21,13 +21,15 @@ haben Vorrang vor allgemeinen Standardverhalten.
 
 ## Offene Punkte
 
-- **SEPA-Gläubiger-Identifikationsnummer**: Der Verein hat noch kein
-  Vereinskonto und daher noch keine Gläubiger-ID beim Bundesamt für
-  Wirtschaft und Ausfuhrkontrolle beantragt. `SEPA_GLAEUBIGER_ID` in
-  `private/config.php` steht deshalb bewusst noch auf dem Platzhalter
-  `DE00ZZZ00000000000` (siehe `htdocs/bereich/sepa_mandat.php`). Sobald ein
-  Vereinskonto und eine echte Gläubiger-ID vorliegen, dort eintragen –
-  nicht von selbst nachfragen/andrängen, der Nutzer meldet sich dazu.
+- **SEPA-Gläubiger-Identifikationsnummer und Vereins-IBAN**: Der Verein hat
+  noch kein Vereinskonto und daher weder eine Gläubiger-ID beim Bundesamt
+  für Wirtschaft und Ausfuhrkontrolle beantragt noch eine Vereins-IBAN.
+  `SEPA_GLAEUBIGER_ID`, `VEREIN_IBAN` und `VEREIN_BIC` in
+  `private/config.php` stehen deshalb bewusst noch auf Platzhaltern (siehe
+  `htdocs/bereich/sepa_mandat.php` bzw. der Kassenwart-SEPA-Export unter
+  `htdocs/bereich/vorstand/kassenwart/export.php`). Sobald ein Vereinskonto
+  vorliegt, dort eintragen – nicht von selbst nachfragen/andrängen, der
+  Nutzer meldet sich dazu.
 
 ## Marken-Farbverlauf
 

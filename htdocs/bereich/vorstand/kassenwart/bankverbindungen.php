@@ -40,11 +40,13 @@ $zurueck = '../../home.php';
             <a href="../antraege.php">Aufnahmeanträge</a>
             <a href="../mitglieder.php">Mitgliederverwaltung</a>
             <a href="../verteiler.php">E-Mail-Verteiler</a>
-            <a href="../kassenwart/bankverbindungen.php" class="active">Kassenwart</a>
+            <a href="bankverbindungen.php" class="active">Kassenwart</a>
         </nav>
 
         <nav class="subnav">
             <a href="bankverbindungen.php" class="active">Bankverbindungen</a>
+            <a href="beitragsposten.php">Beitragsposten</a>
+            <a href="export.php">SEPA-Export</a>
         </nav>
 
         <div class="card">

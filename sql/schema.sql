@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     sepa_bic VARCHAR(11) NULL,
     sepa_mandatsreferenz VARCHAR(35) NULL,
     sepa_erteilt_am DATETIME NULL,
+    sepa_erste_lastschrift_erfolgt TINYINT(1) NOT NULL DEFAULT 0,
     aktiv TINYINT(1) NOT NULL DEFAULT 1,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -52,6 +53,19 @@ CREATE TABLE IF NOT EXISTS antraege (
     PRIMARY KEY (id),
     KEY idx_mitglied_id (mitglied_id),
     CONSTRAINT fk_antraege_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Kassenwart: frei konfigurierbare Beitragsposten (Mitgliedsbeitrag je Rolle,
+-- weitere Kostenpunkte wie Startpassgebuehren). rolle = NULL bedeutet: gilt
+-- fuer alle aktiven Mitglieder mit Mandat, unabhaengig von deren Rolle.
+CREATE TABLE IF NOT EXISTS beitragsposten (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    bezeichnung VARCHAR(150) NOT NULL,
+    betrag DECIMAL(10,2) NOT NULL,
+    rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NULL,
+    aktiv TINYINT(1) NOT NULL DEFAULT 1,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- "Angemeldet bleiben": pro Gerät/Browser ein Token, damit Mitglieder sich
