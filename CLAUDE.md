@@ -8,9 +8,11 @@ haben Vorrang vor allgemeinen Standardverhalten.
    beschreiben und auf ausdrückliche Bestätigung des Nutzers warten. Nicht
    einfach losprogrammieren, auch nicht bei scheinbar kleinen Änderungen.
 2. **Auslieferungen immer als ZIP**, nie als einzelne Dateien zum Download.
-3. **Bei jeder Auslieferung immer beide Dateien liefern**: eine `.zip`
-   (Code-Stand) UND eine `.sql` (aktuelles Datenbankschema) – auch wenn sich
-   das Schema seit der letzten Auslieferung nicht geändert hat.
+3. **`.zip` bei jeder Auslieferung, `.sql` nur bei Schema-Änderung.** Die
+   `.zip` (Code-Stand) gehört zu jeder Auslieferung dazu. Die `.sql`
+   (Datenbankschema) nur zusätzlich anzeigen/liefern, wenn sich das Schema
+   seit der letzten Auslieferung tatsächlich geändert hat – hat sich nichts
+   geändert, wird die `.sql` nicht angezeigt.
 4. **Immer derselbe, feste Dateiname** – kein Datum, keine hochgezählte
    Nummer, kein beschreibendes Wort: jede Auslieferung heißt schlicht
    `vereinsapp.zip` und `vereinsapp.sql`. Bei jeder neuen Auslieferung wird
