@@ -430,6 +430,43 @@ th {
     overflow-x: auto;
 }
 
+.th-filter-btn {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border: 1px solid var(--farbe-border);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--farbe-primary);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+}
+
+.th-filter-btn[aria-expanded="true"] {
+    background: var(--farbe-primary);
+    color: #fff;
+    border-color: var(--farbe-primary);
+}
+
+.filter-dropdown-panel {
+    position: fixed;
+    background: var(--farbe-card);
+    border: 1px solid var(--farbe-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(20, 60, 70, 0.15);
+    padding: 10px 14px;
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.filter-dropdown-panel label.inline {
+    margin: 6px 0;
+    font-size: 0.88rem;
+}
+
 .role-select {
     padding: 6px 8px;
     border-radius: 8px;

@@ -90,10 +90,14 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       ändern und Konto aktivieren/deaktivieren. Nachname verlinkt weiterhin
       zusätzlich auf das ausführliche Datenblatt. Konto löschen und Passwort
       zurücksetzen sind in den Admin-Bereich umgezogen (siehe unten).
-    - **E-Mail-Verteiler**: Empfängergruppe per Checkbox auswählen, direkt
-      darunter aktualisiert sich live (ohne Neuladen) eine Vorschau-Liste
-      der tatsächlichen Empfänger (Nachname, Vorname, E-Mail), darunter
-      Betreff/Nachricht und der Senden-Button.
+    - **E-Mail-Verteiler**: klassische Liste aller aktiven Mitglieder
+      (Nachname, Vorname, Rolle, E-Mail) mit eigener Checkbox je Zeile -
+      wer die Rundmail bekommen soll, wird direkt in der Liste angehakt.
+      In der Kopfzeile eine "Alle sichtbaren auswählen"-Checkbox sowie ein
+      Filter-Rollup bei "Rolle" (Dropdown zum Ein-/Ausblenden von Zeilen
+      nach Rolle, rein zum schnelleren Finden/Auswählen - ändert nichts an
+      bereits gesetzten Häkchen). Der Zähler über der Liste zeigt die
+      Anzahl tatsächlich ausgewählter Empfänger, unabhängig vom Filter.
     - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich mit
       eigenem Sub-Menü (analog Admin → Konten/Bilder). Zugriff wie der Rest
       der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
@@ -153,9 +157,10 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   ursprüngliche Aufnahmeantrag bleibt als historischer Datensatz erhalten,
   verliert aber die Verknüpfung zum Konto.
 - **E-Mail-Verteiler** (`.../bereich/vorstand/verteiler.php`): Rundmail an
-  alle aktiven Mitglieder oder gezielt nach Rolle, verschickt per Bcc (die
-  Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Die
-  tatsächlichen Empfänger werden vor dem Versenden als Liste angezeigt.
+  einzeln per Checkbox ausgewählte aktive Mitglieder, verschickt per Bcc
+  (die Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht).
+  Der Rollen-Filter in der Kopfzeile blendet Zeilen nur zum leichteren
+  Finden/Auswählen ein oder aus, er verändert keine Häkchen.
   Nutzt die native PHP-`mail()`-Funktion, wie sie auf all-inkl KAS
   standardmäßig zur Verfügung steht — siehe Hinweis zu Absenderadresse/Spam
   weiter unten.

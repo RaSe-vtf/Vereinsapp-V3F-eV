@@ -11,8 +11,7 @@ $pdo = getPdo();
 $fehler = [];
 $betreff = '';
 $nachricht = '';
-$alleAusgewaehlt = $_SERVER['REQUEST_METHOD'] !== 'POST';
-$rollenAusgewaehlt = [];
+$ausgewaehlteIds = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
@@ -20,23 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $betreff = trim((string) ($_POST['betreff'] ?? ''));
         $nachricht = trim((string) ($_POST['nachricht'] ?? ''));
-        $alleAusgewaehlt = !empty($_POST['alle']);
-        $rollenAusgewaehlt = array_values(array_intersect((array) ($_POST['rollen'] ?? []), array_keys(ROLLEN_LABELS)));
+        $ausgewaehlteIds = array_map('intval', (array) ($_POST['empfaenger'] ?? []));
 
         if ($betreff === '') $fehler[] = 'Bitte gib einen Betreff an.';
         if ($nachricht === '') $fehler[] = 'Bitte gib eine Nachricht an.';
-        if (!$alleAusgewaehlt && empty($rollenAusgewaehlt)) {
-            $fehler[] = 'Bitte wähle mindestens eine Empfängergruppe aus.';
+        if (empty($ausgewaehlteIds)) {
+            $fehler[] = 'Bitte wähle mindestens einen Empfänger aus.';
         }
 
         if (empty($fehler)) {
-            if ($alleAusgewaehlt) {
-                $stmt = $pdo->query('SELECT email FROM mitglieder WHERE aktiv = 1');
-            } else {
-                $platzhalter = implode(',', array_fill(0, count($rollenAusgewaehlt), '?'));
-                $stmt = $pdo->prepare("SELECT email FROM mitglieder WHERE aktiv = 1 AND rolle IN ($platzhalter)");
-                $stmt->execute($rollenAusgewaehlt);
-            }
+            $platzhalter = implode(',', array_fill(0, count($ausgewaehlteIds), '?'));
+            $stmt = $pdo->prepare("SELECT email FROM mitglieder WHERE aktiv = 1 AND id IN ($platzhalter)");
+            $stmt->execute($ausgewaehlteIds);
             $empfaenger = array_column($stmt->fetchAll(), 'email');
 
             if (empty($empfaenger)) {
@@ -55,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$alleMitglieder = $pdo->query('SELECT vorname, nachname, email, rolle FROM mitglieder WHERE aktiv = 1 ORDER BY nachname, vorname')->fetchAll();
+$alleMitglieder = $pdo->query('SELECT id, vorname, nachname, email, rolle FROM mitglieder WHERE aktiv = 1 ORDER BY nachname, vorname')->fetchAll();
 
 $flash = takeFlash();
 ?>
@@ -91,7 +85,7 @@ $flash = takeFlash();
 
         <div class="card">
             <h2 style="margin-top:0;">E-Mail-Verteiler</h2>
-            <p class="text-muted">Verschickt eine Rundmail per Bcc, sodass Mitglieder die E-Mail-Adressen der anderen Empfänger nicht sehen.</p>
+            <p class="text-muted">Verschickt eine Rundmail per Bcc, sodass Mitglieder die E-Mail-Adressen der anderen Empfänger nicht sehen. Häkchen setzen, wer die Mail bekommen soll &ndash; über das Filter-Symbol bei "Rolle" lässt sich die Liste zum schnelleren Auswählen eingrenzen.</p>
 
             <?php if ($flash): ?>
                 <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
@@ -108,41 +102,47 @@ $flash = takeFlash();
             <form method="post" id="rundmail-form">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
 
-                <fieldset>
-                    <legend>Empfänger</legend>
-                    <label class="inline">
-                        <input type="checkbox" name="alle" value="1" <?= $alleAusgewaehlt ? 'checked' : '' ?>>
-                        <span>Alle aktiven Mitglieder</span>
-                    </label>
-                    <p class="text-muted" style="margin:10px 0 6px;">Oder gezielt nach Rolle:</p>
-                    <?php foreach (ROLLEN_LABELS as $wert => $label): ?>
-                        <label class="inline">
-                            <input type="checkbox" name="rollen[]" value="<?= e($wert) ?>" <?= in_array($wert, $rollenAusgewaehlt, true) ? 'checked' : '' ?>>
-                            <span><?= e($label) ?></span>
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
-
                 <p class="text-muted"><span id="empfaenger-anzahl">0</span> Empfänger ausgewählt:</p>
                 <div style="overflow-x:auto; margin-bottom:20px;">
                 <table id="empfaenger-tabelle" class="tabelle-einzeilig">
                     <thead>
                         <tr>
+                            <th><input type="checkbox" id="empfaenger-alle-checkbox" title="Alle sichtbaren Zeilen auswählen"></th>
                             <th>Nachname</th>
                             <th>Vorname</th>
+                            <th>
+                                Rolle
+                                <button type="button" class="th-filter-btn" id="rollen-filter-btn" aria-haspopup="true" aria-expanded="false">Filter &#9662;</button>
+                            </th>
                             <th>E-Mail</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($alleMitglieder as $m): ?>
-                            <tr data-rolle="<?= e($m['rolle']) ?>" hidden>
+                            <tr data-rolle="<?= e($m['rolle']) ?>">
+                                <td><input type="checkbox" name="empfaenger[]" class="empfaenger-checkbox" value="<?= (int) $m['id'] ?>" <?= in_array((int) $m['id'], $ausgewaehlteIds, true) ? 'checked' : '' ?>></td>
                                 <td><?= e($m['nachname']) ?></td>
                                 <td><?= e($m['vorname']) ?></td>
+                                <td><?= e(rollenLabel($m['rolle'])) ?></td>
                                 <td><?= e($m['email']) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
+
+                <div id="rollen-filter-dropdown" class="filter-dropdown-panel" hidden>
+                    <label class="inline">
+                        <input type="checkbox" id="rollen-filter-alle" checked>
+                        <span><strong>Alle Rollen</strong></span>
+                    </label>
+                    <hr style="border:none; border-top:1px solid var(--farbe-border); margin:8px 0;">
+                    <?php foreach (ROLLEN_LABELS as $wert => $label): ?>
+                        <label class="inline">
+                            <input type="checkbox" class="rollen-filter-checkbox" value="<?= e($wert) ?>" checked>
+                            <span><?= e($label) ?></span>
+                        </label>
+                    <?php endforeach; ?>
                 </div>
 
                 <label class="required" for="betreff">Betreff</label>
@@ -164,37 +164,116 @@ $flash = takeFlash();
             if (!form) {
                 return;
             }
-            var alleCheckbox = form.querySelector('input[name="alle"]');
-            var rollenCheckboxen = form.querySelectorAll('input[name="rollen[]"]');
-            var zeilen = document.querySelectorAll('#empfaenger-tabelle tbody tr');
+            var zeilen = Array.prototype.slice.call(document.querySelectorAll('#empfaenger-tabelle tbody tr'));
+            var checkboxen = Array.prototype.slice.call(document.querySelectorAll('.empfaenger-checkbox'));
+            var alleCheckbox = document.getElementById('empfaenger-alle-checkbox');
             var zaehler = document.getElementById('empfaenger-anzahl');
 
-            function aktualisieren() {
-                var alle = alleCheckbox.checked;
-                var ausgewaehlteRollen = [];
-                rollenCheckboxen.forEach(function (cb) {
+            var filterBtn = document.getElementById('rollen-filter-btn');
+            var filterPanel = document.getElementById('rollen-filter-dropdown');
+            var filterAlleCheckbox = document.getElementById('rollen-filter-alle');
+            var filterCheckboxen = Array.prototype.slice.call(document.querySelectorAll('.rollen-filter-checkbox'));
+
+            // Panel aus der scrollenden Tabelle herausloesen, damit es nicht
+            // vom overflow-x:auto-Container abgeschnitten wird.
+            document.body.appendChild(filterPanel);
+
+            function sichtbareZeilen() {
+                return zeilen.filter(function (z) { return !z.hidden; });
+            }
+
+            function aktualisiereZaehlerUndMaster() {
+                var anzahl = 0;
+                checkboxen.forEach(function (cb) {
                     if (cb.checked) {
-                        ausgewaehlteRollen.push(cb.value);
-                    }
-                });
-                var anzahlSichtbar = 0;
-                zeilen.forEach(function (zeile) {
-                    var sichtbar = alle || ausgewaehlteRollen.indexOf(zeile.dataset.rolle) !== -1;
-                    zeile.hidden = !sichtbar;
-                    if (sichtbar) {
-                        anzahlSichtbar++;
+                        anzahl++;
                     }
                 });
                 if (zaehler) {
-                    zaehler.textContent = String(anzahlSichtbar);
+                    zaehler.textContent = String(anzahl);
+                }
+
+                var sichtbar = sichtbareZeilen();
+                var sichtbareCheckboxen = sichtbar.map(function (z) { return z.querySelector('.empfaenger-checkbox'); });
+                var angehaktSichtbar = sichtbareCheckboxen.filter(function (cb) { return cb.checked; }).length;
+                if (sichtbareCheckboxen.length === 0) {
+                    alleCheckbox.checked = false;
+                    alleCheckbox.indeterminate = false;
+                } else if (angehaktSichtbar === sichtbareCheckboxen.length) {
+                    alleCheckbox.checked = true;
+                    alleCheckbox.indeterminate = false;
+                } else if (angehaktSichtbar === 0) {
+                    alleCheckbox.checked = false;
+                    alleCheckbox.indeterminate = false;
+                } else {
+                    alleCheckbox.checked = false;
+                    alleCheckbox.indeterminate = true;
                 }
             }
 
-            alleCheckbox.addEventListener('change', aktualisieren);
-            rollenCheckboxen.forEach(function (cb) {
-                cb.addEventListener('change', aktualisieren);
+            checkboxen.forEach(function (cb) {
+                cb.addEventListener('change', aktualisiereZaehlerUndMaster);
             });
-            aktualisieren();
+
+            alleCheckbox.addEventListener('change', function () {
+                var sollAngehaktSein = alleCheckbox.checked;
+                sichtbareZeilen().forEach(function (z) {
+                    z.querySelector('.empfaenger-checkbox').checked = sollAngehaktSein;
+                });
+                aktualisiereZaehlerUndMaster();
+            });
+
+            function wendeFilterAn() {
+                var ausgewaehlteRollen = filterCheckboxen.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+                zeilen.forEach(function (zeile) {
+                    zeile.hidden = ausgewaehlteRollen.indexOf(zeile.dataset.rolle) === -1;
+                });
+                aktualisiereZaehlerUndMaster();
+            }
+
+            filterAlleCheckbox.addEventListener('change', function () {
+                filterCheckboxen.forEach(function (cb) {
+                    cb.checked = filterAlleCheckbox.checked;
+                });
+                wendeFilterAn();
+            });
+
+            filterCheckboxen.forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    filterAlleCheckbox.checked = filterCheckboxen.every(function (c) { return c.checked; });
+                    wendeFilterAn();
+                });
+            });
+
+            function oeffnePanel() {
+                var rect = filterBtn.getBoundingClientRect();
+                filterPanel.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+                filterPanel.style.left = Math.min(rect.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 220) + 'px';
+                filterPanel.hidden = false;
+                filterBtn.setAttribute('aria-expanded', 'true');
+            }
+
+            function schliessePanel() {
+                filterPanel.hidden = true;
+                filterBtn.setAttribute('aria-expanded', 'false');
+            }
+
+            filterBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (filterPanel.hidden) {
+                    oeffnePanel();
+                } else {
+                    schliessePanel();
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!filterPanel.hidden && !filterPanel.contains(e.target) && e.target !== filterBtn) {
+                    schliessePanel();
+                }
+            });
+
+            aktualisiereZaehlerUndMaster();
         })();
     </script>
 </body>
