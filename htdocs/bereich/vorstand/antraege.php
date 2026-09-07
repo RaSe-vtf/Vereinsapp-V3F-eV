@@ -58,10 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
     exit;
 }
 
-$filter = $_GET['status'] ?? 'neu';
+$filter = $_GET['status'] ?? 'alle';
 $gueltigeFilter = ['alle', 'neu', 'angenommen', 'abgelehnt'];
 if (!in_array($filter, $gueltigeFilter, true)) {
-    $filter = 'neu';
+    $filter = 'alle';
 }
 
 if ($filter === 'alle') {
@@ -87,28 +87,15 @@ $flash = takeFlash();
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Geschäftsstelle</div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '../';
+    $seitenUntertitel = 'Geschäftsstelle';
+    $aktivReiter = 'geschaeftsstelle';
+    $zurueck = '../home.php';
+    require __DIR__ . '/../../../includes/kopf.php';
+    ?>
 
     <main class="container" style="max-width:960px;">
-        <nav class="tabs">
-            <a href="../index.php">Meine Daten</a>
-            <a href="antraege.php" class="active">Geschäftsstelle</a>
-            <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="../admin/konten.php">Admin</a>
-            <?php endif; ?>
-        </nav>
-
         <nav class="subnav">
             <a href="antraege.php" class="active">Aufnahmeanträge</a>
             <a href="mitglieder.php">Mitgliederverwaltung</a>
@@ -122,9 +109,9 @@ $flash = takeFlash();
                 <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
             <?php endif; ?>
 
-            <div style="margin:16px 0;">
+            <div style="margin:10px 0 16px;">
                 <?php foreach ($gueltigeFilter as $f): ?>
-                    <a href="?status=<?= e($f) ?>" class="btn btn-secondary" style="<?= $filter === $f ? 'font-weight:700;' : '' ?>"><?= e(ucfirst($f)) ?></a>
+                    <a href="?status=<?= e($f) ?>" class="filter-pill<?= $filter === $f ? ' active' : '' ?>"><?= e(ucfirst($f)) ?></a>
                 <?php endforeach; ?>
             </div>
 
@@ -158,5 +145,6 @@ $flash = takeFlash();
             <?php endif; ?>
         </div>
     </main>
+    <script src="../../assets/js/menue.js" defer></script>
 </body>
 </html>

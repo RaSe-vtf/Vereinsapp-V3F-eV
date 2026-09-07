@@ -25,7 +25,16 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 - Jedes Mitglied hat ein eigenes Login (E-Mail + Passwort) und eine Rolle:
   Vollmitglied, Trainingsmitglied, Vorstandsmitglied, Ehrenmitglied,
   Fördermitglied.
-- Mitgliederbereich (`htdocs/bereich/`) mit Tab-Navigation:
+- **Navigation im eingeloggten Bereich**: Das Logo oben links führt immer zur
+  Startseite `bereich/home.php` mit einer Kachel pro Bereich (Meine Daten,
+  Geschäftsstelle, Admin — je nachdem, was die Rolle/das Admin-Flag erlaubt).
+  Oben rechts im Banner öffnet ein Menü-Symbol (☰) ein Dropdown mit denselben
+  Bereichen sowie "Abmelden" ganz unten. Unterhalb des Banners zeigt jede
+  Seite oben rechts einen kleinen "← Zurück"-Pfeil zur jeweils nächst höheren
+  Seite (z.B. von einem Datenblatt zurück zur Liste, von einer Bereichsseite
+  zurück zur Startseite). Technisch über den gemeinsamen Baustein
+  `includes/kopf.php` und `htdocs/assets/js/menue.js`.
+- Mitgliederbereich (`htdocs/bereich/`):
   - **Meine Daten**: für alle eingeloggten Mitglieder, eigene Stammdaten
     (Name, Geburtsdatum/-ort, Adresse, Telefon, E-Mail, Instagram, Foto)
     selbst ändern bzw. ergänzen und eigenes Passwort ändern. Pflichtfelder
@@ -36,12 +45,20 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     der App, sondern per E-Mail an den Vorstand (siehe Datenschutzerklärung).
   - **Geschäftsstelle**: nur sichtbar und aufrufbar für die Rolle
     Vorstandsmitglied (Reiter heißt bewusst nicht "Vorstand", um Bereich
-    und Personen-Rolle sprachlich zu trennen). Enthält Aufnahmeanträge
-    (ansehen, annehmen/ablehnen) und die Mitgliederverwaltung (Rolle ändern,
-    Konto aktivieren/deaktivieren, mit Profilbild-Miniaturansicht und
-    Nachname als Link zum Datenblatt) sowie den E-Mail-Verteiler.
-    Konto löschen und Passwort zurücksetzen sind in den Admin-Bereich
-    umgezogen (siehe unten).
+    und Personen-Rolle sprachlich zu trennen). Enthält:
+    - **Aufnahmeanträge**: zeigt standardmäßig alle Anträge (Filter "Alle"
+      voreingestellt), die Filter-Buttons (Alle/Neu/Angenommen/Abgelehnt)
+      sind kompakte Pillen oberhalb der Liste.
+    - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
+      (Foto, Vor-/Nachname, Geburtsdatum/-ort, Adresse, Telefon, E-Mail,
+      Instagram, Rolle, Status, Passwort-Status, Mitglied seit) sowie Rolle
+      ändern und Konto aktivieren/deaktivieren. Nachname verlinkt weiterhin
+      zusätzlich auf das ausführliche Datenblatt. Konto löschen und Passwort
+      zurücksetzen sind in den Admin-Bereich umgezogen (siehe unten).
+    - **E-Mail-Verteiler**: Empfängergruppe per Checkbox auswählen, direkt
+      darunter aktualisiert sich live (ohne Neuladen) eine Vorschau-Liste
+      der tatsächlichen Empfänger (Nachname, Vorname, E-Mail), darunter
+      Betreff/Nachricht und der Senden-Button.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
@@ -76,9 +93,11 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   verliert aber die Verknüpfung zum Konto.
 - **E-Mail-Verteiler** (`.../bereich/vorstand/verteiler.php`): Rundmail an
   alle aktiven Mitglieder oder gezielt nach Rolle, verschickt per Bcc (die
-  Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Nutzt
-  die native PHP-`mail()`-Funktion, wie sie auf all-inkl KAS standardmäßig
-  zur Verfügung steht — siehe Hinweis zu Absenderadresse/Spam weiter unten.
+  Mitglieder sehen die E-Mail-Adressen der anderen Empfänger nicht). Die
+  tatsächlichen Empfänger werden vor dem Versenden als Liste angezeigt.
+  Nutzt die native PHP-`mail()`-Funktion, wie sie auf all-inkl KAS
+  standardmäßig zur Verfügung steht — siehe Hinweis zu Absenderadresse/Spam
+  weiter unten.
 - **Angemeldet bleiben**: Nach dem Login bleibt man dauerhaft eingeloggt,
   auch nach Schließen des Browsers oder auf einem neuen Gerätebesuch nach
   Monaten — kein wiederholtes Passwort-Eintippen nötig. Technisch über ein
@@ -115,20 +134,25 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
   datenschutz.php
   login.php / logout.php    -> Mitglieder-Login
   bereich/                  -> eingeloggter Bereich (alle Mitglieder)
+    home.php                -> Startseite mit Kacheln (Logo-Ziel, Menü-Ziel bei "Meine Daten" etc.)
     index.php               -> "Meine Daten" + Passwort ändern
     foto.php                -> liefert Fotos aus (eigenes Foto oder, für Vorstand, alle)
     vorstand/                -> nur Rolle Vorstandsmitglied
-      antraege.php           -> Aufnahmeanträge verwalten
+      antraege.php           -> Aufnahmeanträge verwalten (Standardfilter: alle)
       antrag_ansehen.php
-      mitglieder.php         -> Mitgliederverwaltung: Rolle, Status
+      mitglieder.php         -> Mitgliederverwaltung: alle Stammdaten, Rolle, Status
       mitglied_ansehen.php
-      verteiler.php          -> E-Mail-Verteiler (Rundmail per Bcc)
+      verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern
-  assets/                   -> CSS, Logo
+  assets/
+    css/style.css           -> Styles, u.a. Menü/Zurück-Pfeil/Kacheln
+    js/lightbox.js          -> Foto-Lupe
+    js/menue.js             -> Auf-/Zuklappen des Menü-Symbols im Banner
 
 includes/          -> gemeinsamer PHP-Code (liegt bewusst AUSSERHALB von htdocs)
+  kopf.php         -> gemeinsamer Banner/Menü/Zurück-Pfeil-Baustein für bereich/**
 private/           -> Konfiguration + hochgeladene Fotos (liegt AUSSERHALB von htdocs)
   config.php       -> wird lokal erstellt, nicht Teil des Repos
   uploads/fotos/   -> gespeicherte Mitgliederfotos

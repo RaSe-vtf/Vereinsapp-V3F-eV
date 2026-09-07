@@ -31,22 +31,15 @@ if (!$antrag) {
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle">Geschäftsstelle</div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '../';
+    $seitenUntertitel = 'Geschäftsstelle';
+    $aktivReiter = 'geschaeftsstelle';
+    $zurueck = 'antraege.php';
+    require __DIR__ . '/../../../includes/kopf.php';
+    ?>
 
     <main class="container">
-        <p><a href="antraege.php">&larr; Zurück zur Übersicht</a></p>
-
         <div class="card">
             <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
                 <img class="foto-preview foto-zoombar" src="../foto.php?typ=antrag&id=<?= (int) $antrag['id'] ?>" alt="Foto von <?= e($antrag['vorname']) ?>">
@@ -96,5 +89,6 @@ if (!$antrag) {
         </div>
     </main>
     <script src="../../assets/js/lightbox.js" defer></script>
+    <script src="../../assets/js/menue.js" defer></script>
 </body>
 </html>

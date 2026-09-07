@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 if (currentMitglied() !== null) {
-    header('Location: bereich/index.php');
+    header('Location: bereich/home.php');
     exit;
 }
 
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             $_SESSION['mitglied_id'] = (int) $mitglied['id'];
             issueRememberToken((int) $mitglied['id']);
-            header('Location: bereich/index.php');
+            header('Location: bereich/home.php');
             exit;
         }
     }

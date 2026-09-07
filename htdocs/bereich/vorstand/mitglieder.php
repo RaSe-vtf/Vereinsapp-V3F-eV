@@ -56,28 +56,15 @@ $flash = takeFlash();
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Geschäftsstelle</div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '../';
+    $seitenUntertitel = 'Geschäftsstelle';
+    $aktivReiter = 'geschaeftsstelle';
+    $zurueck = '../home.php';
+    require __DIR__ . '/../../../includes/kopf.php';
+    ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="tabs">
-            <a href="../index.php">Meine Daten</a>
-            <a href="antraege.php" class="active">Geschäftsstelle</a>
-            <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="../admin/konten.php">Admin</a>
-            <?php endif; ?>
-        </nav>
-
         <nav class="subnav">
             <a href="antraege.php">Aufnahmeanträge</a>
             <a href="mitglieder.php" class="active">Mitgliederverwaltung</a>
@@ -99,11 +86,18 @@ $flash = takeFlash();
                     <thead>
                         <tr>
                             <th>Foto</th>
-                            <th>Name</th>
+                            <th>Vorname</th>
+                            <th>Nachname</th>
+                            <th>Geburtsdatum</th>
+                            <th>Geburtsort</th>
+                            <th>Adresse</th>
+                            <th>Telefon</th>
                             <th>E-Mail</th>
+                            <th>Instagram</th>
                             <th>Rolle</th>
                             <th>Status</th>
                             <th>Passwort</th>
+                            <th>Mitglied seit</th>
                             <th>Aktionen</th>
                         </tr>
                     </thead>
@@ -117,8 +111,14 @@ $flash = takeFlash();
                                         <span class="foto-thumb foto-thumb--platzhalter"><?= e(mb_substr($m['vorname'], 0, 1) . mb_substr($m['nachname'], 0, 1)) ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= e($m['vorname']) ?> <a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>"><?= e($m['nachname']) ?></a></td>
-                                <td><?= e($m['email']) ?></td>
+                                <td><?= e($m['vorname']) ?></td>
+                                <td><a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>"><?= e($m['nachname']) ?></a></td>
+                                <td style="white-space:nowrap;"><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
+                                <td><?= e($m['geburtsort']) ?></td>
+                                <td><?= e($m['strasse_hausnummer']) ?>, <?= e($m['plz'] . ' ' . $m['ort']) ?></td>
+                                <td><?= e($m['telefon']) ?></td>
+                                <td><a href="mailto:<?= e($m['email']) ?>"><?= e($m['email']) ?></a></td>
+                                <td><?= $m['instagram'] ? '@' . e($m['instagram']) : '&ndash;' ?></td>
                                 <td>
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -133,6 +133,7 @@ $flash = takeFlash();
                                 </td>
                                 <td><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
                                 <td><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
+                                <td style="white-space:nowrap;"><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
                                 <td style="white-space:nowrap;">
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -150,5 +151,6 @@ $flash = takeFlash();
         </div>
     </main>
     <script src="../../assets/js/lightbox.js" defer></script>
+    <script src="../../assets/js/menue.js" defer></script>
 </body>
 </html>

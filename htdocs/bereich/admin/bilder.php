@@ -83,28 +83,15 @@ $flash = takeFlash();
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Admin</div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '../';
+    $seitenUntertitel = 'Admin';
+    $aktivReiter = 'admin';
+    $zurueck = '../home.php';
+    require __DIR__ . '/../../../includes/kopf.php';
+    ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="tabs">
-            <a href="../index.php">Meine Daten</a>
-            <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
-                <a href="../vorstand/antraege.php">Geschäftsstelle</a>
-            <?php endif; ?>
-            <a href="konten.php" class="active">Admin</a>
-        </nav>
-
         <nav class="subnav">
             <a href="konten.php">Konten</a>
             <a href="bilder.php" class="active">Bilder</a>
@@ -124,5 +111,6 @@ $flash = takeFlash();
             </form>
         </div>
     </main>
+    <script src="../../assets/js/menue.js" defer></script>
 </body>
 </html>

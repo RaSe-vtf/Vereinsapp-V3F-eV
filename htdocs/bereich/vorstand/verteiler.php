@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$alleMitglieder = $pdo->query('SELECT vorname, nachname, email, rolle FROM mitglieder WHERE aktiv = 1 ORDER BY nachname, vorname')->fetchAll();
+
 $flash = takeFlash();
 ?>
 <!DOCTYPE html>
@@ -71,28 +73,15 @@ $flash = takeFlash();
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; Geschäftsstelle</div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '../';
+    $seitenUntertitel = 'Geschäftsstelle';
+    $aktivReiter = 'geschaeftsstelle';
+    $zurueck = '../home.php';
+    require __DIR__ . '/../../../includes/kopf.php';
+    ?>
 
     <main class="container">
-        <nav class="tabs">
-            <a href="../index.php">Meine Daten</a>
-            <a href="antraege.php" class="active">Geschäftsstelle</a>
-            <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="../admin/konten.php">Admin</a>
-            <?php endif; ?>
-        </nav>
-
         <nav class="subnav">
             <a href="antraege.php">Aufnahmeanträge</a>
             <a href="mitglieder.php">Mitgliederverwaltung</a>
@@ -115,7 +104,7 @@ $flash = takeFlash();
                 </div>
             <?php endif; ?>
 
-            <form method="post">
+            <form method="post" id="rundmail-form">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
 
                 <fieldset>
@@ -133,6 +122,28 @@ $flash = takeFlash();
                     <?php endforeach; ?>
                 </fieldset>
 
+                <p class="text-muted"><span id="empfaenger-anzahl">0</span> Empfänger ausgewählt:</p>
+                <div style="overflow-x:auto; margin-bottom:20px;">
+                <table id="empfaenger-tabelle">
+                    <thead>
+                        <tr>
+                            <th>Nachname</th>
+                            <th>Vorname</th>
+                            <th>E-Mail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($alleMitglieder as $m): ?>
+                            <tr data-rolle="<?= e($m['rolle']) ?>" hidden>
+                                <td><?= e($m['nachname']) ?></td>
+                                <td><?= e($m['vorname']) ?></td>
+                                <td><?= e($m['email']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
+
                 <label class="required" for="betreff">Betreff</label>
                 <input type="text" id="betreff" name="betreff" value="<?= e($betreff) ?>" required>
 
@@ -145,5 +156,45 @@ $flash = takeFlash();
             </form>
         </div>
     </main>
+    <script src="../../assets/js/menue.js" defer></script>
+    <script>
+        (function () {
+            var form = document.getElementById('rundmail-form');
+            if (!form) {
+                return;
+            }
+            var alleCheckbox = form.querySelector('input[name="alle"]');
+            var rollenCheckboxen = form.querySelectorAll('input[name="rollen[]"]');
+            var zeilen = document.querySelectorAll('#empfaenger-tabelle tbody tr');
+            var zaehler = document.getElementById('empfaenger-anzahl');
+
+            function aktualisieren() {
+                var alle = alleCheckbox.checked;
+                var ausgewaehlteRollen = [];
+                rollenCheckboxen.forEach(function (cb) {
+                    if (cb.checked) {
+                        ausgewaehlteRollen.push(cb.value);
+                    }
+                });
+                var anzahlSichtbar = 0;
+                zeilen.forEach(function (zeile) {
+                    var sichtbar = alle || ausgewaehlteRollen.indexOf(zeile.dataset.rolle) !== -1;
+                    zeile.hidden = !sichtbar;
+                    if (sichtbar) {
+                        anzahlSichtbar++;
+                    }
+                });
+                if (zaehler) {
+                    zaehler.textContent = String(anzahlSichtbar);
+                }
+            }
+
+            alleCheckbox.addEventListener('change', aktualisieren);
+            rollenCheckboxen.forEach(function (cb) {
+                cb.addEventListener('change', aktualisieren);
+            });
+            aktualisieren();
+        })();
+    </script>
 </body>
 </html>

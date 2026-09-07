@@ -167,30 +167,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div>
-                <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e($mitglied['vorname'] . ' ' . $mitglied['nachname']) ?> &middot; <?= e(rollenLabel($mitglied['rolle'])) ?></div>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="../logout.php" class="btn btn-secondary">Abmelden</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $tiefe = '';
+    $seitenUntertitel = rollenLabel($mitglied['rolle']);
+    $aktivReiter = 'meine-daten';
+    $zurueck = 'home.php';
+    require __DIR__ . '/../../includes/kopf.php';
+    ?>
 
     <main class="container">
-        <nav class="tabs">
-            <a href="index.php" class="active">Meine Daten</a>
-            <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
-                <a href="vorstand/antraege.php">Geschäftsstelle</a>
-            <?php endif; ?>
-            <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="admin/konten.php">Admin</a>
-            <?php endif; ?>
-        </nav>
-
         <div class="card">
             <h2>Meine Daten</h2>
             <p class="text-muted">Rolle, Status und Passwort verwaltet der Vorstand bzw. das Formular weiter unten. Alle anderen Angaben kannst du hier selbst ändern.</p>
@@ -297,5 +282,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
         </div>
     </main>
     <script src="../assets/js/lightbox.js" defer></script>
+    <script src="../assets/js/menue.js" defer></script>
 </body>
 </html>
