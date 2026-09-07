@@ -123,11 +123,17 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
 6. **Ersten Vorstandszugang anlegen** (einmalig, Henne-Ei-Problem: ohne
    Vorstandsmitglied kann niemand über die App selbst eines anlegen):
    - Mit SSH-Zugriff auf den Server: `php scripts/create_mitglied.php`
-     ausführen und die Abfragen beantworten.
+     ausführen und die Abfragen beantworten (inkl. Pfad zu einem Foto auf
+     dem Server/dem Rechner, von dem aus das Skript läuft). Das Skript legt
+     dabei automatisch auch einen zugehörigen, bereits angenommenen
+     Aufnahmeantrag an, damit das erste Vorstandsmitglied genau wie jedes
+     andere Mitglied in der Anträge-Übersicht auftaucht.
    - Ohne SSH-Zugriff: das Mitglied direkt per phpMyAdmin in die Tabelle
      `mitglieder` eintragen, mit `rolle = 'vorstandsmitglied'` und einem
      Passwort-Hash, den du lokal per
-     `php -r "echo password_hash('DeinPasswort', PASSWORD_DEFAULT);"` erzeugst.
+     `php -r "echo password_hash('DeinPasswort', PASSWORD_DEFAULT);"`
+     erzeugst. In diesem Fall fehlt der zugehörige Aufnahmeantrag zunächst -
+     bei Bedarf gesondert per SQL nachtragen.
 7. Aufrufen und testen: `https://deine-domain.de/` zeigt die Startseite,
    `.../login.php` das Mitglieder-Login.
 
