@@ -83,7 +83,7 @@ $flash = takeFlash();
                 <p>Noch keine Mitglieder angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-einzeilig tabelle-karten">
                     <thead>
                         <tr>
                             <th>Foto</th>
@@ -105,7 +105,7 @@ $flash = takeFlash();
                     <tbody>
                         <?php foreach ($mitgliederListe as $m): ?>
                             <tr>
-                                <td>
+                                <td data-label="Foto">
                                     <a href="mitglied_ansehen.php?id=<?= (int) $m['id'] ?>" title="Datenblatt von <?= e($m['vorname'] . ' ' . $m['nachname']) ?> ansehen">
                                         <?php if ($m['foto_dateiname']): ?>
                                             <img class="foto-thumb" src="../foto.php?typ=mitglied&id=<?= (int) $m['id'] ?>" alt="Foto von <?= e($m['vorname'] . ' ' . $m['nachname']) ?>">
@@ -114,15 +114,15 @@ $flash = takeFlash();
                                         <?php endif; ?>
                                     </a>
                                 </td>
-                                <td><?= e($m['vorname']) ?></td>
-                                <td><?= e($m['nachname']) ?></td>
-                                <td style="white-space:nowrap;"><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
-                                <td><?= e($m['geburtsort']) ?></td>
-                                <td><?= e($m['strasse_hausnummer']) ?>, <?= e($m['plz'] . ' ' . $m['ort']) ?></td>
-                                <td><?= e($m['telefon']) ?></td>
-                                <td><a href="mailto:<?= e($m['email']) ?>"><?= e($m['email']) ?></a></td>
-                                <td><?= $m['instagram'] ? '@' . e($m['instagram']) : '&ndash;' ?></td>
-                                <td>
+                                <td data-label="Vorname"><?= e($m['vorname']) ?></td>
+                                <td data-label="Nachname"><?= e($m['nachname']) ?></td>
+                                <td data-label="Geburtsdatum" class="nowrap-wert"><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
+                                <td data-label="Geburtsort"><?= e($m['geburtsort']) ?></td>
+                                <td data-label="Adresse"><?= e($m['strasse_hausnummer']) ?>, <?= e($m['plz'] . ' ' . $m['ort']) ?></td>
+                                <td data-label="Telefon" class="nowrap-wert"><?= e($m['telefon']) ?></td>
+                                <td data-label="E-Mail"><a href="mailto:<?= e($m['email']) ?>"><?= e($m['email']) ?></a></td>
+                                <td data-label="Instagram"><?= $m['instagram'] ? '@' . e($m['instagram']) : '&ndash;' ?></td>
+                                <td data-label="Rolle">
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                         <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
@@ -134,10 +134,10 @@ $flash = takeFlash();
                                         </select>
                                     </form>
                                 </td>
-                                <td><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
-                                <td><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
-                                <td style="white-space:nowrap;"><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
-                                <td style="white-space:nowrap;">
+                                <td data-label="Status"><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
+                                <td data-label="Passwort"><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
+                                <td data-label="Mitglied seit" class="nowrap-wert"><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
+                                <td data-label="Aktionen">
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                         <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">

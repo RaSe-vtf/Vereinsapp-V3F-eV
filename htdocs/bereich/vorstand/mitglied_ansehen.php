@@ -50,33 +50,29 @@ if (!$angesehen) {
                     <h2 style="margin-top:0;"><?= e($angesehen['vorname'] . ' ' . $angesehen['nachname']) ?></h2>
                     <span class="badge badge-<?= $angesehen['aktiv'] ? 'angenommen' : 'abgelehnt' ?>"><?= $angesehen['aktiv'] ? 'aktiv' : 'inaktiv' ?></span>
 
-                    <div style="overflow-x:auto;">
-                    <table style="margin-top:16px;">
+                    <table class="tabelle-eigenschaften" style="margin-top:16px;">
                         <tr><th>Rolle</th><td><?= e(rollenLabel($angesehen['rolle'])) ?></td></tr>
-                        <tr><th>Geburtsdatum</th><td><?= e((new DateTime($angesehen['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
+                        <tr><th>Geburtsdatum</th><td class="nowrap-wert"><?= e((new DateTime($angesehen['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
                         <tr><th>Geburtsort</th><td><?= e($angesehen['geburtsort']) ?></td></tr>
                         <tr><th>Adresse</th><td><?= e($angesehen['strasse_hausnummer']) ?>, <?= e($angesehen['plz'] . ' ' . $angesehen['ort']) ?></td></tr>
-                        <tr><th>Telefon</th><td><?= e($angesehen['telefon']) ?></td></tr>
+                        <tr><th>Telefon</th><td class="nowrap-wert"><?= e($angesehen['telefon']) ?></td></tr>
                         <tr><th>E-Mail</th><td><a href="mailto:<?= e($angesehen['email']) ?>"><?= e($angesehen['email']) ?></a></td></tr>
                         <tr><th>Instagram</th><td><?= $angesehen['instagram'] ? '@' . e($angesehen['instagram']) : '&ndash;' ?></td></tr>
                         <tr><th>Passwort</th><td><?= $angesehen['passwort_hash'] !== null ? 'gesetzt' : 'nicht gesetzt' ?></td></tr>
-                        <tr><th>Mitglied seit</th><td><?= e((new DateTime($angesehen['erstellt_am']))->format('d.m.Y')) ?></td></tr>
+                        <tr><th>Mitglied seit</th><td class="nowrap-wert"><?= e((new DateTime($angesehen['erstellt_am']))->format('d.m.Y')) ?></td></tr>
                     </table>
-                    </div>
                 </div>
             </div>
 
             <h3>SEPA-Lastschriftmandat</h3>
             <?php if ($angesehen['sepa_erteilt_am'] !== null): ?>
-                <div style="overflow-x:auto;">
-                <table>
+                <table class="tabelle-eigenschaften">
                     <tr><th>Kontoinhaber</th><td><?= e((string) $angesehen['sepa_kontoinhaber']) ?></td></tr>
-                    <tr><th>IBAN</th><td><?= e((string) $angesehen['sepa_iban']) ?></td></tr>
-                    <tr><th>BIC</th><td><?= $angesehen['sepa_bic'] ? e($angesehen['sepa_bic']) : '&ndash;' ?></td></tr>
-                    <tr><th>Mandatsreferenz</th><td><?= e((string) $angesehen['sepa_mandatsreferenz']) ?></td></tr>
-                    <tr><th>Erteilt am</th><td><?= e((new DateTime($angesehen['sepa_erteilt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
+                    <tr><th>IBAN</th><td class="nowrap-wert"><?= e((string) $angesehen['sepa_iban']) ?></td></tr>
+                    <tr><th>BIC</th><td class="nowrap-wert"><?= $angesehen['sepa_bic'] ? e($angesehen['sepa_bic']) : '&ndash;' ?></td></tr>
+                    <tr><th>Mandatsreferenz</th><td class="nowrap-wert"><?= e((string) $angesehen['sepa_mandatsreferenz']) ?></td></tr>
+                    <tr><th>Erteilt am</th><td class="nowrap-wert"><?= e((new DateTime($angesehen['sepa_erteilt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
                 </table>
-                </div>
             <?php else: ?>
                 <p class="text-muted">Noch nicht erteilt &ndash; das Mitglied wird beim nächsten Login zur Mandatsseite geführt.</p>
             <?php endif; ?>

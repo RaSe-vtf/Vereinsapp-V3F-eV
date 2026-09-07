@@ -48,20 +48,18 @@ if (!$antrag) {
                     <h2 style="margin-top:0;"><?= e($antrag['vorname'] . ' ' . $antrag['nachname']) ?></h2>
                     <span class="badge badge-<?= e($antrag['status']) ?>"><?= e($antrag['status']) ?></span>
 
-                    <div style="overflow-x:auto;">
-                    <table style="margin-top:16px;">
-                        <tr><th>Geburtsdatum</th><td><?= e((new DateTime($antrag['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
+                    <table class="tabelle-eigenschaften" style="margin-top:16px;">
+                        <tr><th>Geburtsdatum</th><td class="nowrap-wert"><?= e((new DateTime($antrag['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
                         <tr><th>Geburtsort</th><td><?= e($antrag['geburtsort']) ?></td></tr>
                         <tr><th>Adresse</th><td><?= e($antrag['strasse_hausnummer']) ?>, <?= e($antrag['plz'] . ' ' . $antrag['ort']) ?></td></tr>
-                        <tr><th>Telefon</th><td><?= e($antrag['telefon']) ?></td></tr>
+                        <tr><th>Telefon</th><td class="nowrap-wert"><?= e($antrag['telefon']) ?></td></tr>
                         <tr><th>E-Mail</th><td><a href="mailto:<?= e($antrag['email']) ?>"><?= e($antrag['email']) ?></a></td></tr>
                         <tr><th>Instagram</th><td><?= $antrag['instagram'] ? '@' . e($antrag['instagram']) : '&ndash;' ?></td></tr>
                         <tr><th>Satzung akzeptiert</th><td><?= $antrag['einverstaendnis_satzung'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Datenschutz zur Kenntnis genommen</th><td><?= $antrag['einverstaendnis_datenschutz'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Bildnutzung Social Media erlaubt</th><td><?= $antrag['einverstaendnis_bildnutzung'] ? 'Ja' : 'Nein' ?></td></tr>
-                        <tr><th>Eingegangen am</th><td><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
+                        <tr><th>Eingegangen am</th><td class="nowrap-wert"><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
                     </table>
-                    </div>
                 </div>
             </div>
 

@@ -333,6 +333,103 @@ th {
     white-space: nowrap;
 }
 
+/* Listentabellen (ein Eintrag pro Zeile, viele Spalten): auf schmalen
+   Bildschirmen wird aus jeder Zeile eine eigene Karte mit Label/Wert
+   untereinander, statt Spalten auf Buchstabenbreite zusammenzuquetschen. */
+@media (max-width: 700px) {
+    .tabelle-karten thead {
+        display: none;
+    }
+
+    .tabelle-karten,
+    .tabelle-karten tbody,
+    .tabelle-karten tr,
+    .tabelle-karten td {
+        display: block;
+        width: 100%;
+        white-space: normal;
+    }
+
+    .tabelle-karten tr {
+        border: 1px solid var(--farbe-border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+    }
+
+    .tabelle-karten tr[hidden] {
+        display: none;
+    }
+
+    .tabelle-karten td {
+        border: none;
+        padding: 6px 0;
+    }
+
+    .tabelle-karten td.nowrap-wert {
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+
+    .tabelle-karten td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--farbe-text-soft);
+        margin-bottom: 2px;
+    }
+
+    .tabelle-karten .inline-form {
+        display: inline-block;
+        margin: 2px 8px 2px 0;
+    }
+}
+
+/* Eigenschaften-Tabellen (Label/Wert je Zeile, z.B. Datenblatt, Bankverbindung):
+   auf schmalen Bildschirmen steht der Wert unter dem Label statt daneben,
+   damit z.B. IBAN oder Telefonnummer nie über zwei Zeilen umbrechen. */
+@media (max-width: 560px) {
+    .tabelle-eigenschaften tr {
+        display: block;
+        padding-top: 8px;
+    }
+
+    .tabelle-eigenschaften th,
+    .tabelle-eigenschaften td {
+        display: block;
+        width: 100%;
+        border: none;
+        padding: 2px 0;
+        white-space: normal;
+    }
+
+    .tabelle-eigenschaften th {
+        font-size: 0.72rem;
+    }
+
+    .tabelle-eigenschaften td {
+        font-size: 0.98rem;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--farbe-border);
+    }
+
+    .tabelle-eigenschaften td.nowrap-wert {
+        white-space: nowrap;
+        overflow-x: auto;
+    }
+}
+
+/* Werte, die als eine zusammenhaengende Zahl/Kennung gelesen werden (IBAN,
+   Telefon, Mandatsreferenz, Datum, PLZ): nie mitten in der Ziffernfolge
+   umbrechen. Passt der Wert nicht in die Spalte, scrollt er statt umzubrechen. */
+.nowrap-wert {
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
 .role-select {
     padding: 6px 8px;
     border-radius: 8px;

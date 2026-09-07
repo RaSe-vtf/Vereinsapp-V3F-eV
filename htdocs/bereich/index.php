@@ -286,15 +286,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
             <h2>Bankverbindung</h2>
             <p class="text-muted">Aus Sicherheitsgründen nicht direkt änderbar. Für eine neue Bankverbindung bitte das SEPA-Mandat erneut ausfüllen &ndash; der Vorstand wird darüber automatisch informiert.</p>
 
-            <div style="overflow-x:auto; margin-bottom:16px;">
-            <table>
+            <table class="tabelle-eigenschaften">
                 <tr><th>Kontoinhaber</th><td><?= e((string) $mitglied['sepa_kontoinhaber']) ?></td></tr>
-                <tr><th>IBAN</th><td><?= e((string) $mitglied['sepa_iban']) ?></td></tr>
-                <tr><th>BIC</th><td><?= $mitglied['sepa_bic'] ? e($mitglied['sepa_bic']) : '&ndash;' ?></td></tr>
-                <tr><th>Mandatsreferenz</th><td><?= e((string) $mitglied['sepa_mandatsreferenz']) ?></td></tr>
-                <tr><th>Erteilt am</th><td><?= e((new DateTime($mitglied['sepa_erteilt_am']))->format('d.m.Y')) ?></td></tr>
+                <tr><th>IBAN</th><td class="nowrap-wert"><?= e((string) $mitglied['sepa_iban']) ?></td></tr>
+                <tr><th>BIC</th><td class="nowrap-wert"><?= $mitglied['sepa_bic'] ? e($mitglied['sepa_bic']) : '&ndash;' ?></td></tr>
+                <tr><th>Mandatsreferenz</th><td class="nowrap-wert"><?= e((string) $mitglied['sepa_mandatsreferenz']) ?></td></tr>
+                <tr><th>Erteilt am</th><td class="nowrap-wert"><?= e((new DateTime($mitglied['sepa_erteilt_am']))->format('d.m.Y')) ?></td></tr>
             </table>
-            </div>
 
             <a href="sepa_mandat.php" class="btn btn-secondary">Bankverbindung ändern</a>
         </div>

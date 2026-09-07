@@ -81,7 +81,7 @@ $flash = takeFlash();
                 <p>Noch keine Mitglieder angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table>
+                <table class="tabelle-karten">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -95,10 +95,10 @@ $flash = takeFlash();
                     <tbody>
                         <?php foreach ($mitgliederListe as $m): ?>
                             <tr>
-                                <td><?= e($m['vorname'] . ' ' . $m['nachname']) ?></td>
-                                <td><?= e($m['email']) ?></td>
-                                <td><?= e(rollenLabel($m['rolle'])) ?></td>
-                                <td>
+                                <td data-label="Name"><?= e($m['vorname'] . ' ' . $m['nachname']) ?></td>
+                                <td data-label="E-Mail"><?= e($m['email']) ?></td>
+                                <td data-label="Rolle"><?= e(rollenLabel($m['rolle'])) ?></td>
+                                <td data-label="Admin">
                                     <?php if ((int) $m['id'] === (int) $mitglied['id']): ?>
                                         <span class="badge badge-angenommen">du</span>
                                     <?php else: ?>
@@ -110,8 +110,8 @@ $flash = takeFlash();
                                         </form>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
-                                <td style="white-space:nowrap;">
+                                <td data-label="Passwort"><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
+                                <td data-label="Aktionen">
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                         <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">

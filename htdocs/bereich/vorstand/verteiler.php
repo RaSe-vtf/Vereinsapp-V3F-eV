@@ -125,7 +125,7 @@ $flash = takeFlash();
 
                 <p class="text-muted"><span id="empfaenger-anzahl">0</span> Empfänger ausgewählt:</p>
                 <div style="overflow-x:auto; margin-bottom:20px;">
-                <table id="empfaenger-tabelle">
+                <table id="empfaenger-tabelle" class="tabelle-karten">
                     <thead>
                         <tr>
                             <th>Nachname</th>
@@ -136,9 +136,9 @@ $flash = takeFlash();
                     <tbody>
                         <?php foreach ($alleMitglieder as $m): ?>
                             <tr data-rolle="<?= e($m['rolle']) ?>" hidden>
-                                <td><?= e($m['nachname']) ?></td>
-                                <td><?= e($m['vorname']) ?></td>
-                                <td><?= e($m['email']) ?></td>
+                                <td data-label="Nachname"><?= e($m['nachname']) ?></td>
+                                <td data-label="Vorname"><?= e($m['vorname']) ?></td>
+                                <td data-label="E-Mail"><?= e($m['email']) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
