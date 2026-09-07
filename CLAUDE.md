@@ -21,12 +21,14 @@ Der Akzent-Farbverlauf orientiert sich am App-Icon und wird für Banner-Rahmen
 `--verlauf-akzent` in `htdocs/assets/css/style.css`:
 
 ```css
-linear-gradient(120deg, #ff3399 0%, #fadd06 50%, #5b9bd5 100%);
+linear-gradient(120deg, #ff3399 0%, #fadd06 35%, #5b9bd5 55%);
 ```
 
-- Pink: `#ff3399`
-- Gelb: `#fadd06`
-- Blau: `#5b9bd5`
+- Pink: `#ff3399` (0%–35%)
+- Gelb: `#fadd06` (Übergang beginnt bei 35%)
+- Blau: `#5b9bd5` (ab 55% vollflächig, dadurch kurzer, nicht zu grünlicher
+  Gelb-Blau-Übergang zwischen 35% und 55%)
 
-Diese Farbfolge (Pink → Gelb → Blau) bei künftigen Design-Änderungen
-beibehalten, sofern nicht ausdrücklich anders gewünscht.
+Diese Farbfolge und diese Stop-Positionen (Pink → Gelb → Blau) bei
+künftigen Design-Änderungen beibehalten, sofern nicht ausdrücklich anders
+gewünscht.

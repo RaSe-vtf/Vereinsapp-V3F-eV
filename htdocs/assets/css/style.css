@@ -8,7 +8,7 @@
     --farbe-border: #dfe7ea;
     --farbe-error: #c0392b;
     --farbe-success: #1f8a4c;
-    --verlauf-akzent: linear-gradient(120deg, #ff3399 0%, #fadd06 50%, #5b9bd5 100%);
+    --verlauf-akzent: linear-gradient(120deg, #ff3399 0%, #fadd06 35%, #5b9bd5 55%);
     --radius: 14px;
 }
 
