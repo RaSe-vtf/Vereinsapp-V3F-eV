@@ -77,6 +77,8 @@ try {
     verarbeiteUndSpeichereFoto($fotoPfad, $mime, $zielOrdner . $fotoDateiname);
 } catch (RuntimeException $e) {
     die('Abbruch: ' . $e->getMessage() . "\n");
+} catch (\Throwable $e) {
+    die('Abbruch: Foto konnte nicht verarbeitet werden (' . $e->getMessage() . ")\n");
 }
 
 $pdo = getPdo();

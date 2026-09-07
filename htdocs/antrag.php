@@ -74,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fotoDateiname = handleFotoUpload($_FILES['foto'] ?? []);
         } catch (RuntimeException $e) {
             $fehler[] = $e->getMessage();
+        } catch (\Throwable $e) {
+            $fehler[] = 'Foto konnte nicht verarbeitet werden. Bitte ein anderes Foto versuchen.';
         }
     }
 

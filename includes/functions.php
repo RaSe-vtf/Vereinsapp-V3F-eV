@@ -85,6 +85,43 @@ function takeFlash(): ?array
 
 const FOTO_MAX_KANTE = 1600;
 const FOTO_JPEG_QUALITAET = 82;
+const FOTO_MIN_MEMORY_LIMIT = 256 * 1024 * 1024; // 256 MB
+
+/**
+ * Wandelt PHP-Ini-Groessenangaben wie "128M" oder "1G" in Bytes um.
+ */
+function phpGroesseInBytes(string $wert): int
+{
+    $wert = trim($wert);
+    if ($wert === '' || $wert === '-1') {
+        return -1; // kein Limit
+    }
+    $einheit = strtoupper(substr($wert, -1));
+    $zahl = (int) $wert;
+    return match ($einheit) {
+        'G' => $zahl * 1024 * 1024 * 1024,
+        'M' => $zahl * 1024 * 1024,
+        'K' => $zahl * 1024,
+        default => (int) $wert,
+    };
+}
+
+/**
+ * Erhoeht das PHP-Speicherlimit fuer die aktuelle Ausfuehrung, falls es
+ * fuer die Bildverarbeitung knapp bemessen ist. Wirkungslos (aber
+ * unschaedlich), falls der Host ini_set dafuer nicht erlaubt.
+ */
+function stelleAusreichendFotoSpeicherSicher(): void
+{
+    $aktuell = ini_get('memory_limit');
+    if ($aktuell === false) {
+        return;
+    }
+    $aktuellBytes = phpGroesseInBytes($aktuell);
+    if ($aktuellBytes !== -1 && $aktuellBytes < FOTO_MIN_MEMORY_LIMIT) {
+        @ini_set('memory_limit', '256M');
+    }
+}
 
 /**
  * Validiert und speichert das hochgeladene Foto: richtet es anhand der
@@ -138,6 +175,12 @@ function handleFotoUpload(array $file): string
  */
 function verarbeiteUndSpeichereFoto(string $quellPfad, string $mime, string $zielPfad): void
 {
+    // Grosse Handyfotos (10+ Megapixel) brauchen beim Dekodieren/Drehen/
+    // Verkleinern kurzzeitig viel Speicher. Falls das Server-Limit knapp
+    // ist, hier fuer diesen Ablauf grosszuegiger anfordern (schadet nicht,
+    // falls der Host das ohnehin nicht erlaubt, bleibt es beim Ausgangswert).
+    stelleAusreichendFotoSpeicherSicher();
+
     $lader = match ($mime) {
         'image/jpeg' => 'imagecreatefromjpeg',
         'image/png' => 'imagecreatefrompng',
