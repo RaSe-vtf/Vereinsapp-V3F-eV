@@ -10,6 +10,12 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 
 ## Aktueller Stand
 
+- **Startseite** (`htdocs/index.php`): Willkommenstext, direkt darunter das
+  Mitglieder-Login (E-Mail + Passwort), darunter der Aufnahmeantrag-Bereich
+  mit erklärendem Text und Button. Die eigenständige Seite `htdocs/login.php`
+  bleibt technisch bestehen (z.B. als Ziel, wenn man ohne Login eine
+  geschützte Seite aufruft), wird aber von der Startseite nicht mehr
+  gesondert verlinkt.
 - Öffentlicher Aufnahmeantrag (`htdocs/antrag.php`) mit allen erfassten Daten,
   Foto-Upload und den Einverständniserklärungen (Satzung/Ordnungen,
   Kenntnisnahme Impressum & Datenschutz, optionale Freigabe für Social-Media-Fotos).
