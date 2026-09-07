@@ -63,6 +63,7 @@ if (!$antrag) {
                 </div>
             </div>
 
+            <?php if ($antrag['status'] === 'neu'): ?>
             <div style="margin-top:24px; display:flex; gap:10px; flex-wrap:wrap;">
                 <form method="post" action="antraege.php">
                     <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -83,6 +84,7 @@ if (!$antrag) {
                     <button type="submit" class="btn btn-secondary">Zurücksetzen auf "Neu"</button>
                 </form>
             </div>
+            <?php endif; ?>
         </div>
     </main>
     <script src="../../assets/js/lightbox.js" defer></script>

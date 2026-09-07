@@ -48,7 +48,12 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     und Personen-Rolle sprachlich zu trennen). Enthält:
     - **Aufnahmeanträge**: zeigt standardmäßig alle Anträge (Filter "Alle"
       voreingestellt), die Filter-Buttons (Alle/Neu/Angenommen/Abgelehnt)
-      sind kompakte Pillen oberhalb der Liste.
+      sind kompakte Pillen oberhalb der Liste. Annehmen/Ablehnen/
+      Zurücksetzen-Buttons gibt es nur noch bei Status "Neu" — ist einmal
+      entschieden, ist der Antrag ein abgeschlossener, historischer
+      Vorgang. Beim Annehmen wird direkt ein initiales Passwort vergeben
+      und einmalig angezeigt (kein separater Schritt in der
+      Mitgliederverwaltung mehr nötig).
     - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
       (Foto, Vor-/Nachname, Geburtsdatum/-ort, Adresse, Telefon, E-Mail,
       Instagram, Rolle, Status, Passwort-Status, Mitglied seit) sowie Rolle
@@ -77,10 +82,10 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Altbestände, die vor Einführung der automatischen Verkleinerung
       z.B. per FTP/phpMyAdmin eingespielt wurden.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
-  Rolle "Vollmitglied" angelegt (noch ohne Passwort). Der Vorstand vergibt in
-  der Mitgliederverwaltung ein initiales Passwort, das einmalig angezeigt und
-  manuell an das Mitglied weitergegeben wird (z.B. persönlich, Telefon,
-  E-Mail außerhalb der App — ein automatischer E-Mail-Versand ist noch nicht
+  Rolle "Vollmitglied" und einem zufällig generierten initialen Passwort
+  angelegt. Das Passwort wird direkt bei der Annahme einmalig angezeigt und
+  manuell an das Mitglied weitergegeben (z.B. persönlich, Telefon, E-Mail
+  außerhalb der App — ein automatischer E-Mail-Versand ist noch nicht
   eingebaut).
 - Rollenänderungen und Deaktivierungen wirken sofort, auch bei bereits
   eingeloggten Sitzungen.
