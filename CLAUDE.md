@@ -8,11 +8,16 @@ haben Vorrang vor allgemeinen Standardverhalten.
    beschreiben und auf ausdrückliche Bestätigung des Nutzers warten. Nicht
    einfach losprogrammieren, auch nicht bei scheinbar kleinen Änderungen.
 2. **Auslieferungen immer als ZIP**, nie als einzelne Dateien zum Download.
-3. **Einheitliche Namensgebung**: Wenn zu einer Auslieferung sowohl eine
-   `.sql`- als auch eine `.zip`-Datei gehören, müssen beide denselben
-   Basisnamen tragen (z.B. `vereinsapp-2024-06-01.sql` und
-   `vereinsapp-2024-06-01.zip`), damit Code-Stand und Datenbank-Stand klar
-   zusammengehören.
+3. **Bei jeder Auslieferung immer beide Dateien liefern**: eine `.zip`
+   (Code-Stand) UND eine `.sql` (aktuelles Datenbankschema) – auch wenn sich
+   das Schema seit der letzten Auslieferung nicht geändert hat.
+4. **Einheitliche, schlichte Namensgebung**: `.sql` und `.zip` tragen immer
+   denselben Basisnamen, nur nach Datum, ohne Zusätze wie `-farbverlauf`
+   oder `-symmetrisch` (z.B. `vereinsapp-2024-06-01.sql` und
+   `vereinsapp-2024-06-01.zip`). Gibt es am selben Tag mehrere
+   Auslieferungen, wird hochgezählt: `vereinsapp-2024-06-01-2.zip` /
+   `.sql`, `vereinsapp-2024-06-01-3.zip` / `.sql`, usw. – nie ein
+   beschreibendes Wort im Dateinamen.
 
 ## Marken-Farbverlauf
 
