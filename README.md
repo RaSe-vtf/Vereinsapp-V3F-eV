@@ -49,16 +49,16 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Admin-Rechte an- bzw. abschalten. Ein Admin kann sich weder selbst
       löschen noch sich selbst das Admin-Recht entziehen (Schutz vor
       Aussperren) — das kann nur ein anderer Admin.
-    - **Bilder**: Übersicht aller aktuell verwendeten Fotos (aus
-      Aufnahmeanträgen und Mitgliederkonten) mit Verwendung, Abmessungen
-      und Dateigröße. Bilder über 1600px an der längsten Kante gelten als
-      "zu groß" und lassen sich einzeln oder alle zusammen per Button neu
-      verarbeiten (gleiche Verkleinerung/Kompression wie beim Hochladen).
-      Nach dem Verkleinern zeigt eine Meldung, wie viele Bilder geprüft,
-      wie viele tatsächlich verkleinert und wie viel Speicherplatz dadurch
-      eingespart wurde. Gedacht u.a. für Altbestände, die vor Einführung
-      der automatischen Verkleinerung z.B. per FTP/phpMyAdmin eingespielt
-      wurden.
+    - **Bilder**: ein einziger Button "Bilder jetzt prüfen und
+      optimieren". Prüft alle aktuell verwendeten Fotos (aus
+      Aufnahmeanträgen und Mitgliederkonten) und verkleinert/komprimiert
+      automatisch alle, die über 1600px an der längsten Kante liegen
+      (gleiche Verarbeitung wie beim Hochladen) — bereits passende
+      Bilder werden nicht angerührt. Danach eine Meldung, wie viele
+      Bilder geprüft, wie viele tatsächlich verkleinert und wie viel
+      Speicherplatz dadurch eingespart wurde. Gedacht u.a. für
+      Altbestände, die vor Einführung der automatischen Verkleinerung
+      z.B. per FTP/phpMyAdmin eingespielt wurden.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
   Rolle "Vollmitglied" angelegt (noch ohne Passwort). Der Vorstand vergibt in
   der Mitgliederverwaltung ein initiales Passwort, das einmalig angezeigt und
@@ -125,8 +125,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       verteiler.php          -> E-Mail-Verteiler (Rundmail per Bcc)
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
-      bilder.php              -> Foto-Übersicht, zu große Bilder prüfen und verkleinern
-      foto.php                -> liefert Fotos für die Bilder-Übersicht aus (nur Admin)
+      bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern
   assets/                   -> CSS, Logo
 
 includes/          -> gemeinsamer PHP-Code (liegt bewusst AUSSERHALB von htdocs)
