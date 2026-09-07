@@ -419,6 +419,10 @@ th {
     flex-direction: column;
 }
 
+.menu-dropdown[hidden] {
+    display: none;
+}
+
 .menu-dropdown a {
     padding: 10px 14px;
     border-radius: 8px;
