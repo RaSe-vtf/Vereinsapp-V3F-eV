@@ -94,6 +94,12 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       darunter aktualisiert sich live (ohne Neuladen) eine Vorschau-Liste
       der tatsächlichen Empfänger (Nachname, Vorname, E-Mail), darunter
       Betreff/Nachricht und der Senden-Button.
+    - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich mit
+      eigenem Sub-Menü (analog Admin → Konten/Bilder), aktuell mit der
+      Unterseite **Bankverbindungen** — Liste aller aktiven Mitglieder mit
+      Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
+      ein Mandat, steht dort "kein Mandat hinterlegt". Zugriff wie der
+      Rest der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
@@ -178,6 +184,8 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       mitglieder.php         -> Mitgliederverwaltung: alle Stammdaten, Rolle, Status
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
+      kassenwart/
+        bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern

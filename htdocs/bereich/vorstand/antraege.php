@@ -136,6 +136,7 @@ $flash = takeFlash();
             <a href="antraege.php" class="active">Aufnahmeanträge</a>
             <a href="mitglieder.php">Mitgliederverwaltung</a>
             <a href="verteiler.php">E-Mail-Verteiler</a>
+            <a href="kassenwart/bankverbindungen.php">Kassenwart</a>
         </nav>
 
         <div class="card">
