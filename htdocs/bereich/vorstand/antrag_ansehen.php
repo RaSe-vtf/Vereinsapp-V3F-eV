@@ -48,6 +48,7 @@ if (!$antrag) {
                     <h2 style="margin-top:0;"><?= e($antrag['vorname'] . ' ' . $antrag['nachname']) ?></h2>
                     <span class="badge badge-<?= e($antrag['status']) ?>"><?= e($antrag['status']) ?></span>
 
+                    <div style="overflow-x:auto;">
                     <table style="margin-top:16px;">
                         <tr><th>Geburtsdatum</th><td><?= e((new DateTime($antrag['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
                         <tr><th>Geburtsort</th><td><?= e($antrag['geburtsort']) ?></td></tr>
@@ -60,6 +61,7 @@ if (!$antrag) {
                         <tr><th>Bildnutzung Social Media erlaubt</th><td><?= $antrag['einverstaendnis_bildnutzung'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Eingegangen am</th><td><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
                     </table>
+                    </div>
                 </div>
             </div>
 

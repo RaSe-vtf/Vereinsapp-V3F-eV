@@ -248,6 +248,7 @@ th, td {
     text-align: left;
     padding: 10px 12px;
     border-bottom: 1px solid var(--farbe-border);
+    overflow-wrap: anywhere;
 }
 
 th {
