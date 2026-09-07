@@ -61,6 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $passwort = (string) ($_POST['passwort'] ?? '');
+    $passwortWiederholt = (string) ($_POST['passwort_wiederholt'] ?? '');
+    if (strlen($passwort) < 8) {
+        $fehler[] = 'Das Passwort muss mindestens 8 Zeichen lang sein.';
+    } elseif ($passwort !== $passwortWiederholt) {
+        $fehler[] = 'Die Passwort-Wiederholung stimmt nicht überein.';
+    }
+
     $einSatzung = isset($_POST['ein_satzung']) ? 1 : 0;
     $einDatenschutz = isset($_POST['ein_datenschutz']) ? 1 : 0;
     $einBildnutzung = isset($_POST['ein_bildnutzung']) ? 1 : 0;
@@ -83,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = getPdo()->prepare(
                 'INSERT INTO antraege
-                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
+                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, passwort_hash, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
                  VALUES
-                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
+                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :passwort_hash, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
             );
             $stmt->execute([
                 'vorname' => $werte['vorname'],
@@ -99,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'email' => $werte['email'],
                 'instagram' => $werte['instagram'] !== '' ? $werte['instagram'] : null,
                 'foto_dateiname' => $fotoDateiname,
+                'passwort_hash' => password_hash($passwort, PASSWORD_DEFAULT),
                 'ein_satzung' => $einSatzung,
                 'ein_datenschutz' => $einDatenschutz,
                 'ein_bildnutzung' => $einBildnutzung,
@@ -211,6 +220,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="instagram">Instagram (optional)</label>
                     <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>">
                     <div class="hint">Freiwillige Angabe, z.B. für Vereins-Verlinkungen.</div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Zugangsdaten</legend>
+                    <p class="text-muted" style="margin-top:0;">Wähle hier dein Passwort für den Mitgliederbereich. Sobald der Vorstand deinen Antrag annimmt, kannst du dich direkt damit einloggen.</p>
+
+                    <label class="required" for="passwort">Passwort</label>
+                    <input type="password" id="passwort" name="passwort" minlength="8" required>
+
+                    <label class="required" for="passwort_wiederholt">Passwort wiederholen</label>
+                    <input type="password" id="passwort_wiederholt" name="passwort_wiederholt" minlength="8" required>
                 </fieldset>
 
                 <fieldset>

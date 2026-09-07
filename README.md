@@ -17,8 +17,11 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   geschützte Seite aufruft), wird aber von der Startseite nicht mehr
   gesondert verlinkt.
 - Öffentlicher Aufnahmeantrag (`htdocs/antrag.php`) mit allen erfassten Daten,
-  Foto-Upload und den Einverständniserklärungen (Satzung/Ordnungen,
-  Kenntnisnahme Impressum & Datenschutz, optionale Freigabe für Social-Media-Fotos).
+  Foto-Upload, einem selbst gewählten Passwort (mind. 8 Zeichen, mit
+  Wiederholung) und den Einverständniserklärungen (Satzung/Ordnungen,
+  Kenntnisnahme Impressum & Datenschutz, optionale Freigabe für
+  Social-Media-Fotos). Das Passwort gilt sofort, sobald der Vorstand den
+  Antrag annimmt — ein separater Schritt zur Passwortvergabe entfällt damit.
 - Impressum & Datenschutzerklärung als Vorlage (öffentlich erreichbar, wie
   gesetzlich vorgeschrieben) — **muss noch mit den echten Vereinsdaten
   ausgefüllt werden**, siehe `htdocs/impressum.php` und `htdocs/datenschutz.php`.
@@ -51,9 +54,11 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       sind kompakte Pillen oberhalb der Liste. Annehmen/Ablehnen/
       Zurücksetzen-Buttons gibt es nur noch bei Status "Neu" — ist einmal
       entschieden, ist der Antrag ein abgeschlossener, historischer
-      Vorgang. Beim Annehmen wird direkt ein initiales Passwort vergeben
-      und einmalig angezeigt (kein separater Schritt in der
-      Mitgliederverwaltung mehr nötig).
+      Vorgang. Beim Annehmen übernimmt das neue Mitgliedskonto automatisch
+      das beim Aufnahmeantrag selbst gewählte Passwort (Login funktioniert
+      direkt danach). Nur bei Alt-Anträgen ohne gespeichertes Passwort
+      (vor Einführung dieser Funktion gestellt) wird ersatzweise eines
+      generiert und einmalig angezeigt.
     - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
       (Foto, Vor-/Nachname, Geburtsdatum/-ort, Adresse, Telefon, E-Mail,
       Instagram, Rolle, Status, Passwort-Status, Mitglied seit) sowie Rolle
@@ -67,7 +72,9 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
-    - **Konten**: Passwort zurücksetzen, Konto endgültig löschen und
+    - **Konten**: Passwort zurücksetzen (z.B. wenn ein Mitglied sein
+      Passwort vergessen hat — die eigentliche Passwortvergabe passiert
+      ja schon beim Aufnahmeantrag), Konto endgültig löschen und
       Admin-Rechte an- bzw. abschalten. Ein Admin kann sich weder selbst
       löschen noch sich selbst das Admin-Recht entziehen (Schutz vor
       Aussperren) — das kann nur ein anderer Admin.
@@ -82,11 +89,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Altbestände, die vor Einführung der automatischen Verkleinerung
       z.B. per FTP/phpMyAdmin eingespielt wurden.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
-  Rolle "Vollmitglied" und einem zufällig generierten initialen Passwort
-  angelegt. Das Passwort wird direkt bei der Annahme einmalig angezeigt und
-  manuell an das Mitglied weitergegeben (z.B. persönlich, Telefon, E-Mail
-  außerhalb der App — ein automatischer E-Mail-Versand ist noch nicht
-  eingebaut).
+  Rolle "Vollmitglied" angelegt, mit dem beim Aufnahmeantrag selbst gewählten
+  Passwort — das Mitglied kann sich damit sofort einloggen.
 - Rollenänderungen und Deaktivierungen wirken sofort, auch bei bereits
   eingeloggten Sitzungen.
 - Ein Vorstandsmitglied kann sich nicht selbst die Vorstandsrolle entziehen,

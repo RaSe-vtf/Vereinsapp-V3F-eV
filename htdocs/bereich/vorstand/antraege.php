@@ -18,7 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
         if ($antrag) {
             if ($_POST['aktion'] === 'annehmen') {
                 if ($antrag['mitglied_id'] === null) {
-                    $initialPasswort = generateInitialPasswort();
+                    // Normalfall: Antragsteller hat beim Aufnahmeantrag bereits ein
+                    // eigenes Passwort gewaehlt, das direkt uebernommen wird. Nur bei
+                    // Altantraegen ohne gespeichertes Passwort (vor Einfuehrung dieser
+                    // Funktion) wird ersatzweise eines generiert und angezeigt.
+                    $generiertesPasswort = null;
+                    $passwortHash = $antrag['passwort_hash'];
+                    if ($passwortHash === null) {
+                        $generiertesPasswort = generateInitialPasswort();
+                        $passwortHash = password_hash($generiertesPasswort, PASSWORD_DEFAULT);
+                    }
+
                     $insert = $pdo->prepare(
                         'INSERT INTO mitglieder
                             (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, passwort_hash, aktiv)
@@ -38,14 +48,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                         'email' => $antrag['email'],
                         'instagram' => $antrag['instagram'],
                         'foto_dateiname' => $antrag['foto_dateiname'],
-                        'passwort_hash' => password_hash($initialPasswort, PASSWORD_DEFAULT),
+                        'passwort_hash' => $passwortHash,
                     ]);
                     $mitgliedId = (int) $pdo->lastInsertId();
 
                     $update = $pdo->prepare('UPDATE antraege SET status = "angenommen", mitglied_id = :mitglied_id WHERE id = :id');
                     $update->execute(['mitglied_id' => $mitgliedId, 'id' => $antragId]);
 
-                    setFlash('success', 'Antrag angenommen und Mitgliedskonto angelegt. Initiales Passwort: "' . $initialPasswort . '" — bitte sicher übermitteln, es wird nur einmal angezeigt.');
+                    if ($generiertesPasswort !== null) {
+                        setFlash('success', 'Antrag angenommen und Mitgliedskonto angelegt. Dieser Antrag hatte noch kein eigenes Passwort hinterlegt, daher wurde eines generiert: "' . $generiertesPasswort . '" — bitte sicher übermitteln, es wird nur einmal angezeigt.');
+                    } else {
+                        setFlash('success', 'Antrag angenommen und Mitgliedskonto angelegt. Das Mitglied kann sich mit dem beim Aufnahmeantrag selbst gewählten Passwort einloggen.');
+                    }
                 } else {
                     $pdo->prepare('UPDATE antraege SET status = "angenommen" WHERE id = :id')->execute(['id' => $antragId]);
                 }

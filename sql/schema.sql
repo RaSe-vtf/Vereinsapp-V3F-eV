@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS antraege (
     email VARCHAR(190) NOT NULL,
     instagram VARCHAR(100) NULL,
     foto_dateiname VARCHAR(255) NOT NULL,
+    passwort_hash VARCHAR(255) NULL,
     einverstaendnis_satzung TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_datenschutz TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_bildnutzung TINYINT(1) NOT NULL DEFAULT 0,
