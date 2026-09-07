@@ -19,17 +19,27 @@ haben Vorrang vor allgemeinen Standardverhalten.
    dieser gleiche Name erneut verwendet (überschreibt die vorherige
    gleichnamige Datei beim Nutzer).
 
-## Offene Punkte
+## Merkliste / Offene Punkte
 
-- **SEPA-Gläubiger-Identifikationsnummer und Vereins-IBAN**: Der Verein hat
-  noch kein Vereinskonto und daher weder eine Gläubiger-ID beim Bundesamt
-  für Wirtschaft und Ausfuhrkontrolle beantragt noch eine Vereins-IBAN.
-  `SEPA_GLAEUBIGER_ID`, `VEREIN_IBAN` und `VEREIN_BIC` in
+Diese Liste ist der feste Ablageort für Punkte, die später noch final
+geklärt/eingetragen werden müssen. Sie ist Teil von CLAUDE.md und damit in
+jeder künftigen Sitzung automatisch abrufbar. Neue offene Punkte hier
+ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
+
+- [ ] **SEPA-Gläubiger-Identifikationsnummer, Vereins-IBAN, Vereins-BIC**:
+  Der Verein hat noch kein Vereinskonto und daher weder eine Gläubiger-ID
+  beim Bundesamt für Wirtschaft und Ausfuhrkontrolle beantragt noch eine
+  Vereins-IBAN/BIC. `SEPA_GLAEUBIGER_ID`, `VEREIN_IBAN` und `VEREIN_BIC` in
   `private/config.php` stehen deshalb bewusst noch auf Platzhaltern (siehe
   `htdocs/bereich/sepa_mandat.php` bzw. der Kassenwart-SEPA-Export unter
   `htdocs/bereich/vorstand/kassenwart/export.php`). Sobald ein Vereinskonto
   vorliegt, dort eintragen – nicht von selbst nachfragen/andrängen, der
   Nutzer meldet sich dazu.
+- [ ] **Vereinsname**: Aktuell in der App als "Vonsys Tri Family e.V."
+  hinterlegt (`VEREIN_NAME`/`MAIL_ABSENDER_NAME` in `config.example.php`
+  bzw. `private/config.php`). Falls sich der offizielle Name noch ändert
+  (z.B. nach endgültiger Eintragung ins Vereinsregister), hier und in der
+  Config nachziehen.
 
 ## Marken-Farbverlauf
 
