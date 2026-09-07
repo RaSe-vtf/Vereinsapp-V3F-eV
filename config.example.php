@@ -16,7 +16,7 @@ define('DB_USER', 'dxxxxxx_verein');
 define('DB_PASS', 'HIER_DEIN_DB_PASSWORT');
 
 // --- App ---
-define('VEREIN_NAME', 'V3F e.V.');
+define('VEREIN_NAME', 'Vonsys Tri Family e.V.');
 define('APP_NAME', 'Vereinsapp V3F');
 
 // Jedes Mitglied loggt sich mit eigener E-Mail + eigenem Passwort ein
@@ -27,4 +27,4 @@ define('APP_NAME', 'Vereinsapp V3F');
 // Absenderadresse fuer Rundmails an Mitglieder. Muss eine echte, zur Domain
 // gehoerende Adresse sein, sonst landen die Mails leicht im Spam-Ordner.
 define('MAIL_ABSENDER_EMAIL', 'verein@deine-domain.de');
-define('MAIL_ABSENDER_NAME', 'V3F e.V.');
+define('MAIL_ABSENDER_NAME', 'Vonsys Tri Family e.V.');

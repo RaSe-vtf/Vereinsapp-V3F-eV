@@ -55,6 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                     $update = $pdo->prepare('UPDATE antraege SET status = "angenommen", mitglied_id = :mitglied_id WHERE id = :id');
                     $update->execute(['mitglied_id' => $mitgliedId, 'id' => $antragId]);
 
+                    sendeEinzelMail(
+                        $antrag['email'],
+                        'Willkommen bei ' . VEREIN_NAME . '!',
+                        "Herzlich willkommen bei " . VEREIN_NAME . "!\n\n"
+                        . "Wir freuen uns, dich als neues Mitglied im Verein begrüßen zu dürfen.\n\n"
+                        . "Du kannst dich ab sofort mit deiner E-Mail-Adresse und dem beim Aufnahmeantrag von dir gewählten Passwort im Mitgliederbereich einloggen.\n\n"
+                        . "Mit sportlichen Grüßen\n"
+                        . "Dein Team " . VEREIN_NAME
+                    );
+
                     if ($generiertesPasswort !== null) {
                         setFlash('success', 'Antrag angenommen und Mitgliedskonto angelegt. Dieser Antrag hatte noch kein eigenes Passwort hinterlegt, daher wurde eines generiert: "' . $generiertesPasswort . '" — bitte sicher übermitteln, es wird nur einmal angezeigt.');
                     } else {
@@ -65,6 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                 }
             } elseif ($_POST['aktion'] === 'ablehnen') {
                 $pdo->prepare('UPDATE antraege SET status = "abgelehnt" WHERE id = :id')->execute(['id' => $antragId]);
+
+                sendeEinzelMail(
+                    $antrag['email'],
+                    'Ihr Aufnahmeantrag bei ' . VEREIN_NAME,
+                    "Sehr geehrte Damen und Herren,\n\n"
+                    . "leider müssen wir Ihnen mitteilen, dass wir Ihren Antrag vorstandsseitig abgelehnt haben.\n\n"
+                    . "Wir wünschen Ihnen weiterhin alles Gute.\n\n"
+                    . "Mit sportlichen Grüßen\n"
+                    . "Der Vorstand " . VEREIN_NAME
+                );
             } elseif ($_POST['aktion'] === 'zuruecksetzen') {
                 $pdo->prepare('UPDATE antraege SET status = "neu" WHERE id = :id')->execute(['id' => $antragId]);
             }

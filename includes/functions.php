@@ -76,6 +76,24 @@ function sendeRundmail(string $betreff, string $nachricht, array $empfaenger): a
     return ['erfolgreich' => $erfolgreich, 'fehlgeschlagen' => $fehlgeschlagen];
 }
 
+/**
+ * Verschickt eine einzelne E-Mail direkt an einen Empfaenger (kein Bcc-
+ * Verteiler) - genutzt fuer die automatische Annahme-/Ablehnungs-Mail an
+ * Antragsteller. Gibt zurueck, ob der Versand erfolgreich war.
+ */
+function sendeEinzelMail(string $empfaengerEmail, string $betreff, string $nachricht): bool
+{
+    $betreff = str_replace(["\r", "\n"], ' ', trim($betreff));
+    $betreffKodiert = '=?UTF-8?B?' . base64_encode($betreff) . '?=';
+
+    $headers = "From: " . MAIL_ABSENDER_NAME . " <" . MAIL_ABSENDER_EMAIL . ">\r\n";
+    $headers .= "Reply-To: " . MAIL_ABSENDER_EMAIL . "\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+    return mail($empfaengerEmail, $betreffKodiert, $nachricht, $headers);
+}
+
 function setFlash(string $typ, string $text): void
 {
     $_SESSION['flash'] = ['typ' => $typ, 'text' => $text];

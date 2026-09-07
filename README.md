@@ -58,7 +58,9 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       das beim Aufnahmeantrag selbst gewählte Passwort (Login funktioniert
       direkt danach). Nur bei Alt-Anträgen ohne gespeichertes Passwort
       (vor Einführung dieser Funktion gestellt) wird ersatzweise eines
-      generiert und einmalig angezeigt.
+      generiert und einmalig angezeigt. Annehmen und Ablehnen verschicken
+      automatisch eine E-Mail an den Antragsteller (Willkommens- bzw.
+      Absage-Text, siehe `sendeEinzelMail()` in `includes/functions.php`).
     - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
       (Foto, Vor-/Nachname, Geburtsdatum/-ort, Adresse, Telefon, E-Mail,
       Instagram, Rolle, Status, Passwort-Status, Mitglied seit) sowie Rolle
