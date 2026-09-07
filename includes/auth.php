@@ -97,9 +97,9 @@ function issueRememberToken(int $mitgliedId): void
 
 /**
  * Prueft, ob ein gueltiges Auto-Login-Cookie vorliegt, und loggt bei Erfolg
- * ein (setzt $_SESSION['mitglied_id']). Rotiert das Token bei jeder
- * Verwendung, damit ein einzelner abgefangener Cookie-Wert nur einmal
- * unbemerkt wiederverwendet werden kann.
+ * ein (setzt $_SESSION['mitglied_id']). Der Selector/Validator bleibt dabei
+ * bewusst unveraendert bestehen (siehe Kommentar weiter unten) statt bei
+ * jeder Verwendung ausgetauscht zu werden.
  */
 function versucheAutoLoginPerToken(): void
 {
@@ -135,10 +135,20 @@ function versucheAutoLoginPerToken(): void
     session_regenerate_id(true);
     $_SESSION['mitglied_id'] = (int) $token['mitglied_id'];
 
-    $neuerValidator = bin2hex(random_bytes(32));
-    getPdo()->prepare('UPDATE anmelde_tokens SET validator_hash = :hash, zuletzt_verwendet_am = NOW() WHERE id = :id')
-        ->execute(['hash' => hash('sha256', $neuerValidator), 'id' => $token['id']]);
-    setzeRememberCookie($selector, $neuerValidator);
+    // Nutzungszeitpunkt aktualisieren (rein informativ). Das Token selbst
+    // (Selector/Validator) bleibt bewusst unveraendert bestehen, statt es bei
+    // jeder Verwendung auszutauschen: Laedt eine Seite mehrere Dinge
+    // gleichzeitig (Hauptseite + mehrere Foto-Vorschauen), wuerden sich sonst
+    // mehrere fast zeitgleiche Anfragen gegenseitig den frisch rotierten
+    // Cookie "wegrotieren" und den Auto-Login faelschlich fuer ungueltig
+    // halten - das war die Ursache fuer sporadische Zwangs-Logouts. Ein
+    // gestohlener Cookie-Wert bleibt dadurch bis zum naechsten Logout bzw.
+    // Passwort-Reset gueltig statt nach einmaliger Wiederverwendung erkannt
+    // zu werden - fuer diese App (kein hochsensibler Kontext, ohnehin
+    // HttpOnly + Secure + SameSite) eine bewusste Abwaegung zugunsten von
+    // Zuverlaessigkeit.
+    getPdo()->prepare('UPDATE anmelde_tokens SET zuletzt_verwendet_am = NOW() WHERE id = :id')
+        ->execute(['id' => $token['id']]);
 }
 
 /**
