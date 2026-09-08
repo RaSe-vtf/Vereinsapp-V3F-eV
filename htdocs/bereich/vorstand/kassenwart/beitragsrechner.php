@@ -42,6 +42,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     --bad-bg: #FBE9E9;
     --track: #E3ECF3;
     --focus: #0B6FA0;
+    color-scheme: light;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -65,6 +66,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       --bad-bg: #2E1414;
       --track: #24304A;
       --focus: #6FC4EE;
+      color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
@@ -87,6 +89,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     --bad-bg: #2E1414;
     --track: #24304A;
     --focus: #6FC4EE;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -220,6 +223,8 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
+    opacity: 1;
     padding: 0.55rem 0.25rem;
     width: 100%;
     font-variant-numeric: tabular-nums;
@@ -316,10 +321,13 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     border: 1px solid var(--card-border);
     border-radius: 8px;
     background: var(--surface);
+    background-color: var(--surface);
     font-family: "IBM Plex Mono", monospace;
     font-size: 1rem;
     font-weight: 600;
     color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
+    opacity: 1;
     padding: 0.5rem 0.6rem;
     font-variant-numeric: tabular-nums;
   }
