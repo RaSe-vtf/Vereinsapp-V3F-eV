@@ -1,6 +1,6 @@
-# Vereinsapp V3F e.V.
+# Vereinsapp
 
-Webapp für V3F e.V.: Mitglieder stellen über ein Formular ihren Aufnahmeantrag,
+Webapp für Vonsys Tri Family e.V.: Mitglieder stellen über ein Formular ihren Aufnahmeantrag,
 der Vorstand nimmt ihn im Mitgliederbereich an, wodurch ein Mitgliedskonto mit
 Rolle entsteht. Rollen steuern den Zugriff, z.B. sieht nur die Rolle
 Vorstandsmitglied den Reiter "Geschäftsstelle".

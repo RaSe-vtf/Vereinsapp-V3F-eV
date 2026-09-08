@@ -17,7 +17,7 @@ define('DB_PASS', 'HIER_DEIN_DB_PASSWORT');
 
 // --- App ---
 define('VEREIN_NAME', 'Vonsys Tri Family e.V.');
-define('APP_NAME', 'Vereinsapp V3F');
+define('APP_NAME', 'Vereinsapp');
 
 // Jedes Mitglied loggt sich mit eigener E-Mail + eigenem Passwort ein
 // (siehe Mitgliederverwaltung im Vorstandsbereich sowie scripts/create_mitglied.php

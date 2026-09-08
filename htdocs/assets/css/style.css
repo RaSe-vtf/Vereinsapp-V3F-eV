@@ -55,11 +55,6 @@ a {
     color: var(--farbe-primary-dark);
 }
 
-.top-header__subtitle {
-    font-size: 0.85rem;
-    color: var(--farbe-text-soft);
-}
-
 .container {
     max-width: 720px;
     margin: 0 auto;

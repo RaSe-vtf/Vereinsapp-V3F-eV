@@ -1,6 +1,6 @@
 {
-    "name": "Vereinsapp V3F",
-    "short_name": "Vereinsapp V3F",
+    "name": "Vereinsapp",
+    "short_name": "Vereinsapp",
     "start_url": "index.php",
     "display": "standalone",
     "background_color": "#f6f9fa",
