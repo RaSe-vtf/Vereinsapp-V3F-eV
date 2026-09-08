@@ -10,7 +10,7 @@ require_once __DIR__ . '/../includes/functions.php';
 // dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen"), daher wird als
 // Linktext immer der Dateiname verwendet.
 $aktuelleDokumente = getPdo()->query(
-    "SELECT v1.id, v1.bezeichnung, v1.original_dateiname FROM vereinsdokumente v1
+    "SELECT v1.id, v1.bezeichnung, v1.original_dateiname, v1.dateiname FROM vereinsdokumente v1
      LEFT JOIN vereinsdokumente v2 ON v2.bezeichnung = v1.bezeichnung
          AND (v2.original_dateiname <=> v1.original_dateiname)
          AND (v2.hochgeladen_am > v1.hochgeladen_am OR (v2.hochgeladen_am = v1.hochgeladen_am AND v2.id > v1.id))
@@ -288,8 +288,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="text-muted" style="margin-bottom:16px;">
                         <p style="margin-bottom:6px;">Satzung und Ordnungen zum Nachlesen:</p>
                         <ul style="margin-top:0;">
-                            <?php foreach ($aktuelleDokumente as $doc): ?>
-                                <li><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($doc['original_dateiname'] ?? $doc['bezeichnung']) ?></a></li>
+                            <?php foreach ($aktuelleDokumente as $doc):
+                                // Nur PDFs werden im Browser inline angezeigt (Bilder werden beim
+                                // Upload immer zu PDF konvertiert, andere Formate bleiben Downloads).
+                                // Bei Downloads darf kein neuer Tab geoeffnet werden, sonst bleibt
+                                // dieser leer/weiss stehen, waehrend der eigentliche Download im
+                                // Hintergrund laeuft.
+                                $istPdf = strtolower(pathinfo($doc['dateiname'], PATHINFO_EXTENSION)) === 'pdf';
+                            ?>
+                                <li><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>"<?= $istPdf ? ' target="_blank" rel="noopener"' : '' ?>><?= e($doc['original_dateiname'] ?? $doc['bezeichnung']) ?></a></li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
