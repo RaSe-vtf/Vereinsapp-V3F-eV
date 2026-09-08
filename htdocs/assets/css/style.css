@@ -32,12 +32,15 @@ body {
    normalen Seiteninhalt, ohne dass andere Elemente eigene z-index-Regeln
    brauchen.
    Das Bild ist breiter als hoch (Farbverlauf blau -> pink -> gelb ueber die
-   volle Breite). Auf normalen/breiten Bildschirmen deckt "cover" die Seite
-   unverzerrt ab. Auf hohen, schmalen Bildschirmen (Handy, v.a. Vollbild-
-   Ansicht) wuerde "cover" aber nur einen schmalen Ausschnitt zeigen und
-   dabei ganze Farben (v.a. Gelb) abschneiden - dort wird stattdessen auf
-   volle Breite skaliert und untereinander wiederholt, damit der komplette
-   Farbverlauf sichtbar bleibt. */
+   volle Breite, nach oben hin dichter an Streifen als unten). Auf normalen/
+   breiten Bildschirmen deckt "cover" die Seite unverzerrt ab. Auf hohen,
+   schmalen Bildschirmen (Handy, v.a. Vollbild-Ansicht) reicht die Bildhoehe
+   dagegen nicht aus: das ganze Bild einfach untereinander zu wiederholen
+   wuerde wegen der duenn besetzten oberen Bildhaelfte wie grosse leere
+   Luecken zwischen den Wiederholungen aussehen. Deshalb dort zweischichtig:
+   oben einmal das komplette Bild (mit Gelb), darunter lueckenlos der
+   durchgehend dicht bestreifte untere Bildausschnitt (hintergrund-streifen-
+   kachel.jpg) als Endlos-Muster. */
 body::before {
     content: "";
     position: fixed;
@@ -53,8 +56,12 @@ body::before {
 
 @media (max-aspect-ratio: 4/5) {
     body::before {
-        background-size: 100% auto;
-        background-repeat: repeat-y;
+        background-image:
+            url("../img/hintergrund-streifen.jpg"),
+            url("../img/hintergrund-streifen-kachel.jpg");
+        background-size: 100% auto, 100% auto;
+        background-position: top center, top center;
+        background-repeat: no-repeat, repeat-y;
     }
 }
 
