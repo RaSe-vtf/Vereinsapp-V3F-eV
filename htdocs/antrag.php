@@ -236,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <hr style="border:none; border-top:2px solid var(--farbe-border); margin:28px 0;">
 
                 <h3 style="margin-bottom:2px;">Nur für den Vorstand sichtbar</h3>
-                <p class="text-muted" style="margin-top:0;">Diese Angaben sind aus Sicherheitsgründen nicht öffentlich einsehbar &ndash; Zugriff hat ausschließlich der Vorstand bzw. die Geschäftsführung.</p>
+                <p class="text-muted" style="margin-top:0;">Diese Angaben sind aus Sicherheitsgründen nicht öffentlich einsehbar &ndash; Zugriff hat ausschließlich der Vorstand.</p>
 
                 <fieldset>
                     <legend>Weitere persönliche Daten</legend>

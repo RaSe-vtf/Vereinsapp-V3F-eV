@@ -195,6 +195,9 @@ input:focus, select:focus {
    gleicher Zeile. */
 input[type="date"] {
     height: 40px;
+    line-height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
