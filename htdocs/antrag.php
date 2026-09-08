@@ -56,15 +56,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Bitte gib eine gültige E-Mail-Adresse an.';
     }
 
-    if ($werte['instagram'] !== '') {
+    if ($werte['instagram'] === '') {
+        $fehler[] = 'Bitte gib deinen Instagram-Benutzernamen an.';
+    } else {
         $werte['instagram'] = ltrim($werte['instagram'], '@');
         if (!preg_match('/^[A-Za-z0-9._]{1,60}$/', $werte['instagram'])) {
-            $fehler[] = 'Bitte gib einen gültigen Instagram-Benutzernamen an (oder lasse das Feld leer).';
+            $fehler[] = 'Bitte gib einen gültigen Instagram-Benutzernamen an.';
         }
     }
 
-    if ($werte['shirt_groesse'] !== '' && !in_array($werte['shirt_groesse'], SHIRT_GROESSEN, true)) {
-        $fehler[] = 'Bitte wähle eine gültige Shirt-Größe.';
+    if ($werte['shirt_groesse'] === '' || !in_array($werte['shirt_groesse'], SHIRT_GROESSEN, true)) {
+        $fehler[] = 'Bitte wähle deine Shirt-Größe aus.';
+    }
+
+    if ($werte['portraet'] === '') {
+        $fehler[] = 'Bitte gib ein kurzes Porträt zur Vorstellung an.';
     }
 
     $passwort = (string) ($_POST['passwort'] ?? '');
@@ -156,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="container">
         <div class="card">
             <h2>Aufnahmeantrag</h2>
-            <p>Mit diesem Formular beantragst du gleichzeitig deine Mitgliedschaft bei <?= e(VEREIN_NAME) ?>. Pflichtfelder sind mit * markiert.</p>
+            <p>Mit diesem Formular beantragst du gleichzeitig deine Mitgliedschaft bei <?= e(VEREIN_NAME) ?>. Bitte fülle alle Felder aus &ndash; nur die Einwilligung zur Bildnutzung ist freiwillig.</p>
 
             <?php if (!empty($fehler)): ?>
                 <div class="alert alert-error">
@@ -184,46 +190,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-row">
                         <div>
-                            <label class="required" for="vorname">Vorname</label>
+                            <label for="vorname">Vorname</label>
                             <input type="text" id="vorname" name="vorname" value="<?= e($werte['vorname']) ?>" required>
                         </div>
                         <div>
-                            <label class="required" for="nachname">Nachname</label>
+                            <label for="nachname">Nachname</label>
                             <input type="text" id="nachname" name="nachname" value="<?= e($werte['nachname']) ?>" required>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div>
-                            <label class="required" for="geburtsdatum">Geburtsdatum</label>
+                            <label for="geburtsdatum">Geburtsdatum</label>
                             <input type="date" id="geburtsdatum" name="geburtsdatum" value="<?= e($werte['geburtsdatum']) ?>" required>
                         </div>
                         <div>
-                            <label class="required" for="ort">Wohnort</label>
+                            <label for="ort">Wohnort</label>
                             <input type="text" id="ort" name="ort" value="<?= e($werte['ort']) ?>" required>
                             <div class="hint">Erscheint als Heimatort auf deinem Sportlerprofil.</div>
                         </div>
                     </div>
 
-                    <label class="required" for="telefon">Telefonnummer</label>
+                    <label for="telefon">Telefonnummer</label>
                     <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
                     <div class="hint">Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung), die vollständige Nummer sieht nur die Vereinsverwaltung.</div>
 
-                    <label for="instagram">Instagram (optional)</label>
-                    <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>">
+                    <label for="instagram">Instagram</label>
+                    <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>" required>
 
-                    <label for="shirt_groesse">Shirt-Größe (optional)</label>
-                    <select id="shirt_groesse" name="shirt_groesse">
-                        <option value="">Keine Angabe</option>
+                    <label for="shirt_groesse">Shirt-Größe</label>
+                    <select id="shirt_groesse" name="shirt_groesse" required>
+                        <option value="">Bitte auswählen</option>
                         <?php foreach (SHIRT_GROESSEN as $groesse): ?>
                             <option value="<?= e($groesse) ?>" <?= $werte['shirt_groesse'] === $groesse ? 'selected' : '' ?>><?= e($groesse) ?></option>
                         <?php endforeach; ?>
                     </select>
 
-                    <label for="portraet">Kurzes Porträt zur Vorstellung (optional)</label>
-                    <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich: seit wann du dabei bist, was dir am Verein gefällt, deine Ziele ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;"><?= e($werte['portraet']) ?></textarea>
+                    <label for="portraet">Kurzes Porträt zur Vorstellung</label>
+                    <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich: seit wann du dabei bist, was dir am Verein gefällt, deine Ziele ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;" required><?= e($werte['portraet']) ?></textarea>
 
-                    <label class="required" for="foto" style="margin-top:14px;">Foto von dir</label>
+                    <label for="foto" style="margin-top:14px;">Foto von dir</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp" required>
                     <div class="hint">JPG, PNG oder WebP, maximal 10 MB.</div>
                 </fieldset>
@@ -236,16 +242,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <fieldset>
                     <legend>Weitere persönliche Daten</legend>
 
-                    <label class="required" for="geburtsort">Geburtsort</label>
+                    <label for="geburtsort">Geburtsort</label>
                     <input type="text" id="geburtsort" name="geburtsort" value="<?= e($werte['geburtsort']) ?>" required>
 
-                    <label class="required" for="strasse_hausnummer">Straße und Hausnummer</label>
+                    <label for="strasse_hausnummer">Straße und Hausnummer</label>
                     <input type="text" id="strasse_hausnummer" name="strasse_hausnummer" value="<?= e($werte['strasse_hausnummer']) ?>" required>
 
-                    <label class="required" for="plz">Postleitzahl</label>
+                    <label for="plz">Postleitzahl</label>
                     <input type="text" id="plz" name="plz" inputmode="numeric" value="<?= e($werte['plz']) ?>" required>
 
-                    <label class="required" for="email">E-Mail-Adresse</label>
+                    <label for="email">E-Mail-Adresse</label>
                     <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
                 </fieldset>
 
@@ -253,10 +259,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <legend>Zugangsdaten</legend>
                     <p class="text-muted" style="margin-top:0;">Wähle hier dein Passwort für den Mitgliederbereich. Sobald der Vorstand deinen Antrag annimmt, kannst du dich direkt damit einloggen.</p>
 
-                    <label class="required" for="passwort">Passwort</label>
+                    <label for="passwort">Passwort</label>
                     <input type="password" id="passwort" name="passwort" minlength="8" required>
 
-                    <label class="required" for="passwort_wiederholt">Passwort wiederholen</label>
+                    <label for="passwort_wiederholt">Passwort wiederholen</label>
                     <input type="password" id="passwort_wiederholt" name="passwort_wiederholt" minlength="8" required>
                 </fieldset>
 
@@ -265,12 +271,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <label class="inline">
                         <input type="checkbox" name="ein_satzung" value="1" <?= !empty($_POST['ein_satzung']) ? 'checked' : '' ?> required>
-                        <span class="required">Ich habe die Satzung und alle Ordnungen von <?= e(VEREIN_NAME) ?> gelesen und erkenne diese verbindlich an.</span>
+                        <span>Ich habe die Satzung und alle Ordnungen von <?= e(VEREIN_NAME) ?> gelesen und erkenne diese verbindlich an.</span>
                     </label>
 
                     <label class="inline">
                         <input type="checkbox" name="ein_datenschutz" value="1" <?= !empty($_POST['ein_datenschutz']) ? 'checked' : '' ?> required>
-                        <span class="required">Ich habe das <a href="impressum.php" target="_blank" rel="noopener">Impressum</a> und die <a href="datenschutz.php" target="_blank" rel="noopener">Datenschutzerklärung</a> der App zur Kenntnis genommen.</span>
+                        <span>Ich habe das <a href="impressum.php" target="_blank" rel="noopener">Impressum</a> und die <a href="datenschutz.php" target="_blank" rel="noopener">Datenschutzerklärung</a> der App zur Kenntnis genommen.</span>
                     </label>
 
                     <label class="inline">

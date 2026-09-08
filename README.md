@@ -77,8 +77,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     Angaben, die für die öffentliche Vorstellung gedacht sind: Foto,
     Shirt-Größe (als Tag), Geburtsdatum, Mitglied seit, Heimatort (nur
     Ort, nicht die volle Adresse), Handynummer maskiert auf die letzten 4
-    Ziffern (zur WhatsApp-Zuordnung) sowie Instagram und ein freiwilliges
-    Kurzporträt. Verwaltungsinterne Daten (volle Adresse, volle
+    Ziffern (zur WhatsApp-Zuordnung) sowie Instagram und ein kurzes
+    Porträt (im Aufnahmeantrag Pflichtfelder). Verwaltungsinterne Daten (volle Adresse, volle
     Telefonnummer, Geburtsort, E-Mail, Rolle, Passwort-Status,
     Bankverbindung) erscheinen hier bewusst nicht. Auf dem eigenen Profil
     gibt es zusätzlich einen "Profil bearbeiten"-Link zu "Meine Daten".
@@ -100,11 +100,18 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       automatisch eine E-Mail an den Antragsteller (Willkommens- bzw.
       Absage-Text, siehe `sendeEinzelMail()` in `includes/functions.php`).
     - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
-      (Foto, Vor-/Nachname, Geburtsdatum/-ort, Adresse, Telefon, E-Mail,
-      Instagram, Rolle, Status, Passwort-Status, Mitglied seit) sowie Rolle
-      ändern und Konto aktivieren/deaktivieren. Nachname verlinkt weiterhin
-      zusätzlich auf das ausführliche Datenblatt. Konto löschen und Passwort
-      zurücksetzen sind in den Admin-Bereich umgezogen (siehe unten).
+      (Foto, Bildnutzung-Einwilligung, Vor-/Nachname, Geburtsdatum/-ort,
+      Adresse, Telefon, E-Mail, Instagram, Rolle, Status, Passwort-Status,
+      Mitglied seit) sowie Rolle ändern und Konto aktivieren/deaktivieren.
+      Die Spalte "Bildnutzung" zeigt ja/nein anhand der beim Aufnahmeantrag
+      gegebenen (freiwilligen) Einwilligung zur Social-Media-Nutzung von
+      Fotos/Videos (per LEFT JOIN auf `antraege.einverstaendnis_bildnutzung`
+      über `mitglieder.antrag_id` - ohne verknüpften Antrag gilt sicherheits-
+      halber "nein"), damit der Vorstand vor einem Social-Media-Post sieht,
+      wer widersprochen hat bzw. nicht zugestimmt hat. Nachname verlinkt
+      weiterhin zusätzlich auf das ausführliche Datenblatt. Konto löschen
+      und Passwort zurücksetzen sind in den Admin-Bereich umgezogen (siehe
+      unten).
     - **E-Mail-Verteiler**: klassische Liste aller aktiven Mitglieder
       (Nachname, Vorname, Rolle, E-Mail) mit eigener Checkbox je Zeile -
       wer die Rundmail bekommen soll, wird direkt in der Liste angehakt.

@@ -39,7 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
     exit;
 }
 
-$mitgliederListe = $pdo->query('SELECT * FROM mitglieder ORDER BY nachname, vorname')->fetchAll();
+$mitgliederListe = $pdo->query(
+    'SELECT m.*, a.einverstaendnis_bildnutzung
+     FROM mitglieder m
+     LEFT JOIN antraege a ON a.id = m.antrag_id
+     ORDER BY m.nachname, m.vorname'
+)->fetchAll();
 $flash = takeFlash();
 ?>
 <!DOCTYPE html>
@@ -87,6 +92,7 @@ $flash = takeFlash();
                     <thead>
                         <tr>
                             <th>Foto</th>
+                            <th>Bildnutzung</th>
                             <th>Vorname</th>
                             <th>Nachname</th>
                             <th>Geburtsdatum</th>
@@ -114,6 +120,7 @@ $flash = takeFlash();
                                         <?php endif; ?>
                                     </a>
                                 </td>
+                                <td><?= $m['einverstaendnis_bildnutzung'] ? '<span class="badge badge-angenommen">ja</span>' : '<span class="badge badge-abgelehnt">nein</span>' ?></td>
                                 <td><?= e($m['vorname']) ?></td>
                                 <td><?= e($m['nachname']) ?></td>
                                 <td><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
