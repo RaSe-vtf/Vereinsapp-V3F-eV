@@ -282,8 +282,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern
   assets/
-    css/style.css           -> Styles, u.a. Menü/Zurück-Pfeil/Kacheln/Seitenhintergrund
-    img/hintergrund-streifen.jpg -> Streifen-Hintergrund (fix, alle Seiten, Deckkraft per --hintergrund-deckkraft)
+    css/style.css           -> Styles, u.a. Menü/Zurück-Pfeil/Kacheln
     js/lightbox.js          -> Foto-Lupe
     js/menue.js             -> Auf-/Zuklappen des Menü-Symbols im Banner
 
