@@ -4,15 +4,24 @@ session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// Aktuelle Fassung je Bezeichnung (juengstes Hochladedatum), damit Antragsteller
-// Satzung/Ordnungen vor dem Absenden einsehen koennen.
+// Aktuelle Fassung je Datei (juengstes Hochladedatum je Bezeichnung +
+// Original-Dateiname), damit Antragsteller Satzung/Ordnungen vor dem
+// Absenden einsehen koennen. Mehrere unterschiedliche Dateien duerfen
+// dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen"), daher wird bei
+// Mehrdeutigkeit der Dateiname mit angezeigt.
 $aktuelleDokumente = getPdo()->query(
-    "SELECT v1.id, v1.bezeichnung FROM vereinsdokumente v1
+    "SELECT v1.id, v1.bezeichnung, v1.original_dateiname FROM vereinsdokumente v1
      LEFT JOIN vereinsdokumente v2 ON v2.bezeichnung = v1.bezeichnung
+         AND (v2.original_dateiname <=> v1.original_dateiname)
          AND (v2.hochgeladen_am > v1.hochgeladen_am OR (v2.hochgeladen_am = v1.hochgeladen_am AND v2.id > v1.id))
      WHERE v2.id IS NULL
-     ORDER BY v1.bezeichnung"
+     ORDER BY v1.bezeichnung, v1.original_dateiname"
 )->fetchAll();
+
+$bezeichnungAnzahl = [];
+foreach ($aktuelleDokumente as $doc) {
+    $bezeichnungAnzahl[$doc['bezeichnung']] = ($bezeichnungAnzahl[$doc['bezeichnung']] ?? 0) + 1;
+}
 
 $fehler = [];
 $werte = [
@@ -174,7 +183,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (!empty($aktuelleDokumente)): ?>
                 <p class="text-muted">
                     Satzung und Ordnungen:
-                    <?php foreach ($aktuelleDokumente as $i => $doc): ?><?= $i > 0 ? ' &middot; ' : '' ?><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($doc['bezeichnung']) ?></a><?php endforeach; ?>
+                    <?php foreach ($aktuelleDokumente as $i => $doc):
+                        $label = $doc['bezeichnung'];
+                        if ($bezeichnungAnzahl[$doc['bezeichnung']] > 1 && $doc['original_dateiname'] !== null) {
+                            $label .= ' – ' . pathinfo($doc['original_dateiname'], PATHINFO_FILENAME);
+                        }
+                    ?><?= $i > 0 ? ' &middot; ' : '' ?><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($label) ?></a><?php endforeach; ?>
                 </p>
             <?php endif; ?>
 

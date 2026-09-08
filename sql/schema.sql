@@ -167,17 +167,24 @@ CREATE TABLE IF NOT EXISTS barkasse_buchungen (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Vereinsdokumente (Satzung, Ordnungen): Historie statt Ersetzen - jeder
--- Upload legt einen neuen Eintrag an, das jeweils juengste Datum je
--- Bezeichnung gilt als aktuelle Fassung (im Aufnahmeantrag oeffentlich
--- verlinkt). Aeltere Fassungen bleiben erhalten und sind im Vorstands-
--- bereich weiterhin herunterladbar, bis sie dort geloescht werden.
+-- Upload legt einen neuen Eintrag an. "Aktuell" wird je Kombination aus
+-- Bezeichnung UND Original-Dateiname bestimmt (juengstes Datum gewinnt),
+-- damit mehrere verschiedene Dateien unter derselben Bezeichnung (z.B.
+-- "Vereinsordnungen" mit Wahlordnung.pdf, Beitragsordnung.pdf, ...) als
+-- eigenstaendige Dokumente erhalten bleiben, statt sich gegenseitig als
+-- "Historie" zu verdraengen - nur ein erneuter Upload mit demselben
+-- Dateinamen gilt als neue Fassung desselben Dokuments. Aeltere Fassungen
+-- bleiben erhalten und sind im Vorstandsbereich weiterhin herunterladbar,
+-- bis sie dort geloescht werden.
 CREATE TABLE IF NOT EXISTS vereinsdokumente (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     bezeichnung VARCHAR(150) NOT NULL,
     dateiname VARCHAR(255) NOT NULL,
+    original_dateiname VARCHAR(255) NULL,
     hochgeladen_von_id INT UNSIGNED NULL,
     hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_bezeichnung (bezeichnung),
     CONSTRAINT fk_vereinsdokumente_mitglied FOREIGN KEY (hochgeladen_von_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE vereinsdokumente ADD COLUMN IF NOT EXISTS original_dateiname VARCHAR(255) NULL AFTER dateiname;

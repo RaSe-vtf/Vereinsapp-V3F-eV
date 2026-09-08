@@ -772,7 +772,7 @@ function handleBelegUpload(array $file): string
  *   externes Programm wie LibreOffice, das sich auf dem Webspace ohne
  *   SSH-Zugang nicht installieren laesst.
  */
-function handleVereinsdokumentUpload(array $file): string
+function handleVereinsdokumentUpload(array $file): array
 {
     $maxBytes = 20 * 1024 * 1024; // 20 MB
 
@@ -789,6 +789,8 @@ function handleVereinsdokumentUpload(array $file): string
         throw new RuntimeException('Die Datei darf maximal 20 MB groß sein.');
     }
 
+    $originalDateiname = mb_substr(basename((string) ($file['name'] ?? '')), 0, 255);
+
     $zielOrdner = __DIR__ . '/../private/uploads/vereinsdokumente/';
     if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
         throw new RuntimeException('Speicherort für Vereinsdokumente konnte nicht angelegt werden.');
@@ -803,13 +805,13 @@ function handleVereinsdokumentUpload(array $file): string
         if (!move_uploaded_file($file['tmp_name'], $zielOrdner . $dateiname)) {
             throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
         }
-        return $dateiname;
+        return ['dateiname' => $dateiname, 'original_dateiname' => $originalDateiname];
     }
 
     if (isset($bildLader[$mime])) {
         $dateiname = bin2hex(random_bytes(16)) . '.pdf';
         file_put_contents($zielOrdner . $dateiname, wandleBildInEinseitigePdf($file['tmp_name'], $mime));
-        return $dateiname;
+        return ['dateiname' => $dateiname, 'original_dateiname' => $originalDateiname];
     }
 
     $endung = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
@@ -821,7 +823,7 @@ function handleVereinsdokumentUpload(array $file): string
         throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
     }
 
-    return $dateiname;
+    return ['dateiname' => $dateiname, 'original_dateiname' => $originalDateiname];
 }
 
 /**

@@ -17,11 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('error', 'Bitte eine Bezeichnung angeben.');
         } else {
             try {
-                $dateiname = handleVereinsdokumentUpload($_FILES['datei'] ?? []);
-                $pdo->prepare('INSERT INTO vereinsdokumente (bezeichnung, dateiname, hochgeladen_von_id) VALUES (:bezeichnung, :dateiname, :hochgeladen_von_id)')
+                $hochgeladen = handleVereinsdokumentUpload($_FILES['datei'] ?? []);
+                $pdo->prepare('INSERT INTO vereinsdokumente (bezeichnung, dateiname, original_dateiname, hochgeladen_von_id) VALUES (:bezeichnung, :dateiname, :original_dateiname, :hochgeladen_von_id)')
                     ->execute([
                         'bezeichnung' => $bezeichnung,
-                        'dateiname' => $dateiname,
+                        'dateiname' => $hochgeladen['dateiname'],
+                        'original_dateiname' => $hochgeladen['original_dateiname'],
                         'hochgeladen_von_id' => $mitglied['id'],
                     ]);
                 setFlash('success', 'Dokument wurde hochgeladen.');
@@ -51,7 +52,7 @@ $alleDokumente = $pdo->query(
     'SELECT v.*, m.vorname, m.nachname
      FROM vereinsdokumente v
      LEFT JOIN mitglieder m ON m.id = v.hochgeladen_von_id
-     ORDER BY v.bezeichnung, v.hochgeladen_am DESC, v.id DESC'
+     ORDER BY v.bezeichnung, COALESCE(v.original_dateiname, v.dateiname), v.hochgeladen_am DESC, v.id DESC'
 )->fetchAll();
 
 $gruppen = [];
@@ -98,7 +99,7 @@ $zurueck = '../home.php';
 
         <div class="card">
             <h2 style="margin-top:0;">Vereinsdokumente</h2>
-            <p class="text-muted">Satzung und Ordnungen. Die jeweils neueste Fassung je Bezeichnung wird im öffentlichen Aufnahmeantrag verlinkt, ältere Fassungen bleiben hier als Historie erhalten.</p>
+            <p class="text-muted">Satzung und Ordnungen. Die jeweils neueste Fassung je Datei wird im öffentlichen Aufnahmeantrag verlinkt, ältere Fassungen bleiben hier als Historie erhalten. Mehrere unterschiedliche Dateien dürfen dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen") - nur ein erneuter Upload mit demselben Dateinamen gilt als neue Fassung derselben Datei.</p>
 
             <?php if (empty($gruppen)): ?>
                 <p>Noch keine Dokumente hochgeladen.</p>
@@ -109,6 +110,7 @@ $zurueck = '../home.php';
                     <table class="tabelle-einzeilig">
                         <thead>
                             <tr>
+                                <th>Dateiname</th>
                                 <th>Hochgeladen am</th>
                                 <th>Hochgeladen von</th>
                                 <th>Format</th>
@@ -117,19 +119,26 @@ $zurueck = '../home.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($versionen as $i => $doc): ?>
+                            <?php $gesehen = []; ?>
+                            <?php foreach ($versionen as $doc): ?>
+                                <?php
+                                $schluessel = $doc['original_dateiname'] ?? $doc['dateiname'];
+                                $istAktuell = !isset($gesehen[$schluessel]);
+                                $gesehen[$schluessel] = true;
+                                ?>
                                 <tr>
+                                    <td><?= $doc['original_dateiname'] !== null ? e($doc['original_dateiname']) : '&ndash;' ?></td>
                                     <td><?= e((new DateTime($doc['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
                                     <td><?= $doc['vorname'] !== null ? e($doc['vorname'] . ' ' . $doc['nachname']) : '&ndash;' ?></td>
                                     <td><?= e(strtoupper(pathinfo($doc['dateiname'], PATHINFO_EXTENSION))) ?></td>
-                                    <td><?= $i === 0 ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
+                                    <td><?= $istAktuell ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
                                     <td>
                                         <a class="btn btn-secondary" href="../../vereinsdokument.php?id=<?= (int) $doc['id'] ?>">Herunterladen</a>
                                         <form method="post" class="inline-form">
                                             <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                                             <input type="hidden" name="aktion" value="loeschen">
                                             <input type="hidden" name="id" value="<?= (int) $doc['id'] ?>">
-                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Fassung von &quot;<?= e($bezeichnung) ?>&quot; wirklich löschen?');">Löschen</button>
+                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Datei &quot;<?= e($schluessel) ?>&quot; (<?= e($bezeichnung) ?>) wirklich löschen?');">Löschen</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -140,8 +149,8 @@ $zurueck = '../home.php';
                 <?php endforeach; ?>
             <?php endif; ?>
 
-            <h3>Neue Fassung hochladen</h3>
-            <p class="text-muted">Bei einer bereits vorhandenen Bezeichnung (z.B. "Satzung") wird die neue Datei als aktuelle Fassung geführt, die vorherige bleibt als Historie erhalten. Es gibt keine Formatbeschränkung: PDF bleibt PDF, Bilder (JPG/PNG/WebP) werden automatisch in eine PDF-Seite gewandelt, andere Formate (z.B. Word) werden im Originalformat gespeichert.</p>
+            <h3>Neue Datei hochladen</h3>
+            <p class="text-muted">Lädst du erneut eine Datei mit demselben Dateinamen wie eine bereits vorhandene hoch, wird sie als deren aktuelle Fassung geführt (die vorherige bleibt als Historie erhalten). Ein anderer Dateiname unter derselben Bezeichnung gilt dagegen als eigenständiges, zusätzliches Dokument. Es gibt keine Formatbeschränkung: PDF bleibt PDF, Bilder (JPG/PNG/WebP) werden automatisch in eine PDF-Seite gewandelt, andere Formate (z.B. Word) werden im Originalformat gespeichert.</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                 <input type="hidden" name="aktion" value="hochladen">
