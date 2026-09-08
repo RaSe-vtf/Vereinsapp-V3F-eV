@@ -77,6 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setFlash('error', $e->getMessage());
             }
         }
+    } elseif (($_POST['aktion'] ?? '') === 'kategorie_setzen' && isset($_POST['id'])) {
+        $kategorieId = (int) ($_POST['kategorie_id'] ?? 0);
+        $pdo->prepare('UPDATE barkasse_buchungen SET kategorie_id = :kategorie_id WHERE id = :id')
+            ->execute(['kategorie_id' => $kategorieId > 0 ? $kategorieId : null, 'id' => (int) $_POST['id']]);
     } elseif (($_POST['aktion'] ?? '') === 'loeschen' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare('SELECT * FROM barkasse_buchungen WHERE id = :id');
@@ -123,6 +127,10 @@ foreach ($alleBuchungen as $b) {
         $jahresSaldo += $vorzeichenWert;
     }
 }
+
+stelleKassenberichtKategorienSicher($pdo);
+$kategorienEinnahme = holeKassenberichtKategorien($pdo, 'einnahme');
+$kategorienAusgabe = holeKassenberichtKategorien($pdo, 'ausgabe');
 
 $kandidaten = $pdo->query(
     "SELECT * FROM kontobewegungen WHERE ist_bargeld_verdacht = 1 AND in_barkasse_uebernommen = 0 ORDER BY buchungsdatum DESC"
@@ -271,6 +279,7 @@ $zurueck = 'index.php';
                             <th>Beschreibung</th>
                             <th>Empfänger</th>
                             <th>Betrag</th>
+                            <th>Kategorie</th>
                             <th>Beleg</th>
                             <th></th>
                         </tr>
@@ -284,6 +293,23 @@ $zurueck = 'index.php';
                                 <td><?= e((string) $b['empfaenger']) ?></td>
                                 <td style="color:<?= $b['typ'] === 'ausgabe' ? 'var(--farbe-error)' : 'var(--farbe-success)' ?>;">
                                     <?= $b['typ'] === 'ausgabe' ? '-' : '+' ?><?= number_format((float) $b['betrag'], 2, ',', '.') ?> €
+                                </td>
+                                <td>
+                                    <?php if ($b['typ'] === 'einnahme_konto'): ?>
+                                        <span class="text-muted">&larr; Vereinskonto</span>
+                                    <?php else: ?>
+                                        <form method="post" class="inline-form">
+                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                            <input type="hidden" name="aktion" value="kategorie_setzen">
+                                            <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
+                                            <select name="kategorie_id" onchange="this.form.submit()">
+                                                <option value="0">&ndash; ohne Kategorie &ndash;</option>
+                                                <?php foreach (($b['typ'] === 'ausgabe' ? $kategorienAusgabe : $kategorienEinnahme) as $kat): ?>
+                                                    <option value="<?= (int) $kat['id'] ?>" <?= (int) $b['kategorie_id'] === (int) $kat['id'] ? 'selected' : '' ?>><?= e($kat['name']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($b['beleg_dateiname']): ?>

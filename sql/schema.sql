@@ -131,6 +131,22 @@ CREATE TABLE IF NOT EXISTS kontoauszuege (
     KEY idx_jahr_monat (jahr, monat)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Kassenbericht: feste Kategorienliste fuer Einnahmen/Ausgaben, damit sich
+-- Kontobewegungen und Barkasse-Buchungen fuer die Verteilungs-Diagramme
+-- gruppieren lassen. Wird per PHP beim ersten Aufruf des Kassenberichts mit
+-- Standardkategorien befuellt (kein SQL-Seed, siehe functions.php), der
+-- Kassenwart kann dort weitere ergaenzen. "aktiv = 0" blendet eine Kategorie
+-- nur aus der Auswahl aus, bereits zugeordnete Buchungen behalten sie.
+CREATE TABLE IF NOT EXISTS kassenbericht_kategorien (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    typ ENUM('einnahme', 'ausgabe') NOT NULL,
+    aktiv TINYINT(1) NOT NULL DEFAULT 1,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_typ (typ)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS kontobewegungen (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     auszug_id INT UNSIGNED NOT NULL,
@@ -138,12 +154,15 @@ CREATE TABLE IF NOT EXISTS kontobewegungen (
     betrag DECIMAL(10,2) NOT NULL,
     verwendungszweck VARCHAR(500) NULL,
     beteiligter VARCHAR(200) NULL,
+    kategorie_id INT UNSIGNED NULL,
     ist_bargeld_verdacht TINYINT(1) NOT NULL DEFAULT 0,
     in_barkasse_uebernommen TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     KEY idx_auszug_id (auszug_id),
     KEY idx_buchungsdatum (buchungsdatum),
-    CONSTRAINT fk_kontobewegungen_auszug FOREIGN KEY (auszug_id) REFERENCES kontoauszuege (id) ON DELETE CASCADE
+    KEY idx_kategorie_id (kategorie_id),
+    CONSTRAINT fk_kontobewegungen_auszug FOREIGN KEY (auszug_id) REFERENCES kontoauszuege (id) ON DELETE CASCADE,
+    CONSTRAINT fk_kontobewegungen_kategorie FOREIGN KEY (kategorie_id) REFERENCES kassenbericht_kategorien (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Barkasse: Zugänge entweder als bestätigte Übernahme einer Kontobewegung
@@ -159,11 +178,27 @@ CREATE TABLE IF NOT EXISTS barkasse_buchungen (
     empfaenger VARCHAR(200) NULL,
     beleg_dateiname VARCHAR(255) NULL,
     kontobewegung_id INT UNSIGNED NULL,
+    kategorie_id INT UNSIGNED NULL,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_datum (datum),
     KEY idx_kontobewegung_id (kontobewegung_id),
-    CONSTRAINT fk_barkasse_kontobewegung FOREIGN KEY (kontobewegung_id) REFERENCES kontobewegungen (id) ON DELETE SET NULL
+    KEY idx_kategorie_id (kategorie_id),
+    CONSTRAINT fk_barkasse_kontobewegung FOREIGN KEY (kontobewegung_id) REFERENCES kontobewegungen (id) ON DELETE SET NULL,
+    CONSTRAINT fk_barkasse_kategorie FOREIGN KEY (kategorie_id) REFERENCES kassenbericht_kategorien (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Kassenbericht-Prognose: manuell erfasste Sonderposten je Haushaltsjahr
+-- (= Kalenderjahr), die zur fortgeschriebenen Vorjahresbasis addiert werden.
+CREATE TABLE IF NOT EXISTS budget_sonderposten (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    jahr SMALLINT UNSIGNED NOT NULL,
+    bezeichnung VARCHAR(200) NOT NULL,
+    betrag DECIMAL(10,2) NOT NULL,
+    typ ENUM('einnahme', 'ausgabe') NOT NULL,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_jahr (jahr)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Vereinsdokumente (Satzung, Ordnungen): Historie statt Ersetzen - jeder
@@ -188,3 +223,5 @@ CREATE TABLE IF NOT EXISTS vereinsdokumente (
     CONSTRAINT fk_vereinsdokumente_mitglied FOREIGN KEY (hochgeladen_von_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ALTER TABLE vereinsdokumente ADD COLUMN IF NOT EXISTS original_dateiname VARCHAR(255) NULL AFTER dateiname;
+ALTER TABLE kontobewegungen ADD COLUMN IF NOT EXISTS kategorie_id INT UNSIGNED NULL AFTER beteiligter;
+ALTER TABLE barkasse_buchungen ADD COLUMN IF NOT EXISTS kategorie_id INT UNSIGNED NULL AFTER empfaenger;

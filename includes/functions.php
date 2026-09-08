@@ -943,3 +943,230 @@ function baueEinseitigePdfMitJpeg(string $jpegDaten, int $breitePx, int $hoehePx
 
     return $pdf;
 }
+
+/**
+ * Kassenbericht: Kategorien fuer Einnahmen/Ausgaben, Jahresauswertung
+ * (Gesamt, Verteilung nach Kategorie, Top-5-Buchungen) sowie eine schlichte,
+ * serverseitig gerenderte SVG-Tortengrafik dafuer - bewusst ohne externe
+ * JS-Chart-Bibliothek, passend zum Rest der App (kein Build-Schritt, keine
+ * externen Abhaengigkeiten ausser den ohnehin schon genutzten Google Fonts).
+ */
+const KASSENBERICHT_STANDARDKATEGORIEN = [
+    ['name' => 'Mitgliedsbeiträge', 'typ' => 'einnahme'],
+    ['name' => 'Spenden', 'typ' => 'einnahme'],
+    ['name' => 'Sonstige Einnahmen', 'typ' => 'einnahme'],
+    ['name' => 'Verbandsabgaben', 'typ' => 'ausgabe'],
+    ['name' => 'Verwaltung', 'typ' => 'ausgabe'],
+    ['name' => 'Sportbetrieb', 'typ' => 'ausgabe'],
+    ['name' => 'Sonstige Ausgaben', 'typ' => 'ausgabe'],
+];
+
+// Farbreihenfolge fuer die Tortendiagramme - feste, unterscheidbare Palette,
+// nie nach Rang neu zugewiesen. "Unkategorisiert" bekommt bewusst immer Grau.
+const KASSENBERICHT_FARBEN = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#4a3aa7', '#e34948', '#008300'];
+const KASSENBERICHT_FARBE_UNKATEGORISIERT = '#9a9a9a';
+
+function stelleKassenberichtKategorienSicher(PDO $pdo): void
+{
+    $anzahl = (int) $pdo->query('SELECT COUNT(*) FROM kassenbericht_kategorien')->fetchColumn();
+    if ($anzahl > 0) {
+        return;
+    }
+    $stmt = $pdo->prepare('INSERT INTO kassenbericht_kategorien (name, typ) VALUES (:name, :typ)');
+    foreach (KASSENBERICHT_STANDARDKATEGORIEN as $kategorie) {
+        $stmt->execute($kategorie);
+    }
+}
+
+function holeKassenberichtKategorien(PDO $pdo, ?string $typ = null): array
+{
+    if ($typ !== null) {
+        $stmt = $pdo->prepare('SELECT * FROM kassenbericht_kategorien WHERE aktiv = 1 AND typ = :typ ORDER BY name');
+        $stmt->execute(['typ' => $typ]);
+        return $stmt->fetchAll();
+    }
+    return $pdo->query('SELECT * FROM kassenbericht_kategorien WHERE aktiv = 1 ORDER BY typ, name')->fetchAll();
+}
+
+/** Alle Jahre, fuer die es mindestens eine Kontobewegung oder Barkasse-Buchung gibt, neueste zuerst. */
+function holeKassenberichtJahre(PDO $pdo): array
+{
+    $jahre = $pdo->query(
+        'SELECT DISTINCT jahr FROM (
+            SELECT YEAR(buchungsdatum) AS jahr FROM kontobewegungen
+            UNION
+            SELECT YEAR(datum) AS jahr FROM barkasse_buchungen
+        ) j ORDER BY jahr DESC'
+    )->fetchAll(PDO::FETCH_COLUMN);
+    return array_map('intval', $jahre);
+}
+
+/**
+ * Einzelne Einnahme-/Ausgabe-Buchungen eines Jahres aus Kontobewegungen und
+ * Barkasse zusammengefuehrt. Interne Vorgaenge (Bargeldabhebung vom Konto,
+ * die nur in die Barkasse wandert) werden ausgeschlossen, damit dieselbe
+ * Bewegung nicht doppelt als Ausgabe (Konto) und Einnahme (Barkasse) zaehlt -
+ * echte Ausgabe ist erst die spaetere Auszahlung aus der Barkasse.
+ */
+function holeKassenberichtBuchungen(PDO $pdo, int $jahr, string $richtung): array
+{
+    if ($richtung === 'einnahme') {
+        $sql = "SELECT k.id, 'konto' AS quelle, k.buchungsdatum AS datum, k.betrag AS betrag,
+                       COALESCE(NULLIF(k.verwendungszweck, ''), k.beteiligter, 'Ohne Verwendungszweck') AS beschreibung,
+                       k.kategorie_id, kat.name AS kategorie_name
+                FROM kontobewegungen k
+                LEFT JOIN kassenbericht_kategorien kat ON kat.id = k.kategorie_id
+                WHERE YEAR(k.buchungsdatum) = :jahr AND k.betrag > 0
+                UNION ALL
+                SELECT b.id, 'barkasse' AS quelle, b.datum AS datum, b.betrag AS betrag,
+                       COALESCE(NULLIF(b.beschreibung, ''), 'Ohne Beschreibung') AS beschreibung,
+                       b.kategorie_id, kat.name AS kategorie_name
+                FROM barkasse_buchungen b
+                LEFT JOIN kassenbericht_kategorien kat ON kat.id = b.kategorie_id
+                WHERE YEAR(b.datum) = :jahr2 AND b.typ = 'einnahme_manuell'";
+    } else {
+        $sql = "SELECT k.id, 'konto' AS quelle, k.buchungsdatum AS datum, ABS(k.betrag) AS betrag,
+                       COALESCE(NULLIF(k.verwendungszweck, ''), k.beteiligter, 'Ohne Verwendungszweck') AS beschreibung,
+                       k.kategorie_id, kat.name AS kategorie_name
+                FROM kontobewegungen k
+                LEFT JOIN kassenbericht_kategorien kat ON kat.id = k.kategorie_id
+                WHERE YEAR(k.buchungsdatum) = :jahr AND k.betrag < 0 AND k.in_barkasse_uebernommen = 0
+                UNION ALL
+                SELECT b.id, 'barkasse' AS quelle, b.datum AS datum, b.betrag AS betrag,
+                       COALESCE(NULLIF(b.beschreibung, ''), b.empfaenger, 'Ohne Beschreibung') AS beschreibung,
+                       b.kategorie_id, kat.name AS kategorie_name
+                FROM barkasse_buchungen b
+                LEFT JOIN kassenbericht_kategorien kat ON kat.id = b.kategorie_id
+                WHERE YEAR(b.datum) = :jahr2 AND b.typ = 'ausgabe'";
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['jahr' => $jahr, 'jahr2' => $jahr]);
+    return $stmt->fetchAll();
+}
+
+function gruppiereKassenberichtNachKategorie(array $buchungen): array
+{
+    $summen = [];
+    foreach ($buchungen as $buchung) {
+        $name = $buchung['kategorie_name'] ?? 'Unkategorisiert';
+        $summen[$name] = ($summen[$name] ?? 0.0) + (float) $buchung['betrag'];
+    }
+    arsort($summen);
+    $ergebnis = [];
+    foreach ($summen as $name => $summe) {
+        $ergebnis[] = ['name' => $name, 'summe' => $summe];
+    }
+    return $ergebnis;
+}
+
+function sortiereKassenberichtTopBuchungen(array $buchungen, int $anzahl = 5): array
+{
+    usort($buchungen, static fn (array $a, array $b): int => (float) $b['betrag'] <=> (float) $a['betrag']);
+    return array_slice($buchungen, 0, $anzahl);
+}
+
+function berechneKassenberichtJahresdaten(PDO $pdo, int $jahr): array
+{
+    $einnahmenBuchungen = holeKassenberichtBuchungen($pdo, $jahr, 'einnahme');
+    $ausgabenBuchungen = holeKassenberichtBuchungen($pdo, $jahr, 'ausgabe');
+
+    $gesamtEinnahmen = array_sum(array_column($einnahmenBuchungen, 'betrag'));
+    $gesamtAusgaben = array_sum(array_column($ausgabenBuchungen, 'betrag'));
+
+    return [
+        'jahr' => $jahr,
+        'gesamtEinnahmen' => $gesamtEinnahmen,
+        'gesamtAusgaben' => $gesamtAusgaben,
+        'ueberschuss' => $gesamtEinnahmen - $gesamtAusgaben,
+        'einnahmenNachKategorie' => gruppiereKassenberichtNachKategorie($einnahmenBuchungen),
+        'ausgabenNachKategorie' => gruppiereKassenberichtNachKategorie($ausgabenBuchungen),
+        'top5Einnahmen' => sortiereKassenberichtTopBuchungen($einnahmenBuchungen),
+        'top5Ausgaben' => sortiereKassenberichtTopBuchungen($ausgabenBuchungen),
+    ];
+}
+
+/** Ordnet Kategorienamen feste Farben zu (gleiche Kategorie = gleiche Farbe ueber beide Diagramme hinweg). */
+function kassenberichtFarbeFuerName(string $name, int $indexFallback): string
+{
+    if ($name === 'Unkategorisiert') {
+        return KASSENBERICHT_FARBE_UNKATEGORISIERT;
+    }
+    return KASSENBERICHT_FARBEN[$indexFallback % count(KASSENBERICHT_FARBEN)];
+}
+
+/**
+ * Baut eine schlichte SVG-Tortengrafik aus Segmenten [['name'=>, 'summe'=>, 'farbe'=>], ...].
+ * Segmente mit >= 5% Anteil bekommen eine Prozent-Beschriftung direkt im
+ * Segment; Titel (Tooltip) und die Legende/Liste daneben zeigen immer alle
+ * Namen, damit keine Kategorie ausschliesslich per Farbe erkennbar sein muss.
+ */
+function svgTortendiagramm(array $segmente, int $groesse = 200): string
+{
+    $gesamt = array_sum(array_column($segmente, 'summe'));
+    if ($gesamt <= 0.0) {
+        return '<p class="text-muted">Keine Buchungen für dieses Jahr.</p>';
+    }
+
+    $radius = $groesse / 2;
+    $mitte = $radius;
+    $winkel = -90.0;
+    $inhalt = '';
+
+    foreach ($segmente as $segment) {
+        $anteil = $segment['summe'] / $gesamt;
+        if ($anteil <= 0.0) {
+            continue;
+        }
+        $titel = e($segment['name']) . ': ' . number_format($segment['summe'], 2, ',', '.') . ' € (' . number_format($anteil * 100, 1, ',', '.') . ' %)';
+
+        if ($anteil >= 0.9995) {
+            $inhalt .= sprintf(
+                '<circle cx="%1$s" cy="%1$s" r="%2$s" fill="%3$s"><title>%4$s</title></circle>',
+                $mitte,
+                $radius,
+                e($segment['farbe']),
+                $titel
+            );
+            $winkel += 360;
+            continue;
+        }
+
+        $spanne = $anteil * 360;
+        $endWinkel = $winkel + $spanne;
+        $x1 = $mitte + $radius * cos(deg2rad($winkel));
+        $y1 = $mitte + $radius * sin(deg2rad($winkel));
+        $x2 = $mitte + $radius * cos(deg2rad($endWinkel));
+        $y2 = $mitte + $radius * sin(deg2rad($endWinkel));
+        $grossBogen = $spanne > 180 ? 1 : 0;
+
+        $inhalt .= sprintf(
+            '<path d="M%1$s,%1$s L%2$s,%3$s A%4$s,%4$s 0 %5$d,1 %6$s,%7$s Z" fill="%8$s"><title>%9$s</title></path>',
+            $mitte,
+            round($x1, 2),
+            round($y1, 2),
+            $radius,
+            $grossBogen,
+            round($x2, 2),
+            round($y2, 2),
+            e($segment['farbe']),
+            $titel
+        );
+
+        if ($anteil >= 0.05) {
+            $mittelWinkel = deg2rad($winkel + $spanne / 2);
+            $labelRadius = $radius * 0.65;
+            $lx = round($mitte + $labelRadius * cos($mittelWinkel), 1);
+            $ly = round($mitte + $labelRadius * sin($mittelWinkel), 1);
+            $inhalt .= sprintf(
+                '<text x="%s" y="%s" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="12" font-weight="700" style="paint-order:stroke; stroke:rgba(0,0,0,.35); stroke-width:2px;">%s</text>',
+                $lx,
+                $ly,
+                round($anteil * 100) . '%'
+            );
+        }
+
+        $winkel = $endWinkel;
+    }
+
+    return sprintf('<svg viewBox="0 0 %1$d %1$d" width="%1$d" height="%1$d" role="img" aria-label="Tortendiagramm">%2$s</svg>', $groesse, $inhalt);
+}

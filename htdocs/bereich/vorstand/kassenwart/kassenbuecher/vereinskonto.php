@@ -63,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             setFlash('error', $e->getMessage());
         }
+    } elseif (($_POST['aktion'] ?? '') === 'kategorie_setzen' && isset($_POST['id'])) {
+        $kategorieId = (int) ($_POST['kategorie_id'] ?? 0);
+        $pdo->prepare('UPDATE kontobewegungen SET kategorie_id = :kategorie_id WHERE id = :id')
+            ->execute(['kategorie_id' => $kategorieId > 0 ? $kategorieId : null, 'id' => (int) $_POST['id']]);
     } elseif (($_POST['aktion'] ?? '') === 'auszug_loeschen' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare('SELECT dateiname FROM kontoauszuege WHERE id = :id');
@@ -77,7 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('success', 'Kontoauszug und seine Buchungen wurden gelöscht.');
         }
     }
-    header('Location: vereinskonto.php?jahr=' . (isset($jahr) ? $jahr : date('Y')) . '&monat=' . (isset($monat) ? $monat : date('n')));
+    $jahrRedirect = $jahr ?? (isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) date('Y'));
+    $monatRedirect = $monat ?? (isset($_GET['monat']) ? (int) $_GET['monat'] : (int) date('n'));
+    header('Location: vereinskonto.php?jahr=' . $jahrRedirect . '&monat=' . $monatRedirect);
     exit;
 }
 
@@ -112,6 +118,10 @@ foreach ($buchungenMonat as $b) {
         $ausgabenMonat += (float) $b['betrag'];
     }
 }
+
+stelleKassenberichtKategorienSicher($pdo);
+$kategorienEinnahme = holeKassenberichtKategorien($pdo, 'einnahme');
+$kategorienAusgabe = holeKassenberichtKategorien($pdo, 'ausgabe');
 
 $stmtAuszuegeMonat = $pdo->prepare('SELECT * FROM kontoauszuege WHERE jahr = :jahr AND monat = :monat ORDER BY id');
 $stmtAuszuegeMonat->execute(['jahr' => $jahrAuswahl, 'monat' => $monatAuswahl]);
@@ -206,6 +216,7 @@ $zurueck = 'index.php';
                             <th>Verwendungszweck</th>
                             <th>Beteiligter</th>
                             <th>Betrag</th>
+                            <th>Kategorie</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -218,6 +229,23 @@ $zurueck = 'index.php';
                                     <?= (float) $b['betrag'] >= 0 ? '+' : '' ?><?= number_format((float) $b['betrag'], 2, ',', '.') ?> €
                                     <?php if ((bool) $b['ist_bargeld_verdacht']): ?>
                                         <span class="badge badge-neu" title="Möglicherweise eine Bargeldabhebung &ndash; siehe Barkasse">Bargeld?</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ((bool) $b['in_barkasse_uebernommen']): ?>
+                                        <span class="text-muted">&rarr; Barkasse</span>
+                                    <?php else: ?>
+                                        <form method="post" class="inline-form">
+                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                            <input type="hidden" name="aktion" value="kategorie_setzen">
+                                            <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
+                                            <select name="kategorie_id" onchange="this.form.submit()">
+                                                <option value="0">&ndash; ohne Kategorie &ndash;</option>
+                                                <?php foreach (((float) $b['betrag'] >= 0) ? $kategorienEinnahme : $kategorienAusgabe as $kat): ?>
+                                                    <option value="<?= (int) $kat['id'] ?>" <?= (int) $b['kategorie_id'] === (int) $kat['id'] ? 'selected' : '' ?>><?= e($kat['name']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </form>
                                     <?php endif; ?>
                                 </td>
                             </tr>

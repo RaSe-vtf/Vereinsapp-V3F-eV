@@ -56,6 +56,10 @@ $zurueck = '../../home.php';
                 <span class="kachel-icon">📚</span>
                 <span>Kassenbücher</span>
             </a>
+            <a href="kassenbericht.php" class="kachel">
+                <span class="kachel-icon">📊</span>
+                <span>Kassenbericht</span>
+            </a>
             <a href="beitragsrechner.php" class="kachel">
                 <span class="kachel-icon">🧮</span>
                 <span>Beitragsrechner</span>
