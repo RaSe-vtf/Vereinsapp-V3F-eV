@@ -67,7 +67,7 @@ foreach ($alleDokumente as $doc) {
 }
 
 $flash = takeFlash();
-$tiefe = '../../';
+$tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
 $zurueck = '../home.php';
 ?>
@@ -106,6 +106,7 @@ $zurueck = '../home.php';
             <a href="verteiler.php">E-Mail-Verteiler</a>
             <a href="kassenwart/index.php">Kassenwart</a>
             <a href="vereinsdokumente.php" class="active">Vereinsdokumente</a>
+            <a href="protokolle.php">Protokolle</a>
         </nav>
 
         <?php if ($flash): ?>
