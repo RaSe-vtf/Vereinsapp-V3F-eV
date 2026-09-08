@@ -18,6 +18,14 @@ $aktuelleDokumente = getPdo()->query(
      ORDER BY v1.bezeichnung, v1.original_dateiname"
 )->fetchAll();
 
+// Feste Reihenfolge Satzung -> Ordnungen -> Sonstiges statt rein alphabetisch.
+$kategorieRang = array_flip(VEREINSDOKUMENT_KATEGORIEN);
+usort($aktuelleDokumente, static function (array $a, array $b) use ($kategorieRang): int {
+    $rangA = $kategorieRang[kategorisiereVereinsdokument($a['bezeichnung'])];
+    $rangB = $kategorieRang[kategorisiereVereinsdokument($b['bezeichnung'])];
+    return $rangA <=> $rangB ?: strnatcasecmp($a['bezeichnung'], $b['bezeichnung']);
+});
+
 $bezeichnungAnzahl = [];
 foreach ($aktuelleDokumente as $doc) {
     $bezeichnungAnzahl[$doc['bezeichnung']] = ($bezeichnungAnzahl[$doc['bezeichnung']] ?? 0) + 1;

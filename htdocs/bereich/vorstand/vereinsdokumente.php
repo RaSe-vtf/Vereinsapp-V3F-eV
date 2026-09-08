@@ -63,6 +63,13 @@ ksort($gruppen, SORT_NATURAL | SORT_FLAG_CASE);
 
 $bekannteBezeichnungen = array_keys($gruppen);
 
+// Feste Sortierung Satzung -> Ordnungen -> Sonstiges statt rein alphabetisch;
+// innerhalb jeder Kategorie bleibt die alphabetische Reihenfolge von oben erhalten.
+$kategorien = array_fill_keys(VEREINSDOKUMENT_KATEGORIEN, []);
+foreach ($gruppen as $bezeichnung => $versionen) {
+    $kategorien[kategorisiereVereinsdokument($bezeichnung)][$bezeichnung] = $versionen;
+}
+
 $flash = takeFlash();
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
@@ -104,48 +111,52 @@ $zurueck = '../home.php';
             <?php if (empty($gruppen)): ?>
                 <p>Noch keine Dokumente hochgeladen.</p>
             <?php else: ?>
-                <?php foreach ($gruppen as $bezeichnung => $versionen): ?>
-                    <h3><?= e($bezeichnung) ?></h3>
-                    <div style="overflow-x:auto; margin-bottom:20px;">
-                    <table class="tabelle-einzeilig">
-                        <thead>
-                            <tr>
-                                <th>Dateiname</th>
-                                <th>Hochgeladen am</th>
-                                <th>Hochgeladen von</th>
-                                <th>Format</th>
-                                <th>Status</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $gesehen = []; ?>
-                            <?php foreach ($versionen as $doc): ?>
-                                <?php
-                                $schluessel = $doc['original_dateiname'] ?? $doc['dateiname'];
-                                $istAktuell = !isset($gesehen[$schluessel]);
-                                $gesehen[$schluessel] = true;
-                                ?>
+                <?php foreach ($kategorien as $kategorieName => $bezeichnungen): ?>
+                    <?php if (empty($bezeichnungen)) continue; ?>
+                    <h2><?= e($kategorieName) ?></h2>
+                    <?php foreach ($bezeichnungen as $bezeichnung => $versionen): ?>
+                        <h3><?= e($bezeichnung) ?></h3>
+                        <div style="overflow-x:auto; margin-bottom:20px;">
+                        <table class="tabelle-einzeilig">
+                            <thead>
                                 <tr>
-                                    <td><?= $doc['original_dateiname'] !== null ? e($doc['original_dateiname']) : '&ndash;' ?></td>
-                                    <td><?= e((new DateTime($doc['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
-                                    <td><?= $doc['vorname'] !== null ? e($doc['vorname'] . ' ' . $doc['nachname']) : '&ndash;' ?></td>
-                                    <td><?= e(strtoupper(pathinfo($doc['dateiname'], PATHINFO_EXTENSION))) ?></td>
-                                    <td><?= $istAktuell ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
-                                    <td>
-                                        <a class="btn btn-secondary" href="../../vereinsdokument.php?id=<?= (int) $doc['id'] ?>">Herunterladen</a>
-                                        <form method="post" class="inline-form">
-                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
-                                            <input type="hidden" name="aktion" value="loeschen">
-                                            <input type="hidden" name="id" value="<?= (int) $doc['id'] ?>">
-                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Datei &quot;<?= e($schluessel) ?>&quot; (<?= e($bezeichnung) ?>) wirklich löschen?');">Löschen</button>
-                                        </form>
-                                    </td>
+                                    <th>Dateiname</th>
+                                    <th>Hochgeladen am</th>
+                                    <th>Hochgeladen von</th>
+                                    <th>Format</th>
+                                    <th>Status</th>
+                                    <th>Aktionen</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    </div>
+                            </thead>
+                            <tbody>
+                                <?php $gesehen = []; ?>
+                                <?php foreach ($versionen as $doc): ?>
+                                    <?php
+                                    $schluessel = $doc['original_dateiname'] ?? $doc['dateiname'];
+                                    $istAktuell = !isset($gesehen[$schluessel]);
+                                    $gesehen[$schluessel] = true;
+                                    ?>
+                                    <tr>
+                                        <td><?= $doc['original_dateiname'] !== null ? e($doc['original_dateiname']) : '&ndash;' ?></td>
+                                        <td><?= e((new DateTime($doc['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
+                                        <td><?= $doc['vorname'] !== null ? e($doc['vorname'] . ' ' . $doc['nachname']) : '&ndash;' ?></td>
+                                        <td><?= e(strtoupper(pathinfo($doc['dateiname'], PATHINFO_EXTENSION))) ?></td>
+                                        <td><?= $istAktuell ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
+                                        <td>
+                                            <a class="btn btn-secondary" href="../../vereinsdokument.php?id=<?= (int) $doc['id'] ?>">Herunterladen</a>
+                                            <form method="post" class="inline-form">
+                                                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                                <input type="hidden" name="aktion" value="loeschen">
+                                                <input type="hidden" name="id" value="<?= (int) $doc['id'] ?>">
+                                                <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Datei &quot;<?= e($schluessel) ?>&quot; (<?= e($bezeichnung) ?>) wirklich löschen?');">Löschen</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        </div>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
             <?php endif; ?>
 

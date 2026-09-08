@@ -761,6 +761,25 @@ function handleBelegUpload(array $file): string
     return $dateiname;
 }
 
+const VEREINSDOKUMENT_KATEGORIEN = ['Satzung', 'Ordnungen', 'Sonstiges'];
+
+/**
+ * Ordnet die freie Bezeichnung eines Vereinsdokuments einer der drei festen
+ * Kategorien zu, fuer eine feste Sortierung (Satzung, Ordnungen, Sonstiges)
+ * statt rein alphabetisch.
+ */
+function kategorisiereVereinsdokument(string $bezeichnung): string
+{
+    $b = mb_strtolower(trim($bezeichnung));
+    if ($b === 'satzung') {
+        return 'Satzung';
+    }
+    if (str_contains($b, 'ordnung')) {
+        return 'Ordnungen';
+    }
+    return 'Sonstiges';
+}
+
 /**
  * Validiert und speichert ein hochgeladenes Vereinsdokument (Satzung,
  * Ordnung). Es gibt bewusst keine Formatbeschraenkung beim Upload:
