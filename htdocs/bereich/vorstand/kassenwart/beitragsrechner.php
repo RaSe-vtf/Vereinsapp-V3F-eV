@@ -288,15 +288,16 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
   }
   .btn-edit, .btn-confirm, .btn-cancel {
     font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    padding: 0.4rem 0.8rem;
+    padding: 0.3rem 0.45rem;
     border-radius: 8px;
     border: 1px solid var(--card-border);
     background: var(--surface);
     color: var(--primary);
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
   }
   .btn-edit:hover, .btn-cancel:hover { background: var(--track); }
   .btn-confirm {
@@ -313,7 +314,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
   .cost-edit-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
   }
   .cost-edit-row input {
     flex: 1;
