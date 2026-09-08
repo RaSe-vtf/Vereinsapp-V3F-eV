@@ -31,38 +31,22 @@ body {
    er beim Scrollen nicht mitwandert; z-index -1 haelt ihn hinter dem
    normalen Seiteninhalt, ohne dass andere Elemente eigene z-index-Regeln
    brauchen.
-   Das Bild ist breiter als hoch (Farbverlauf blau -> pink -> gelb ueber die
-   volle Breite, nach oben hin dichter an Streifen als unten). Auf normalen/
-   breiten Bildschirmen deckt "cover" die Seite unverzerrt ab. Auf hohen,
-   schmalen Bildschirmen (Handy, v.a. Vollbild-Ansicht) reicht die Bildhoehe
-   dagegen nicht aus: das ganze Bild einfach untereinander zu wiederholen
-   wuerde wegen der duenn besetzten oberen Bildhaelfte wie grosse leere
-   Luecken zwischen den Wiederholungen aussehen. Deshalb dort zweischichtig:
-   oben einmal das komplette Bild (mit Gelb), darunter lueckenlos der
-   durchgehend dicht bestreifte untere Bildausschnitt (hintergrund-streifen-
-   kachel.jpg) als Endlos-Muster. */
+   Das Bild ist breiter als hoch. Es wird immer als Ganzes, unverzerrt und
+   ohne Wiederholung gezeigt ("contain") - auf sehr hohen/schmalen Bild-
+   schirmen bleibt dadurch oberhalb/unterhalb des Bildes einfach die normale
+   Seitenfarbe sichtbar, statt das Bild zu verzerren, Teile davon
+   abzuschneiden oder es wiederholt aneinanderzureihen. */
 body::before {
     content: "";
     position: fixed;
     inset: 0;
     background-image: url("../img/hintergrund-streifen.jpg");
-    background-size: cover;
+    background-size: contain;
     background-position: top center;
     background-repeat: no-repeat;
     opacity: var(--hintergrund-deckkraft);
     z-index: -1;
     pointer-events: none;
-}
-
-@media (max-aspect-ratio: 4/5) {
-    body::before {
-        background-image:
-            url("../img/hintergrund-streifen.jpg"),
-            url("../img/hintergrund-streifen-kachel.jpg");
-        background-size: 100% auto, 100% auto;
-        background-position: top center, top center;
-        background-repeat: no-repeat, repeat-y;
-    }
 }
 
 a {
