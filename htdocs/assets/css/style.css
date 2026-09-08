@@ -30,17 +30,32 @@ body {
    zentral ueber --hintergrund-deckkraft anpassbar. Fest positioniert, damit
    er beim Scrollen nicht mitwandert; z-index -1 haelt ihn hinter dem
    normalen Seiteninhalt, ohne dass andere Elemente eigene z-index-Regeln
-   brauchen. */
+   brauchen.
+   Das Bild ist breiter als hoch (Farbverlauf blau -> pink -> gelb ueber die
+   volle Breite). Auf normalen/breiten Bildschirmen deckt "cover" die Seite
+   unverzerrt ab. Auf hohen, schmalen Bildschirmen (Handy, v.a. Vollbild-
+   Ansicht) wuerde "cover" aber nur einen schmalen Ausschnitt zeigen und
+   dabei ganze Farben (v.a. Gelb) abschneiden - dort wird stattdessen auf
+   volle Breite skaliert und untereinander wiederholt, damit der komplette
+   Farbverlauf sichtbar bleibt. */
 body::before {
     content: "";
     position: fixed;
     inset: 0;
     background-image: url("../img/hintergrund-streifen.jpg");
     background-size: cover;
-    background-position: center;
+    background-position: top center;
+    background-repeat: no-repeat;
     opacity: var(--hintergrund-deckkraft);
     z-index: -1;
     pointer-events: none;
+}
+
+@media (max-aspect-ratio: 4/5) {
+    body::before {
+        background-size: 100% auto;
+        background-repeat: repeat-y;
+    }
 }
 
 a {
