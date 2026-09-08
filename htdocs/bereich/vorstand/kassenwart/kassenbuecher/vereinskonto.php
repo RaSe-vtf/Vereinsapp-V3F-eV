@@ -1,0 +1,283 @@
+<?php
+declare(strict_types=1);
+session_start();
+require_once __DIR__ . '/../../../../../includes/db.php';
+require_once __DIR__ . '/../../../../../includes/functions.php';
+require_once __DIR__ . '/../../../../../includes/auth.php';
+
+$mitglied = requireVorstand('../../../../login.php', '../../../index.php');
+$pdo = getPdo();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
+        setFlash('error', 'Deine Sitzung ist abgelaufen. Bitte lade die Seite neu.');
+    } elseif (($_POST['aktion'] ?? '') === 'upload') {
+        try {
+            $geparst = handleKontoauszugUpload($_FILES['auszug'] ?? []);
+            $buchungen = $geparst['buchungen'];
+
+            if (!empty($buchungen)) {
+                $daten = array_column($buchungen, 'datum');
+                sort($daten);
+                $stichdatum = end($daten);
+            } else {
+                $stichdatum = date('Y-m-d');
+            }
+            $jahr = (int) date('Y', strtotime($stichdatum));
+            $monat = (int) date('n', strtotime($stichdatum));
+
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare(
+                'INSERT INTO kontoauszuege (dateiname, format, jahr, monat, anfangssaldo, endsaldo)
+                 VALUES (:dateiname, :format, :jahr, :monat, :anfangssaldo, :endsaldo)'
+            );
+            $stmt->execute([
+                'dateiname' => $geparst['dateiname'],
+                'format' => $geparst['format'],
+                'jahr' => $jahr,
+                'monat' => $monat,
+                'anfangssaldo' => $geparst['anfangssaldo'],
+                'endsaldo' => $geparst['endsaldo'],
+            ]);
+            $auszugId = (int) $pdo->lastInsertId();
+
+            $stmtBuchung = $pdo->prepare(
+                'INSERT INTO kontobewegungen (auszug_id, buchungsdatum, betrag, verwendungszweck, beteiligter, ist_bargeld_verdacht)
+                 VALUES (:auszug_id, :buchungsdatum, :betrag, :verwendungszweck, :beteiligter, :verdacht)'
+            );
+            foreach ($buchungen as $b) {
+                $stmtBuchung->execute([
+                    'auszug_id' => $auszugId,
+                    'buchungsdatum' => $b['datum'],
+                    'betrag' => number_format($b['betrag'], 2, '.', ''),
+                    'verwendungszweck' => $b['verwendungszweck'],
+                    'beteiligter' => $b['beteiligter'],
+                    'verdacht' => istBargeldabhebungVerdacht($b['betrag'], $b['verwendungszweck']) ? 1 : 0,
+                ]);
+            }
+            $pdo->commit();
+            setFlash('success', count($buchungen) . ' Buchung(en) aus dem Kontoauszug übernommen.');
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            setFlash('error', $e->getMessage());
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'auszug_loeschen' && isset($_POST['id'])) {
+        $id = (int) $_POST['id'];
+        $stmt = $pdo->prepare('SELECT dateiname FROM kontoauszuege WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $pdo->prepare('DELETE FROM kontoauszuege WHERE id = :id')->execute(['id' => $id]);
+            $pfad = __DIR__ . '/../../../../../private/uploads/kontoauszuege/' . basename($row['dateiname']);
+            if (is_file($pfad)) {
+                unlink($pfad);
+            }
+            setFlash('success', 'Kontoauszug und seine Buchungen wurden gelöscht.');
+        }
+    }
+    header('Location: vereinskonto.php?jahr=' . (isset($jahr) ? $jahr : date('Y')) . '&monat=' . (isset($monat) ? $monat : date('n')));
+    exit;
+}
+
+$heute = new DateTime();
+$jahrAuswahl = isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) $heute->format('Y');
+$monatAuswahl = isset($_GET['monat']) ? (int) $_GET['monat'] : (int) $heute->format('n');
+if ($monatAuswahl < 1 || $monatAuswahl > 12) {
+    $monatAuswahl = (int) $heute->format('n');
+}
+
+$letzterAuszug = $pdo->query('SELECT endsaldo FROM kontoauszuege ORDER BY jahr DESC, monat DESC, id DESC LIMIT 1')->fetch();
+$kontostand = $letzterAuszug && $letzterAuszug['endsaldo'] !== null ? (float) $letzterAuszug['endsaldo'] : null;
+
+$stmtJahr = $pdo->prepare(
+    'SELECT COALESCE(SUM(betrag), 0) AS summe FROM kontobewegungen WHERE YEAR(buchungsdatum) = :jahr'
+);
+$stmtJahr->execute(['jahr' => $jahrAuswahl]);
+$jahresSaldo = (float) $stmtJahr->fetchColumn();
+
+$stmtMonat = $pdo->prepare(
+    'SELECT * FROM kontobewegungen WHERE YEAR(buchungsdatum) = :jahr AND MONTH(buchungsdatum) = :monat ORDER BY buchungsdatum, id'
+);
+$stmtMonat->execute(['jahr' => $jahrAuswahl, 'monat' => $monatAuswahl]);
+$buchungenMonat = $stmtMonat->fetchAll();
+
+$einnahmenMonat = 0.0;
+$ausgabenMonat = 0.0;
+foreach ($buchungenMonat as $b) {
+    if ((float) $b['betrag'] >= 0) {
+        $einnahmenMonat += (float) $b['betrag'];
+    } else {
+        $ausgabenMonat += (float) $b['betrag'];
+    }
+}
+
+$stmtAuszuegeMonat = $pdo->prepare('SELECT * FROM kontoauszuege WHERE jahr = :jahr AND monat = :monat ORDER BY id');
+$stmtAuszuegeMonat->execute(['jahr' => $jahrAuswahl, 'monat' => $monatAuswahl]);
+$auszuegeMonat = $stmtAuszuegeMonat->fetchAll();
+
+$monatsNamen = [1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni', 7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'];
+
+$flash = takeFlash();
+$tiefe = '../../../';
+$aktivReiter = 'geschaeftsstelle';
+$zurueck = 'index.php';
+?>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vereinskonto &ndash; Kassenbücher &ndash; <?= e(APP_NAME) ?></title>
+    <link rel="stylesheet" href="../../../../assets/css/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../../../assets/img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../../../assets/img/favicon-16.png">
+    <link rel="apple-touch-icon" href="../../../../assets/img/apple-touch-icon.png">
+    <link rel="manifest" href="../../../../manifest.json">
+    <meta name="theme-color" content="#1f7a8c">
+</head>
+<body>
+    <?php require __DIR__ . '/../../../../../includes/kopf.php'; ?>
+
+    <main class="container" style="max-width:1040px;">
+        <nav class="subnav">
+            <a href="../../antraege.php">Aufnahmeanträge</a>
+            <a href="../../mitglieder.php">Mitgliederverwaltung</a>
+            <a href="../../verteiler.php">E-Mail-Verteiler</a>
+            <a href="../index.php" class="active">Kassenwart</a>
+        </nav>
+
+        <nav class="subnav">
+            <a href="index.php">Kassenbücher</a>
+            <a href="vereinskonto.php" class="active">Vereinskonto</a>
+            <a href="barkasse.php">Barkasse</a>
+        </nav>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
+        <?php endif; ?>
+
+        <div class="card">
+            <div style="display:flex; flex-wrap:wrap; gap:32px; align-items:baseline;">
+                <div>
+                    <div class="text-muted" style="font-size:0.85rem;">Kontostand</div>
+                    <div style="font-size:1.6rem; font-weight:700;"><?= $kontostand !== null ? number_format($kontostand, 2, ',', '.') . ' €' : '–' ?></div>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.85rem;">+/- im Jahr <?= (int) $jahrAuswahl ?></div>
+                    <div style="font-size:1.3rem; font-weight:700; color:<?= $jahresSaldo >= 0 ? 'var(--farbe-success)' : 'var(--farbe-error)' ?>;">
+                        <?= $jahresSaldo >= 0 ? '+' : '' ?><?= number_format($jahresSaldo, 2, ',', '.') ?> €
+                    </div>
+                </div>
+                <div style="margin-left:auto; display:flex; gap:8px;">
+                    <a class="btn btn-secondary" href="?jahr=<?= $jahrAuswahl - 1 ?>&monat=<?= $monatAuswahl ?>">&laquo; <?= $jahrAuswahl - 1 ?></a>
+                    <a class="btn btn-secondary" href="?jahr=<?= $jahrAuswahl + 1 ?>&monat=<?= $monatAuswahl ?>"><?= $jahrAuswahl + 1 ?> &raquo;</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <nav class="subnav" style="margin-bottom:0;">
+                <?php foreach ($monatsNamen as $nr => $name): ?>
+                    <a href="?jahr=<?= $jahrAuswahl ?>&monat=<?= $nr ?>" class="<?= $nr === $monatAuswahl ? 'active' : '' ?>"><?= e($name) ?></a>
+                <?php endforeach; ?>
+            </nav>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0;">Einnahmen und Ausgaben &ndash; <?= e($monatsNamen[$monatAuswahl]) ?> <?= (int) $jahrAuswahl ?></h2>
+            <p class="text-muted">
+                Einnahmen: <strong style="color:var(--farbe-success);"><?= number_format($einnahmenMonat, 2, ',', '.') ?> €</strong>
+                &nbsp;&middot;&nbsp;
+                Ausgaben: <strong style="color:var(--farbe-error);"><?= number_format($ausgabenMonat, 2, ',', '.') ?> €</strong>
+            </p>
+
+            <?php if (empty($buchungenMonat)): ?>
+                <p>Keine Buchungen für diesen Monat vorhanden.</p>
+            <?php else: ?>
+                <div style="overflow-x:auto;">
+                <table class="tabelle-einzeilig">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Verwendungszweck</th>
+                            <th>Beteiligter</th>
+                            <th>Betrag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($buchungenMonat as $b): ?>
+                            <tr>
+                                <td><?= e((new DateTime($b['buchungsdatum']))->format('d.m.Y')) ?></td>
+                                <td><?= e((string) $b['verwendungszweck']) ?></td>
+                                <td><?= e((string) $b['beteiligter']) ?></td>
+                                <td style="color:<?= (float) $b['betrag'] >= 0 ? 'var(--farbe-success)' : 'var(--farbe-error)' ?>;">
+                                    <?= (float) $b['betrag'] >= 0 ? '+' : '' ?><?= number_format((float) $b['betrag'], 2, ',', '.') ?> €
+                                    <?php if ((bool) $b['ist_bargeld_verdacht']): ?>
+                                        <span class="badge badge-neu" title="Möglicherweise eine Bargeldabhebung &ndash; siehe Barkasse">Bargeld?</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0;">Kontoauszüge &ndash; <?= e($monatsNamen[$monatAuswahl]) ?> <?= (int) $jahrAuswahl ?></h2>
+
+            <?php if (empty($auszuegeMonat)): ?>
+                <p>Für diesen Monat wurde noch kein Kontoauszug hochgeladen.</p>
+            <?php else: ?>
+                <div style="overflow-x:auto; margin-bottom:20px;">
+                <table class="tabelle-einzeilig">
+                    <thead>
+                        <tr>
+                            <th>Hochgeladen am</th>
+                            <th>Format</th>
+                            <th>Anfangssaldo</th>
+                            <th>Endsaldo</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($auszuegeMonat as $a): ?>
+                            <tr>
+                                <td><?= e((new DateTime($a['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
+                                <td><?= $a['format'] === 'camt053' ? 'CAMT.053' : 'MT940' ?></td>
+                                <td><?= $a['anfangssaldo'] !== null ? number_format((float) $a['anfangssaldo'], 2, ',', '.') . ' €' : '–' ?></td>
+                                <td><?= $a['endsaldo'] !== null ? number_format((float) $a['endsaldo'], 2, ',', '.') . ' €' : '–' ?></td>
+                                <td>
+                                    <a class="btn btn-secondary" href="kontoauszug_datei.php?id=<?= (int) $a['id'] ?>">Herunterladen</a>
+                                    <form method="post" class="inline-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                        <input type="hidden" name="aktion" value="auszug_loeschen">
+                                        <input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
+                                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Diesen Kontoauszug und alle daraus übernommenen Buchungen wirklich löschen?');">Löschen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
+            <?php endif; ?>
+
+            <h3>Kontoauszug hochladen</h3>
+            <p class="text-muted">Unterstützt werden die Standardformate CAMT.053 (XML) und MT940 &ndash; Jahr/Monat sowie alle Buchungen werden automatisch aus der Datei übernommen, es gibt keine manuelle Zahleneingabe.</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="upload">
+                <input type="file" name="auszug" accept=".xml,.sta,.txt" required>
+                <div style="margin-top:12px;">
+                    <button type="submit" class="btn">Hochladen</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script src="../../../../assets/js/menue.js" defer></script>
+</body>
+</html>

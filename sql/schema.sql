@@ -1,4 +1,4 @@
--- Vereinsapp V3F e.V. - Datenbankschema
+-- Vereinsapp - Datenbankschema
 -- Import ueber phpMyAdmin im all-inkl KAS oder per mysql-CLI
 --
 -- Diese Datei ist bei jeder Auslieferung vollstaendig und idempotent: sie
@@ -113,3 +113,55 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_g
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL AFTER foto_dateiname;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
 ALTER TABLE beitragsposten ADD COLUMN IF NOT EXISTS ist_startpass TINYINT(1) NOT NULL DEFAULT 0 AFTER rolle;
+
+-- Kassenbücher: hochgeladene Kontoauszüge (Vereinskonto) und die daraus
+-- geparsten Einzelbuchungen. Kontostand/Einnahmen/Ausgaben ergeben sich
+-- ausschließlich aus diesen Buchungen, es gibt bewusst keine manuelle
+-- Eingabe von Beträgen beim Vereinskonto (Fehlerquelle).
+CREATE TABLE IF NOT EXISTS kontoauszuege (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    dateiname VARCHAR(255) NOT NULL,
+    format ENUM('camt053', 'mt940') NOT NULL,
+    jahr SMALLINT UNSIGNED NOT NULL,
+    monat TINYINT UNSIGNED NOT NULL,
+    anfangssaldo DECIMAL(10,2) NULL,
+    endsaldo DECIMAL(10,2) NULL,
+    hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_jahr_monat (jahr, monat)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS kontobewegungen (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    auszug_id INT UNSIGNED NOT NULL,
+    buchungsdatum DATE NOT NULL,
+    betrag DECIMAL(10,2) NOT NULL,
+    verwendungszweck VARCHAR(500) NULL,
+    beteiligter VARCHAR(200) NULL,
+    ist_bargeld_verdacht TINYINT(1) NOT NULL DEFAULT 0,
+    in_barkasse_uebernommen TINYINT(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY idx_auszug_id (auszug_id),
+    KEY idx_buchungsdatum (buchungsdatum),
+    CONSTRAINT fk_kontobewegungen_auszug FOREIGN KEY (auszug_id) REFERENCES kontoauszuege (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Barkasse: Zugänge entweder als bestätigte Übernahme einer Kontobewegung
+-- (Bargeldabhebung vom Vereinskonto) oder als manuelle Einnahme (z.B.
+-- Bar-Spende, die nie über die Bank lief). Ausgaben immer manuell, mit
+-- Pflicht-Beleg.
+CREATE TABLE IF NOT EXISTS barkasse_buchungen (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    typ ENUM('einnahme_konto', 'einnahme_manuell', 'ausgabe') NOT NULL,
+    datum DATE NOT NULL,
+    betrag DECIMAL(10,2) NOT NULL,
+    beschreibung VARCHAR(500) NULL,
+    empfaenger VARCHAR(200) NULL,
+    beleg_dateiname VARCHAR(255) NULL,
+    kontobewegung_id INT UNSIGNED NULL,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_datum (datum),
+    KEY idx_kontobewegung_id (kontobewegung_id),
+    CONSTRAINT fk_barkasse_kontobewegung FOREIGN KEY (kontobewegung_id) REFERENCES kontobewegungen (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

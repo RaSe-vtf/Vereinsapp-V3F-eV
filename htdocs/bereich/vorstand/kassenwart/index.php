@@ -50,6 +50,10 @@ $zurueck = '../../home.php';
                 <span class="kachel-icon">📤</span>
                 <span>SEPA-Export</span>
             </a>
+            <a href="kassenbuecher/index.php" class="kachel">
+                <span class="kachel-icon">📚</span>
+                <span>Kassenbücher</span>
+            </a>
         </div>
     </main>
     <script src="../../../assets/js/menue.js" defer></script>

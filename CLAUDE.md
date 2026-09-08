@@ -40,6 +40,15 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   bzw. `private/config.php`). Falls sich der offizielle Name noch ändert
   (z.B. nach endgültiger Eintragung ins Vereinsregister), hier und in der
   Config nachziehen.
+- [ ] **Kontoauszug-Import je Bank**: Der Import unter Kassenwart ->
+  Kassenbücher -> Vereinskonto (`parseKontoauszug()` in
+  `includes/functions.php`) deckt aktuell die zwei bankunabhängigen
+  Standardformate CAMT.053 (ISO-20022-XML) und MT940 (SWIFT) ab. Zeigt sich
+  anhand echter Auszüge der tatsächlich genutzten Bank, dass das Format
+  abweicht (z.B. eigenes CSV) oder Feldbesonderheiten (Verwendungszweck,
+  Beteiligter) nicht sauber erkannt werden, anhand eines echten
+  Beispielauszugs nachbessern – nicht von selbst nachfragen/andrängen, der
+  Nutzer bringt bei Bedarf einen echten Auszug mit.
 
 ## Vereinsname im Fließtext
 

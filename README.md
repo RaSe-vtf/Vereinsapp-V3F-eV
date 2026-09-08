@@ -123,11 +123,11 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich,
       Zugriff wie der Rest der Geschäftsstelle an die Rolle
       Vorstandsmitglied gebunden. Der Link "Kassenwart" in der
-      Geschäftsstelle-Navigation führt auf `index.php` mit drei Kacheln
-      (Bankverbindungen/Beiträge/SEPA-Export, analog den
-      Kacheln auf der Startseite); innerhalb der drei Unterseiten bleibt
-      zusätzlich eine schlichte Textzeile zum direkten Wechseln
-      untereinander erhalten.
+      Geschäftsstelle-Navigation führt auf `index.php` mit vier Kacheln
+      (Bankverbindungen/Beiträge/SEPA-Export/Kassenbücher, analog den
+      Kacheln auf der Startseite); innerhalb der Unterseiten von
+      Bankverbindungen/Beiträge/SEPA-Export bleibt zusätzlich eine schlichte
+      Textzeile zum direkten Wechseln untereinander erhalten.
       - **Bankverbindungen**: Liste aller aktiven Mitglieder mit Rolle,
         Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
         ein Mandat, steht dort "kein Mandat hinterlegt". Die angezeigte
@@ -154,6 +154,32 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
         stehen laut Spezifikation in getrennten Blöcken. Benötigt eine
         gültige Vereins-IBAN (`VEREIN_IBAN`, optional `VEREIN_BIC`) in
         `private/config.php` — noch Platzhalter, siehe `CLAUDE.md`.
+      - **Kassenbücher** (`.../kassenwart/kassenbuecher/`): eigene
+        Hub-Seite mit zwei Kacheln, Vereinskonto und Barkasse. Beide zeigen
+        oben den aktuellen Stand mit dem +/- des laufenden Jahres daneben,
+        darunter Reiter für die Kalendermonate, darunter Einnahmen/Ausgaben
+        des gewählten Monats.
+        - **Vereinskonto**: komplett ohne manuelle Zahleneingabe, um
+          Übertragungsfehler auszuschließen. Kontostand, Jahres-+/- sowie
+          die Einnahmen/Ausgaben je Monat ergeben sich ausschließlich aus
+          hochgeladenen Kontoauszügen. Unterstützt werden die beiden
+          bankunabhängigen Standardformate **CAMT.053** (ISO-20022-XML) und
+          **MT940** (SWIFT) — Jahr/Monat des Auszugs sowie alle Buchungen
+          (Datum, Betrag, Verwendungszweck, Beteiligter) werden automatisch
+          geparst (`parseKontoauszug()` in `includes/functions.php`).
+          Bietet eine Bank ein anderes Format an, muss dafür anhand eines
+          echten Auszugs ein passender Import ergänzt werden. Die
+          gespeicherten Auszugsdateien je Monat stehen zum Download bereit
+          (`kontoauszug_datei.php`).
+        - **Barkasse**: Zugänge entweder als bestätigte Übernahme einer
+          Kontobewegung (`istBargeldabhebungVerdacht()` erkennt anhand des
+          Verwendungszwecks mögliche Geldautomaten-Abhebungen als Vorschlag,
+          der Kassenwart bestätigt jeden Vorschlag einzeln statt einen Betrag
+          einzutippen) oder als manuelle Einnahme (z.B. eine Bar-Spende, die
+          nie über die Bank lief). Ausgaben sind immer manuell und verlangen
+          zwingend Empfänger, Betrag und einen Beleg-Upload (Foto oder PDF,
+          `beleg_datei.php` zum Ansehen). Andere Kassenwart-Zahlungen laufen
+          weiterhin außerhalb der App als direkte Überweisung.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
@@ -242,10 +268,16 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
       kassenwart/
-        index.php             -> Kassenwart-Startseite mit 3 Kacheln
+        index.php             -> Kassenwart-Startseite mit 4 Kacheln
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
         beitraege.php          -> Mitgliedsbeiträge je Rolle + Startpasskosten
         export.php             -> SEPA-Sammellastschrift (pain.008.001.02) erzeugen
+        kassenbuecher/
+          index.php            -> Hub-Seite mit 2 Kacheln
+          vereinskonto.php     -> Kontostand/Buchungen aus hochgeladenen Kontoauszügen
+          kontoauszug_datei.php -> Download einer gespeicherten Auszugsdatei
+          barkasse.php         -> Kassenstand, Konto-Übernahmen, manuelle Ein-/Ausgaben
+          beleg_datei.php      -> Ansicht eines Barkassen-Belegs (Foto/PDF)
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern
@@ -256,9 +288,11 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
 
 includes/          -> gemeinsamer PHP-Code (liegt bewusst AUSSERHALB von htdocs)
   kopf.php         -> gemeinsamer Banner/Menü/Zurück-Pfeil-Baustein für bereich/**
-private/           -> Konfiguration + hochgeladene Fotos (liegt AUSSERHALB von htdocs)
+private/           -> Konfiguration + hochgeladene Dateien (liegt AUSSERHALB von htdocs)
   config.php       -> wird lokal erstellt, nicht Teil des Repos
   uploads/fotos/   -> gespeicherte Mitgliederfotos
+  uploads/kontoauszuege/ -> gespeicherte Kontoauszugsdateien (Vereinskonto)
+  uploads/belege/  -> gespeicherte Barkassen-Belege (Foto/PDF)
 
 sql/schema.sql        -> Datenbank-Struktur zum Import (Tabellen: mitglieder, antraege)
 scripts/create_mitglied.php -> Bootstrap: legt das allererste Vorstandsmitglied an

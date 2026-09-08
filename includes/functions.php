@@ -492,3 +492,271 @@ function korrigiereFotoAusrichtung(\GdImage $bild, int $orientation): \GdImage
     imagedestroy($bild);
     return $gedreht;
 }
+
+/**
+ * Erkennt das Format eines Kontoauszugs (CAMT.053-XML oder MT940) und
+ * parst ihn zu Anfangssaldo, Endsaldo und den einzelnen Buchungen. Deckt
+ * die beiden gaengigen, bankunabhaengigen Standardformate ab - weicht eine
+ * Bank in der Praxis davon ab (z.B. eigenes CSV-Format), wird das anhand
+ * eines echten Beispiels gesondert ergaenzt.
+ */
+function parseKontoauszug(string $inhalt): array
+{
+    $getrimmt = ltrim($inhalt);
+    if (str_starts_with($getrimmt, '<?xml') || str_starts_with($getrimmt, '<Document')) {
+        return array_merge(['format' => 'camt053'], parseKontoauszugCamt053($inhalt));
+    }
+    if (preg_match('/^:20:/m', $inhalt)) {
+        return array_merge(['format' => 'mt940'], parseKontoauszugMt940($inhalt));
+    }
+    throw new RuntimeException('Das Dateiformat konnte nicht erkannt werden (erwartet: CAMT.053-XML oder MT940).');
+}
+
+/**
+ * Parst einen CAMT.053-Kontoauszug (ISO 20022 XML). Die Elemente tragen
+ * i.d.R. keinen Namespace-Prefix, daher funktioniert getElementsByTagName()
+ * hier ohne Namespace-Handling.
+ */
+function parseKontoauszugCamt053(string $inhalt): array
+{
+    $dom = new DOMDocument();
+    $vorherigeEinstellung = libxml_use_internal_errors(true);
+    $geladen = $dom->loadXML($inhalt);
+    libxml_use_internal_errors($vorherigeEinstellung);
+    if (!$geladen) {
+        throw new RuntimeException('Die Datei konnte nicht als CAMT.053-XML gelesen werden.');
+    }
+
+    $liesBetrag = static function (DOMElement $knoten): ?float {
+        $betragKnoten = $knoten->getElementsByTagName('Amt')->item(0);
+        $indKnoten = $knoten->getElementsByTagName('CdtDbtInd')->item(0);
+        if ($betragKnoten === null) {
+            return null;
+        }
+        $betrag = (float) str_replace(',', '.', $betragKnoten->textContent);
+        return ($indKnoten && trim($indKnoten->textContent) === 'DBIT') ? -$betrag : $betrag;
+    };
+
+    $anfangssaldo = null;
+    $endsaldo = null;
+    foreach ($dom->getElementsByTagName('Bal') as $bal) {
+        $codeKnoten = $bal->getElementsByTagName('Cd')->item(0);
+        $code = $codeKnoten ? trim($codeKnoten->textContent) : '';
+        $betrag = $liesBetrag($bal);
+        if ($betrag === null) {
+            continue;
+        }
+        if ($code === 'OPBD') {
+            $anfangssaldo = $betrag;
+        } elseif ($code === 'CLBD') {
+            $endsaldo = $betrag;
+        }
+    }
+
+    $buchungen = [];
+    foreach ($dom->getElementsByTagName('Ntry') as $ntry) {
+        $betrag = $liesBetrag($ntry);
+        if ($betrag === null) {
+            continue;
+        }
+
+        $datum = null;
+        $bookgDt = $ntry->getElementsByTagName('BookgDt')->item(0);
+        if ($bookgDt) {
+            $dtKnoten = $bookgDt->getElementsByTagName('Dt')->item(0) ?? $bookgDt->getElementsByTagName('DtTm')->item(0);
+            if ($dtKnoten) {
+                $datum = substr(trim($dtKnoten->textContent), 0, 10);
+            }
+        }
+        if ($datum === null) {
+            continue;
+        }
+
+        $verwendungszweckTeile = [];
+        foreach ($ntry->getElementsByTagName('Ustrd') as $ustrd) {
+            $verwendungszweckTeile[] = trim($ustrd->textContent);
+        }
+
+        $beteiligter = '';
+        foreach (['Dbtr', 'Cdtr'] as $rollenTag) {
+            foreach ($ntry->getElementsByTagName($rollenTag) as $partei) {
+                $nameKnoten = $partei->getElementsByTagName('Nm')->item(0);
+                if ($nameKnoten) {
+                    $beteiligter = trim($nameKnoten->textContent);
+                    break 2;
+                }
+            }
+        }
+
+        $buchungen[] = [
+            'datum' => $datum,
+            'betrag' => $betrag,
+            'verwendungszweck' => implode(' ', array_filter($verwendungszweckTeile)),
+            'beteiligter' => $beteiligter,
+        ];
+    }
+
+    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen];
+}
+
+/**
+ * Parst einen MT940-Kontoauszug (SWIFT-Feldformat). Deckt die gaengigen
+ * Felder ab (:60F:/:60M: Anfangssaldo, :61: Buchungszeile, :86: Verwendungs-
+ * zweck, :62F:/:62M: Endsaldo). Bank-Besonderheiten bei :61:/:86: werden bei
+ * Bedarf spaeter anhand echter Auszuege ergaenzt.
+ */
+function parseKontoauszugMt940(string $inhalt): array
+{
+    $zeilen = preg_split('/\r\n|\r|\n/', $inhalt) ?: [];
+    $anfangssaldo = null;
+    $endsaldo = null;
+    $buchungen = [];
+    $aktuelleBuchung = null;
+
+    $parseSaldoZeile = static function (string $wert): ?float {
+        if (!preg_match('/^[CD]\d{6}[A-Z]{3}([\d,]+)$/', $wert, $treffer)) {
+            return null;
+        }
+        $betrag = (float) str_replace(',', '.', $treffer[1]);
+        return $wert[0] === 'D' ? -$betrag : $betrag;
+    };
+
+    foreach ($zeilen as $zeile) {
+        if (preg_match('/^:60[FM]:(.+)$/', $zeile, $treffer)) {
+            $anfangssaldo = $parseSaldoZeile(trim($treffer[1]));
+        } elseif (preg_match('/^:62[FM]:(.+)$/', $zeile, $treffer)) {
+            $endsaldo = $parseSaldoZeile(trim($treffer[1]));
+        } elseif (preg_match('/^:61:(\d{6})(?:\d{4})?([CD]|R[CD])[A-Z]?([\d,]+)/', $zeile, $treffer)) {
+            if ($aktuelleBuchung !== null) {
+                $buchungen[] = $aktuelleBuchung;
+            }
+            $jjmmtt = $treffer[1];
+            $datum = '20' . substr($jjmmtt, 0, 2) . '-' . substr($jjmmtt, 2, 2) . '-' . substr($jjmmtt, 4, 2);
+            $betrag = (float) str_replace(',', '.', $treffer[3]);
+            if (str_starts_with($treffer[2], 'D')) {
+                $betrag = -$betrag;
+            }
+            $aktuelleBuchung = ['datum' => $datum, 'betrag' => $betrag, 'verwendungszweck' => '', 'beteiligter' => ''];
+        } elseif (preg_match('/^:86:(.+)$/', $zeile, $treffer)) {
+            if ($aktuelleBuchung !== null) {
+                $aktuelleBuchung['verwendungszweck'] = trim($aktuelleBuchung['verwendungszweck'] . ' ' . $treffer[1]);
+            }
+        } elseif ($aktuelleBuchung !== null && $zeile !== '' && $zeile[0] !== ':') {
+            $aktuelleBuchung['verwendungszweck'] = trim($aktuelleBuchung['verwendungszweck'] . ' ' . $zeile);
+        }
+    }
+    if ($aktuelleBuchung !== null) {
+        $buchungen[] = $aktuelleBuchung;
+    }
+
+    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen];
+}
+
+/**
+ * Heuristik fuer moegliche Bargeldabhebungen (Geldautomat o.ae.) innerhalb
+ * der Kontobewegungen, als Vorschlag fuer die Barkassen-Uebernahme. Der
+ * Kassenwart bestaetigt jeden Vorschlag einzeln, es wird nichts automatisch
+ * uebernommen.
+ */
+function istBargeldabhebungVerdacht(float $betrag, string $verwendungszweck): bool
+{
+    if ($betrag >= 0) {
+        return false;
+    }
+    $text = mb_strtolower($verwendungszweck);
+    foreach (['geldautomat', 'bargeldauszahlung', 'barauszahlung', 'auszahlung girocard', 'bargeld', 'ec-cash auszahlung'] as $stichwort) {
+        if (str_contains($text, $stichwort)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Validiert und speichert einen hochgeladenen Kontoauszug, parst ihn direkt
+ * und gibt die geparsten Daten plus den gespeicherten Dateinamen zurueck.
+ */
+function handleKontoauszugUpload(array $file): array
+{
+    $maxBytes = 5 * 1024 * 1024; // 5 MB
+
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException('Bitte eine Auszugsdatei auswählen.');
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Beim Hochladen der Datei ist ein Fehler aufgetreten.');
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('Ungültiger Datei-Upload.');
+    }
+    if ($file['size'] > $maxBytes) {
+        throw new RuntimeException('Die Datei darf maximal 5 MB groß sein.');
+    }
+
+    $inhalt = file_get_contents($file['tmp_name']);
+    if ($inhalt === false) {
+        throw new RuntimeException('Die Datei konnte nicht gelesen werden.');
+    }
+
+    $geparst = parseKontoauszug($inhalt);
+
+    $zielOrdner = __DIR__ . '/../private/uploads/kontoauszuege/';
+    if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
+        throw new RuntimeException('Speicherort für Kontoauszüge konnte nicht angelegt werden.');
+    }
+
+    $endung = $geparst['format'] === 'camt053' ? 'xml' : 'sta';
+    $dateiname = bin2hex(random_bytes(16)) . '.' . $endung;
+    if (!copy($file['tmp_name'], $zielOrdner . $dateiname)) {
+        throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
+    }
+
+    return array_merge($geparst, ['dateiname' => $dateiname]);
+}
+
+/**
+ * Validiert und speichert einen hochgeladenen Barkassen-Beleg (Rechnung als
+ * Foto oder PDF). Fotos werden wie Mitgliederfotos automatisch ausgerichtet
+ * und komprimiert, PDFs unveraendert gespeichert.
+ */
+function handleBelegUpload(array $file): string
+{
+    $erlaubteTypen = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    $maxBytes = 10 * 1024 * 1024; // 10 MB
+
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException('Bitte einen Beleg auswählen.');
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Beim Hochladen des Belegs ist ein Fehler aufgetreten.');
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('Ungültiger Datei-Upload.');
+    }
+    if ($file['size'] > $maxBytes) {
+        throw new RuntimeException('Der Beleg darf maximal 10 MB groß sein.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    if (!in_array($mime, $erlaubteTypen, true)) {
+        throw new RuntimeException('Bitte nur JPG-, PNG-, WebP-Bilder oder PDF-Dateien als Beleg hochladen.');
+    }
+
+    $zielOrdner = __DIR__ . '/../private/uploads/belege/';
+    if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
+        throw new RuntimeException('Speicherort für Belege konnte nicht angelegt werden.');
+    }
+
+    if ($mime === 'application/pdf') {
+        $dateiname = bin2hex(random_bytes(16)) . '.pdf';
+        if (!move_uploaded_file($file['tmp_name'], $zielOrdner . $dateiname)) {
+            throw new RuntimeException('Der Beleg konnte nicht gespeichert werden.');
+        }
+    } else {
+        $dateiname = bin2hex(random_bytes(16)) . '.jpg';
+        verarbeiteUndSpeichereFoto($file['tmp_name'], $mime, $zielOrdner . $dateiname);
+    }
+
+    return $dateiname;
+}
