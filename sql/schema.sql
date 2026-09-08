@@ -165,3 +165,19 @@ CREATE TABLE IF NOT EXISTS barkasse_buchungen (
     KEY idx_kontobewegung_id (kontobewegung_id),
     CONSTRAINT fk_barkasse_kontobewegung FOREIGN KEY (kontobewegung_id) REFERENCES kontobewegungen (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Vereinsdokumente (Satzung, Ordnungen): Historie statt Ersetzen - jeder
+-- Upload legt einen neuen Eintrag an, das jeweils juengste Datum je
+-- Bezeichnung gilt als aktuelle Fassung (im Aufnahmeantrag oeffentlich
+-- verlinkt). Aeltere Fassungen bleiben erhalten und sind im Vorstands-
+-- bereich weiterhin herunterladbar, bis sie dort geloescht werden.
+CREATE TABLE IF NOT EXISTS vereinsdokumente (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    bezeichnung VARCHAR(150) NOT NULL,
+    dateiname VARCHAR(255) NOT NULL,
+    hochgeladen_von_id INT UNSIGNED NULL,
+    hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_bezeichnung (bezeichnung),
+    CONSTRAINT fk_vereinsdokumente_mitglied FOREIGN KEY (hochgeladen_von_id) REFERENCES mitglieder (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

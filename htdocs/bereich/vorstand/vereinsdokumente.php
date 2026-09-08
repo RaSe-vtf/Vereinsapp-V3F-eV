@@ -1,0 +1,166 @@
+<?php
+declare(strict_types=1);
+session_start();
+require_once __DIR__ . '/../../../includes/db.php';
+require_once __DIR__ . '/../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/auth.php';
+
+$mitglied = requireVorstand('../../login.php', '../index.php');
+$pdo = getPdo();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
+        setFlash('error', 'Deine Sitzung ist abgelaufen. Bitte lade die Seite neu.');
+    } elseif (($_POST['aktion'] ?? '') === 'hochladen') {
+        $bezeichnung = trim((string) ($_POST['bezeichnung'] ?? ''));
+        if ($bezeichnung === '') {
+            setFlash('error', 'Bitte eine Bezeichnung angeben.');
+        } else {
+            try {
+                $dateiname = handleVereinsdokumentUpload($_FILES['datei'] ?? []);
+                $pdo->prepare('INSERT INTO vereinsdokumente (bezeichnung, dateiname, hochgeladen_von_id) VALUES (:bezeichnung, :dateiname, :hochgeladen_von_id)')
+                    ->execute([
+                        'bezeichnung' => $bezeichnung,
+                        'dateiname' => $dateiname,
+                        'hochgeladen_von_id' => $mitglied['id'],
+                    ]);
+                setFlash('success', 'Dokument wurde hochgeladen.');
+            } catch (Throwable $e) {
+                setFlash('error', $e->getMessage());
+            }
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'loeschen' && isset($_POST['id'])) {
+        $id = (int) $_POST['id'];
+        $stmt = $pdo->prepare('SELECT dateiname FROM vereinsdokumente WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $pdo->prepare('DELETE FROM vereinsdokumente WHERE id = :id')->execute(['id' => $id]);
+            $pfad = __DIR__ . '/../../../private/uploads/vereinsdokumente/' . basename($row['dateiname']);
+            if (is_file($pfad)) {
+                unlink($pfad);
+            }
+            setFlash('success', 'Dokument wurde gelöscht.');
+        }
+    }
+    header('Location: vereinsdokumente.php');
+    exit;
+}
+
+$alleDokumente = $pdo->query(
+    'SELECT v.*, m.vorname, m.nachname
+     FROM vereinsdokumente v
+     LEFT JOIN mitglieder m ON m.id = v.hochgeladen_von_id
+     ORDER BY v.bezeichnung, v.hochgeladen_am DESC, v.id DESC'
+)->fetchAll();
+
+$gruppen = [];
+foreach ($alleDokumente as $doc) {
+    $gruppen[$doc['bezeichnung']][] = $doc;
+}
+ksort($gruppen, SORT_NATURAL | SORT_FLAG_CASE);
+
+$bekannteBezeichnungen = array_keys($gruppen);
+
+$flash = takeFlash();
+$tiefe = '../../';
+$aktivReiter = 'geschaeftsstelle';
+$zurueck = '../home.php';
+?>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vereinsdokumente &ndash; Geschäftsstelle &ndash; <?= e(APP_NAME) ?></title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../assets/img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../assets/img/favicon-16.png">
+    <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#1f7a8c">
+</head>
+<body>
+    <?php require __DIR__ . '/../../../includes/kopf.php'; ?>
+
+    <main class="container" style="max-width:1040px;">
+        <nav class="subnav">
+            <a href="antraege.php">Aufnahmeanträge</a>
+            <a href="mitglieder.php">Mitgliederverwaltung</a>
+            <a href="verteiler.php">E-Mail-Verteiler</a>
+            <a href="kassenwart/index.php">Kassenwart</a>
+            <a href="vereinsdokumente.php" class="active">Vereinsdokumente</a>
+        </nav>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
+        <?php endif; ?>
+
+        <div class="card">
+            <h2 style="margin-top:0;">Vereinsdokumente</h2>
+            <p class="text-muted">Satzung und Ordnungen. Die jeweils neueste Fassung je Bezeichnung wird im öffentlichen Aufnahmeantrag verlinkt, ältere Fassungen bleiben hier als Historie erhalten.</p>
+
+            <?php if (empty($gruppen)): ?>
+                <p>Noch keine Dokumente hochgeladen.</p>
+            <?php else: ?>
+                <?php foreach ($gruppen as $bezeichnung => $versionen): ?>
+                    <h3><?= e($bezeichnung) ?></h3>
+                    <div style="overflow-x:auto; margin-bottom:20px;">
+                    <table class="tabelle-einzeilig">
+                        <thead>
+                            <tr>
+                                <th>Hochgeladen am</th>
+                                <th>Hochgeladen von</th>
+                                <th>Status</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($versionen as $i => $doc): ?>
+                                <tr>
+                                    <td><?= e((new DateTime($doc['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
+                                    <td><?= $doc['vorname'] !== null ? e($doc['vorname'] . ' ' . $doc['nachname']) : '&ndash;' ?></td>
+                                    <td><?= $i === 0 ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
+                                    <td>
+                                        <a class="btn btn-secondary" href="../../vereinsdokument.php?id=<?= (int) $doc['id'] ?>">Herunterladen</a>
+                                        <form method="post" class="inline-form">
+                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                            <input type="hidden" name="aktion" value="loeschen">
+                                            <input type="hidden" name="id" value="<?= (int) $doc['id'] ?>">
+                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Fassung von &quot;<?= e($bezeichnung) ?>&quot; wirklich löschen?');">Löschen</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <h3>Neue Fassung hochladen</h3>
+            <p class="text-muted">Bei einer bereits vorhandenen Bezeichnung (z.B. "Satzung") wird die neue Datei als aktuelle Fassung geführt, die vorherige bleibt als Historie erhalten.</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="hochladen">
+
+                <label class="required" for="bezeichnung">Bezeichnung</label>
+                <input type="text" id="bezeichnung" name="bezeichnung" list="bekannte-bezeichnungen" placeholder="z.B. Satzung, Beitragsordnung, Wahlordnung" required>
+                <datalist id="bekannte-bezeichnungen">
+                    <?php foreach ($bekannteBezeichnungen as $b): ?>
+                        <option value="<?= e($b) ?>">
+                    <?php endforeach; ?>
+                </datalist>
+
+                <label class="required" for="datei">Datei (PDF)</label>
+                <input type="file" id="datei" name="datei" accept="application/pdf" required>
+
+                <div style="margin-top:16px;">
+                    <button type="submit" class="btn">Hochladen</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script src="../../assets/js/menue.js" defer></script>
+</body>
+</html>

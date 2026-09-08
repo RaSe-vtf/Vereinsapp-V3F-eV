@@ -20,8 +20,15 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Foto-Upload, einem selbst gewählten Passwort (mind. 8 Zeichen, mit
   Wiederholung) und den Einverständniserklärungen (Satzung/Ordnungen,
   Kenntnisnahme Impressum & Datenschutz, optionale Freigabe für
-  Social-Media-Fotos). Das Passwort gilt sofort, sobald der Vorstand den
-  Antrag annimmt — ein separater Schritt zur Passwortvergabe entfällt damit.
+  Social-Media-Fotos). Direkt über der Einverständniserklärung verlinkt das
+  Formular auf die tatsächlichen, vom Vorstand hochgeladenen Satzungs-/
+  Ordnungs-PDFs (`htdocs/vereinsdokument.php`, siehe **Vereinsdokumente**
+  weiter unten) — bewusst ohne Login-Pflicht, da Antragsteller noch keinen
+  Zugang haben; nach der Aufnahme sind diese Dateien im normalen
+  Mitgliederbereich nicht mehr verlinkt, nur der Vorstand kommt über die
+  Geschäftsstelle weiterhin dauerhaft heran. Das Passwort gilt sofort,
+  sobald der Vorstand den Antrag annimmt — ein separater Schritt zur
+  Passwortvergabe entfällt damit.
 - Impressum & Datenschutzerklärung als Vorlage (öffentlich erreichbar, wie
   gesetzlich vorgeschrieben) — **muss noch mit den echten Vereinsdaten
   ausgefüllt werden**, siehe `htdocs/impressum.php` und `htdocs/datenschutz.php`.
@@ -180,6 +187,15 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
           zwingend Empfänger, Betrag und einen Beleg-Upload (Foto oder PDF,
           `beleg_datei.php` zum Ansehen). Andere Kassenwart-Zahlungen laufen
           weiterhin außerhalb der App als direkte Überweisung.
+    - **Vereinsdokumente** (`.../vorstand/vereinsdokumente.php`): Satzung und
+      Ordnungen hoch- und herunterladen (nur PDF). Pro Bezeichnung (z.B.
+      "Satzung", "Beitragsordnung") wird eine Historie geführt statt Dateien
+      zu ersetzen — die jeweils jüngste Fassung je Bezeichnung gilt als
+      aktuell, ältere Fassungen bleiben bis zum manuellen Löschen erhalten.
+      Der Download selbst läuft über `htdocs/vereinsdokument.php` (bewusst
+      ohne Login-Pflicht, siehe oben beim Aufnahmeantrag) — verwaltet
+      (hoch-/herunterladen, löschen) werden die Dokumente aber nur über
+      diese Geschäftsstelle-Seite, also weiterhin nur vom Vorstand.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
     Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
     Vorstandsmitglied zusätzlich Admin sein). Enthält:
@@ -250,6 +266,7 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain eingerichtet
   index.php
   antrag.php                -> öffentlicher Aufnahmeantrag
+  vereinsdokument.php       -> Download eines Vereinsdokuments (ohne Login-Pflicht)
   antrag_erfolg.php
   impressum.php
   datenschutz.php
@@ -267,6 +284,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       mitglieder.php         -> Mitgliederverwaltung: alle Stammdaten, Rolle, Status
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
+      vereinsdokumente.php   -> Satzung/Ordnungen hochladen/verwalten (mit Historie)
       kassenwart/
         index.php             -> Kassenwart-Startseite mit 4 Kacheln
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
@@ -293,6 +311,7 @@ private/           -> Konfiguration + hochgeladene Dateien (liegt AUSSERHALB von
   uploads/fotos/   -> gespeicherte Mitgliederfotos
   uploads/kontoauszuege/ -> gespeicherte Kontoauszugsdateien (Vereinskonto)
   uploads/belege/  -> gespeicherte Barkassen-Belege (Foto/PDF)
+  uploads/vereinsdokumente/ -> gespeicherte Satzung/Ordnungen (PDF)
 
 sql/schema.sql        -> Datenbank-Struktur zum Import (Tabellen: mitglieder, antraege)
 scripts/create_mitglied.php -> Bootstrap: legt das allererste Vorstandsmitglied an

@@ -82,6 +82,7 @@ $zurueck = 'index.php';
             <a href="../mitglieder.php">Mitgliederverwaltung</a>
             <a href="../verteiler.php">E-Mail-Verteiler</a>
             <a href="index.php" class="active">Kassenwart</a>
+            <a href="../vereinsdokumente.php">Vereinsdokumente</a>
         </nav>
 
         <nav class="subnav">

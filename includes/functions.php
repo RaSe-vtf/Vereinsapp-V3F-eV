@@ -760,3 +760,43 @@ function handleBelegUpload(array $file): string
 
     return $dateiname;
 }
+
+/**
+ * Validiert und speichert ein hochgeladenes Vereinsdokument (Satzung,
+ * Ordnung) als PDF.
+ */
+function handleVereinsdokumentUpload(array $file): string
+{
+    $maxBytes = 15 * 1024 * 1024; // 15 MB
+
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException('Bitte eine Datei auswählen.');
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Beim Hochladen der Datei ist ein Fehler aufgetreten.');
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('Ungültiger Datei-Upload.');
+    }
+    if ($file['size'] > $maxBytes) {
+        throw new RuntimeException('Die Datei darf maximal 15 MB groß sein.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    if ($mime !== 'application/pdf') {
+        throw new RuntimeException('Bitte nur PDF-Dateien hochladen.');
+    }
+
+    $zielOrdner = __DIR__ . '/../private/uploads/vereinsdokumente/';
+    if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
+        throw new RuntimeException('Speicherort für Vereinsdokumente konnte nicht angelegt werden.');
+    }
+
+    $dateiname = bin2hex(random_bytes(16)) . '.pdf';
+    if (!move_uploaded_file($file['tmp_name'], $zielOrdner . $dateiname)) {
+        throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
+    }
+
+    return $dateiname;
+}

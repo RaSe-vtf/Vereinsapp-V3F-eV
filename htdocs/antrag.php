@@ -4,6 +4,16 @@ session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
+// Aktuelle Fassung je Bezeichnung (juengstes Hochladedatum), damit Antragsteller
+// Satzung/Ordnungen vor dem Absenden einsehen koennen.
+$aktuelleDokumente = getPdo()->query(
+    "SELECT v1.id, v1.bezeichnung FROM vereinsdokumente v1
+     LEFT JOIN vereinsdokumente v2 ON v2.bezeichnung = v1.bezeichnung
+         AND (v2.hochgeladen_am > v1.hochgeladen_am OR (v2.hochgeladen_am = v1.hochgeladen_am AND v2.id > v1.id))
+     WHERE v2.id IS NULL
+     ORDER BY v1.bezeichnung"
+)->fetchAll();
+
 $fehler = [];
 $werte = [
     'vorname' => '',
@@ -160,6 +170,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card">
             <h2>Aufnahmeantrag</h2>
             <p>Mit diesem Formular beantragst du deine Mitgliedschaft bei <?= e(vereinNameNowrap()) ?> Das Formular ist vollständig auszufüllen.</p>
+
+            <?php if (!empty($aktuelleDokumente)): ?>
+                <p class="text-muted">
+                    Satzung und Ordnungen:
+                    <?php foreach ($aktuelleDokumente as $i => $doc): ?><?= $i > 0 ? ' &middot; ' : '' ?><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($doc['bezeichnung']) ?></a><?php endforeach; ?>
+                </p>
+            <?php endif; ?>
 
             <?php if (!empty($fehler)): ?>
                 <div class="alert alert-error">
