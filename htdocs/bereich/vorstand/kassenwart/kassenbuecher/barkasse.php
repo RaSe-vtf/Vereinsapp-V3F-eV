@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../../../includes/auth.php';
 
 $mitglied = requireVorstand('../../../../login.php', '../../../index.php');
 $pdo = getPdo();
+stelleKassenberichtKategorienSicher($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
@@ -43,8 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($beschreibung === '') {
             setFlash('error', 'Bitte eine Beschreibung angeben.');
         } else {
-            $pdo->prepare('INSERT INTO barkasse_buchungen (typ, datum, betrag, beschreibung) VALUES (\'einnahme_manuell\', :datum, :betrag, :beschreibung)')
-                ->execute(['datum' => $datum, 'betrag' => number_format((float) $betragRoh, 2, '.', ''), 'beschreibung' => $beschreibung]);
+            $pdo->prepare('INSERT INTO barkasse_buchungen (typ, datum, betrag, beschreibung, kategorie_id) VALUES (\'einnahme_manuell\', :datum, :betrag, :beschreibung, :kategorie_id)')
+                ->execute([
+                    'datum' => $datum,
+                    'betrag' => number_format((float) $betragRoh, 2, '.', ''),
+                    'beschreibung' => $beschreibung,
+                    'kategorie_id' => holeKassenberichtRegelKategorie($pdo, null, $beschreibung, 'einnahme'),
+                ]);
             setFlash('success', 'Einnahme wurde erfasst.');
         }
     } elseif (($_POST['aktion'] ?? '') === 'ausgabe') {
@@ -63,14 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $belegDateiname = handleBelegUpload($_FILES['beleg'] ?? []);
                 $pdo->prepare(
-                    'INSERT INTO barkasse_buchungen (typ, datum, betrag, beschreibung, empfaenger, beleg_dateiname)
-                     VALUES (\'ausgabe\', :datum, :betrag, :beschreibung, :empfaenger, :beleg)'
+                    'INSERT INTO barkasse_buchungen (typ, datum, betrag, beschreibung, empfaenger, beleg_dateiname, kategorie_id)
+                     VALUES (\'ausgabe\', :datum, :betrag, :beschreibung, :empfaenger, :beleg, :kategorie_id)'
                 )->execute([
                     'datum' => $datum,
                     'betrag' => number_format((float) $betragRoh, 2, '.', ''),
                     'beschreibung' => $beschreibung,
                     'empfaenger' => $empfaenger,
                     'beleg' => $belegDateiname,
+                    'kategorie_id' => holeKassenberichtRegelKategorie($pdo, $empfaenger, $beschreibung, 'ausgabe'),
                 ]);
                 setFlash('success', 'Ausgabe wurde erfasst.');
             } catch (Throwable $e) {
@@ -81,6 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $kategorieId = (int) ($_POST['kategorie_id'] ?? 0);
         $pdo->prepare('UPDATE barkasse_buchungen SET kategorie_id = :kategorie_id WHERE id = :id')
             ->execute(['kategorie_id' => $kategorieId > 0 ? $kategorieId : null, 'id' => (int) $_POST['id']]);
+        if ($kategorieId > 0) {
+            $stmtBuchung = $pdo->prepare('SELECT empfaenger, beschreibung FROM barkasse_buchungen WHERE id = :id');
+            $stmtBuchung->execute(['id' => (int) $_POST['id']]);
+            $buchungFuerRegel = $stmtBuchung->fetch();
+            $stichwort = ($buchungFuerRegel['empfaenger'] ?? '') !== '' ? $buchungFuerRegel['empfaenger'] : $buchungFuerRegel['beschreibung'];
+            lerneKassenberichtRegel($pdo, (string) $stichwort, $kategorieId);
+        }
     } elseif (($_POST['aktion'] ?? '') === 'loeschen' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare('SELECT * FROM barkasse_buchungen WHERE id = :id');
@@ -128,7 +142,7 @@ foreach ($alleBuchungen as $b) {
     }
 }
 
-stelleKassenberichtKategorienSicher($pdo);
+wendeKassenberichtRegelnAufUnkategorisierteAn($pdo);
 $kategorienEinnahme = holeKassenberichtKategorien($pdo, 'einnahme');
 $kategorienAusgabe = holeKassenberichtKategorien($pdo, 'ausgabe');
 

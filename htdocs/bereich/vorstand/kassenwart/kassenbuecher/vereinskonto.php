@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../../../includes/auth.php';
 
 $mitglied = requireVorstand('../../../../login.php', '../../../index.php');
 $pdo = getPdo();
+stelleKassenberichtKategorienSicher($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!checkCsrfToken($_POST['csrf_token'] ?? null)) {
@@ -42,16 +43,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $auszugId = (int) $pdo->lastInsertId();
 
             $stmtBuchung = $pdo->prepare(
-                'INSERT INTO kontobewegungen (auszug_id, buchungsdatum, betrag, verwendungszweck, beteiligter, ist_bargeld_verdacht)
-                 VALUES (:auszug_id, :buchungsdatum, :betrag, :verwendungszweck, :beteiligter, :verdacht)'
+                'INSERT INTO kontobewegungen (auszug_id, buchungsdatum, betrag, verwendungszweck, beteiligter, kategorie_id, ist_bargeld_verdacht)
+                 VALUES (:auszug_id, :buchungsdatum, :betrag, :verwendungszweck, :beteiligter, :kategorie_id, :verdacht)'
             );
             foreach ($buchungen as $b) {
+                $typ = $b['betrag'] >= 0 ? 'einnahme' : 'ausgabe';
                 $stmtBuchung->execute([
                     'auszug_id' => $auszugId,
                     'buchungsdatum' => $b['datum'],
                     'betrag' => number_format($b['betrag'], 2, '.', ''),
                     'verwendungszweck' => $b['verwendungszweck'],
                     'beteiligter' => $b['beteiligter'],
+                    'kategorie_id' => holeKassenberichtRegelKategorie($pdo, $b['beteiligter'], $b['verwendungszweck'], $typ),
                     'verdacht' => istBargeldabhebungVerdacht($b['betrag'], $b['verwendungszweck']) ? 1 : 0,
                 ]);
             }
@@ -67,6 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $kategorieId = (int) ($_POST['kategorie_id'] ?? 0);
         $pdo->prepare('UPDATE kontobewegungen SET kategorie_id = :kategorie_id WHERE id = :id')
             ->execute(['kategorie_id' => $kategorieId > 0 ? $kategorieId : null, 'id' => (int) $_POST['id']]);
+        if ($kategorieId > 0) {
+            $stmtBeteiligter = $pdo->prepare('SELECT beteiligter FROM kontobewegungen WHERE id = :id');
+            $stmtBeteiligter->execute(['id' => (int) $_POST['id']]);
+            lerneKassenberichtRegel($pdo, (string) $stmtBeteiligter->fetchColumn(), $kategorieId);
+        }
     } elseif (($_POST['aktion'] ?? '') === 'auszug_loeschen' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare('SELECT dateiname FROM kontoauszuege WHERE id = :id');
@@ -86,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: vereinskonto.php?jahr=' . $jahrRedirect . '&monat=' . $monatRedirect);
     exit;
 }
+
+wendeKassenberichtRegelnAufUnkategorisierteAn($pdo);
 
 $heute = new DateTime();
 $jahrAuswahl = isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) $heute->format('Y');
@@ -119,7 +129,6 @@ foreach ($buchungenMonat as $b) {
     }
 }
 
-stelleKassenberichtKategorienSicher($pdo);
 $kategorienEinnahme = holeKassenberichtKategorien($pdo, 'einnahme');
 $kategorienAusgabe = holeKassenberichtKategorien($pdo, 'ausgabe');
 

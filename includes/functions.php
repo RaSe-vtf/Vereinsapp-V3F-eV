@@ -1065,6 +1065,98 @@ function sortiereKassenberichtTopBuchungen(array $buchungen, int $anzahl = 5): a
     return array_slice($buchungen, 0, $anzahl);
 }
 
+/**
+ * Sucht anhand der gelernten Zuordnungsregeln eine passende Kategorie fuer
+ * eine (noch nicht gespeicherte oder bereits vorhandene) Buchung. Zuerst ein
+ * exakter Treffer auf den Beteiligten/Empfaenger, sonst die laengste Regel,
+ * deren Stichwort irgendwo in Beteiligter+Verwendungszweck vorkommt (laengste
+ * zuerst, damit spezifischere Regeln vor generischeren gewinnen).
+ */
+function holeKassenberichtRegelKategorie(PDO $pdo, ?string $beteiligter, ?string $verwendungszweck, string $typ): ?int
+{
+    $beteiligter = trim((string) $beteiligter);
+    $verwendungszweck = trim((string) $verwendungszweck);
+
+    if ($beteiligter !== '') {
+        $stmt = $pdo->prepare(
+            'SELECT r.kategorie_id FROM kassenbericht_regeln r
+             JOIN kassenbericht_kategorien k ON k.id = r.kategorie_id
+             WHERE k.typ = :typ AND r.stichwort = :stichwort LIMIT 1'
+        );
+        $stmt->execute(['typ' => $typ, 'stichwort' => $beteiligter]);
+        $treffer = $stmt->fetchColumn();
+        if ($treffer !== false) {
+            return (int) $treffer;
+        }
+    }
+
+    $heuhaufen = trim($beteiligter . ' ' . $verwendungszweck);
+    if ($heuhaufen === '') {
+        return null;
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT r.stichwort, r.kategorie_id FROM kassenbericht_regeln r
+         JOIN kassenbericht_kategorien k ON k.id = r.kategorie_id
+         WHERE k.typ = :typ ORDER BY CHAR_LENGTH(r.stichwort) DESC'
+    );
+    $stmt->execute(['typ' => $typ]);
+    foreach ($stmt->fetchAll() as $regel) {
+        if ($regel['stichwort'] !== '' && mb_stripos($heuhaufen, $regel['stichwort']) !== false) {
+            return (int) $regel['kategorie_id'];
+        }
+    }
+
+    return null;
+}
+
+/** Legt eine Zuordnungsregel an oder aktualisiert sie (manuelles Kategorisieren "lernt" so mit). */
+function lerneKassenberichtRegel(PDO $pdo, ?string $stichwort, int $kategorieId): void
+{
+    $stichwort = trim((string) $stichwort);
+    if ($stichwort === '') {
+        return;
+    }
+    $pdo->prepare(
+        'INSERT INTO kassenbericht_regeln (stichwort, kategorie_id) VALUES (:stichwort, :kategorie_id)
+         ON DUPLICATE KEY UPDATE kategorie_id = :kategorie_id2'
+    )->execute(['stichwort' => $stichwort, 'kategorie_id' => $kategorieId, 'kategorie_id2' => $kategorieId]);
+}
+
+/**
+ * Wendet die gelernten Regeln auf alle bisher unkategorisierten Buchungen an
+ * (Kontobewegungen und Barkasse) - faellt nichts zurueck, aendert nur NULL-
+ * Kategorien, ist also gefahrlos bei jedem Seitenaufruf ausfuehrbar.
+ */
+function wendeKassenberichtRegelnAufUnkategorisierteAn(PDO $pdo): void
+{
+    $rows = $pdo->query(
+        'SELECT id, betrag, verwendungszweck, beteiligter FROM kontobewegungen
+         WHERE kategorie_id IS NULL AND in_barkasse_uebernommen = 0'
+    )->fetchAll();
+    foreach ($rows as $row) {
+        $typ = (float) $row['betrag'] >= 0 ? 'einnahme' : 'ausgabe';
+        $kategorieId = holeKassenberichtRegelKategorie($pdo, $row['beteiligter'], $row['verwendungszweck'], $typ);
+        if ($kategorieId !== null) {
+            $pdo->prepare('UPDATE kontobewegungen SET kategorie_id = :kategorie_id WHERE id = :id')
+                ->execute(['kategorie_id' => $kategorieId, 'id' => $row['id']]);
+        }
+    }
+
+    $rowsBarkasse = $pdo->query(
+        "SELECT id, typ, beschreibung, empfaenger FROM barkasse_buchungen
+         WHERE kategorie_id IS NULL AND typ IN ('einnahme_manuell', 'ausgabe')"
+    )->fetchAll();
+    foreach ($rowsBarkasse as $row) {
+        $typ = $row['typ'] === 'ausgabe' ? 'ausgabe' : 'einnahme';
+        $kategorieId = holeKassenberichtRegelKategorie($pdo, $row['empfaenger'], $row['beschreibung'], $typ);
+        if ($kategorieId !== null) {
+            $pdo->prepare('UPDATE barkasse_buchungen SET kategorie_id = :kategorie_id WHERE id = :id')
+                ->execute(['kategorie_id' => $kategorieId, 'id' => $row['id']]);
+        }
+    }
+}
+
 function berechneKassenberichtJahresdaten(PDO $pdo, int $jahr): array
 {
     $einnahmenBuchungen = holeKassenberichtBuchungen($pdo, $jahr, 'einnahme');

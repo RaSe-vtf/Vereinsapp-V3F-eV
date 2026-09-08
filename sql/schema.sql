@@ -147,6 +147,22 @@ CREATE TABLE IF NOT EXISTS kassenbericht_kategorien (
     KEY idx_typ (typ)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Lernende Zuordnungsregeln fuer die automatische Kategorisierung: ein
+-- Stichwort (typischerweise der Beteiligte/Empfaenger einer Buchung) wird
+-- beim manuellen Kategorisieren automatisch gelernt/aktualisiert und beim
+-- naechsten Auftreten (Kontoauszug-Import, Barkasse-Erfassung, oder als
+-- Nachtrag fuer bereits vorhandene unkategorisierte Buchungen) automatisch
+-- angewendet - bleibt weiterhin manuell aenderbar.
+CREATE TABLE IF NOT EXISTS kassenbericht_regeln (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    stichwort VARCHAR(190) NOT NULL,
+    kategorie_id INT UNSIGNED NOT NULL,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_stichwort (stichwort),
+    CONSTRAINT fk_kassenbericht_regeln_kategorie FOREIGN KEY (kategorie_id) REFERENCES kassenbericht_kategorien (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS kontobewegungen (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     auszug_id INT UNSIGNED NOT NULL,

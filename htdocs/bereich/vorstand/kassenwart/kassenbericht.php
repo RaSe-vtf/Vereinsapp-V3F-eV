@@ -28,6 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (($_POST['aktion'] ?? '') === 'kategorie_deaktivieren' && isset($_POST['id'])) {
         $pdo->prepare('UPDATE kassenbericht_kategorien SET aktiv = 0 WHERE id = :id')->execute(['id' => (int) $_POST['id']]);
         setFlash('success', 'Kategorie wurde ausgeblendet.');
+    } elseif (($_POST['aktion'] ?? '') === 'regel_hinzufuegen') {
+        $stichwort = trim((string) ($_POST['stichwort'] ?? ''));
+        $kategorieId = (int) ($_POST['kategorie_id'] ?? 0);
+        if ($stichwort === '') {
+            setFlash('error', 'Bitte ein Stichwort angeben.');
+        } elseif ($kategorieId <= 0) {
+            setFlash('error', 'Bitte eine Kategorie auswählen.');
+        } else {
+            lerneKassenberichtRegel($pdo, $stichwort, $kategorieId);
+            wendeKassenberichtRegelnAufUnkategorisierteAn($pdo);
+            setFlash('success', 'Regel wurde gespeichert und auf bestehende Buchungen angewendet.');
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'regel_loeschen' && isset($_POST['id'])) {
+        $pdo->prepare('DELETE FROM kassenbericht_regeln WHERE id = :id')->execute(['id' => (int) $_POST['id']]);
+        setFlash('success', 'Regel wurde gelöscht.');
     } elseif (($_POST['aktion'] ?? '') === 'sonderposten_hinzufuegen') {
         $prognoseJahr = (int) ($_POST['prognose_jahr'] ?? 0);
         $bezeichnung = trim((string) ($_POST['bezeichnung'] ?? ''));
@@ -62,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+wendeKassenberichtRegelnAufUnkategorisierteAn($pdo);
+
 $heute = new DateTime();
 $verfuegbareJahre = holeKassenberichtJahre($pdo);
 $jahrAuswahl = isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) $heute->format('Y');
@@ -87,6 +104,13 @@ foreach ($daten['ausgabenNachKategorie'] as $i => $kat) {
 }
 
 $alleKategorien = $pdo->query('SELECT * FROM kassenbericht_kategorien ORDER BY typ, aktiv DESC, name')->fetchAll();
+
+$alleRegeln = $pdo->query(
+    'SELECT r.id, r.stichwort, k.name AS kategorie_name, k.typ
+     FROM kassenbericht_regeln r
+     JOIN kassenbericht_kategorien k ON k.id = r.kategorie_id
+     ORDER BY r.stichwort'
+)->fetchAll();
 
 // Prognose fuers neue Haushaltsjahr (= Kalenderjahr): Basis ist das
 // abgeschlossene Vorjahr 1:1 je Kategorie, darauf werden manuell erfasste
@@ -379,6 +403,65 @@ function eGeld(float $betrag): string
                 </table>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0;">Automatische Zuordnung</h2>
+            <p class="text-muted">Sobald ihr eine Buchung bei Vereinskonto oder Barkasse manuell einer Kategorie zuordnet, wird automatisch eine Regel für den Beteiligten/Empfänger gelernt oder aktualisiert - neue und bereits vorhandene unkategorisierte Buchungen mit demselben Stichwort werden dann automatisch zugeordnet. Hier lassen sich Regeln auch von Hand anlegen, z.B. ein Stichwort aus dem Verwendungszweck statt dem Beteiligten.</p>
+
+            <?php if (empty($alleRegeln)): ?>
+                <p>Noch keine Regeln gelernt.</p>
+            <?php else: ?>
+                <div style="overflow-x:auto; margin-bottom:16px;">
+                <table class="tabelle-einzeilig">
+                    <thead>
+                        <tr>
+                            <th>Stichwort</th>
+                            <th>Kategorie</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($alleRegeln as $regel): ?>
+                            <tr>
+                                <td><?= e($regel['stichwort']) ?></td>
+                                <td><?= e($regel['kategorie_name']) ?> <span class="text-muted">(<?= $regel['typ'] === 'einnahme' ? 'Einnahme' : 'Ausgabe' ?>)</span></td>
+                                <td>
+                                    <form method="post" class="inline-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                        <input type="hidden" name="aktion" value="regel_loeschen">
+                                        <input type="hidden" name="id" value="<?= (int) $regel['id'] ?>">
+                                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Regel wirklich löschen?');">Löschen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
+            <?php endif; ?>
+
+            <h3>Neue Regel</h3>
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="regel_hinzufuegen">
+
+                <label class="required" for="regel_stichwort">Stichwort</label>
+                <input type="text" id="regel_stichwort" name="stichwort" placeholder="z.B. Mitgliedsbeitrag" required>
+
+                <label class="required" for="regel_kategorie">Kategorie</label>
+                <select id="regel_kategorie" name="kategorie_id" required>
+                    <?php foreach ($alleKategorien as $kat): ?>
+                        <?php if ((bool) $kat['aktiv']): ?>
+                            <option value="<?= (int) $kat['id'] ?>"><?= e($kat['name']) ?> (<?= $kat['typ'] === 'einnahme' ? 'Einnahme' : 'Ausgabe' ?>)</option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </select>
+
+                <div style="margin-top:16px;">
+                    <button type="submit" class="btn">Regel speichern</button>
+                </div>
+            </form>
         </div>
 
         <div class="card">
