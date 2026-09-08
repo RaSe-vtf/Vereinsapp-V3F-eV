@@ -670,21 +670,6 @@ th {
     font-size: 2.2rem;
 }
 
-.badge-intern {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 8px;
-    border-radius: 999px;
-    background: var(--farbe-bg);
-    border: 1px solid var(--farbe-border);
-    color: var(--farbe-text-soft);
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: normal;
-    vertical-align: middle;
-}
-
 /* Sportlerprofile: Uebersichts-Kacheln (Foto + Name) */
 .sportler-grid {
     display: grid;

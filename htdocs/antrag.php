@@ -176,6 +176,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
                 </div>
 
+                <h3 style="margin-bottom:2px;">Für alle Mitglieder sichtbar</h3>
+                <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem Sportlerprofil, das alle Mitglieder von <?= e(VEREIN_NAME) ?> sehen können.</p>
+
                 <fieldset>
                     <legend>Persönliche Daten</legend>
 
@@ -194,48 +197,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="required" for="geburtsdatum">Geburtsdatum</label>
                             <input type="date" id="geburtsdatum" name="geburtsdatum" value="<?= e($werte['geburtsdatum']) ?>" required>
-                            <div class="hint">Erscheint auf deinem öffentlichen Sportlerprofil.</div>
                         </div>
                         <div>
-                            <label class="required" for="geburtsort">Geburtsort <span class="badge-intern">nur Vereinsverwaltung</span></label>
-                            <input type="text" id="geburtsort" name="geburtsort" value="<?= e($werte['geburtsort']) ?>" required>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Adresse & Kontakt</legend>
-
-                    <label class="required" for="strasse_hausnummer">Straße und Hausnummer <span class="badge-intern">nur Vereinsverwaltung</span></label>
-                    <input type="text" id="strasse_hausnummer" name="strasse_hausnummer" value="<?= e($werte['strasse_hausnummer']) ?>" required>
-
-                    <div class="form-row">
-                        <div>
-                            <label class="required" for="plz">Postleitzahl <span class="badge-intern">nur Vereinsverwaltung</span></label>
-                            <input type="text" id="plz" name="plz" inputmode="numeric" value="<?= e($werte['plz']) ?>" required>
-                        </div>
-                        <div>
-                            <label class="required" for="ort">Ort</label>
+                            <label class="required" for="ort">Wohnort</label>
                             <input type="text" id="ort" name="ort" value="<?= e($werte['ort']) ?>" required>
-                            <div class="hint">Als Heimatort auf deinem Sportlerprofil sichtbar.</div>
+                            <div class="hint">Erscheint als Heimatort auf deinem Sportlerprofil.</div>
                         </div>
                     </div>
 
                     <label class="required" for="telefon">Telefonnummer</label>
                     <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
-                    <div class="hint">Die vollständige Nummer sieht nur die Vereinsverwaltung. Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung).</div>
-
-                    <label class="required" for="email">E-Mail-Adresse <span class="badge-intern">nur Vereinsverwaltung</span></label>
-                    <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
+                    <div class="hint">Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung), die vollständige Nummer sieht nur die Vereinsverwaltung.</div>
 
                     <label for="instagram">Instagram (optional)</label>
                     <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>">
-                    <div class="hint">Freiwillige Angabe, erscheint auf deinem Sportlerprofil.</div>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Sportlerprofil</legend>
-                    <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem für alle Mitglieder sichtbaren Sportlerprofil.</p>
 
                     <label for="shirt_groesse">Shirt-Größe (optional)</label>
                     <select id="shirt_groesse" name="shirt_groesse">
@@ -247,6 +222,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <label for="portraet">Kurzes Porträt zur Vorstellung (optional)</label>
                     <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich: seit wann du dabei bist, was dir am Verein gefällt, deine Ziele ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;"><?= e($werte['portraet']) ?></textarea>
+
+                    <label class="required" for="foto" style="margin-top:14px;">Foto von dir</label>
+                    <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp" required>
+                    <div class="hint">JPG, PNG oder WebP, maximal 10 MB.</div>
+                </fieldset>
+
+                <hr style="border:none; border-top:2px solid var(--farbe-border); margin:28px 0;">
+
+                <h3 style="margin-bottom:2px;">Nur für die Vereinsverwaltung sichtbar</h3>
+                <p class="text-muted" style="margin-top:0;">Diese Angaben sind aus Sicherheitsgründen nicht öffentlich einsehbar &ndash; Zugriff hat ausschließlich der Vorstand bzw. die Geschäftsführung.</p>
+
+                <fieldset>
+                    <legend>Weitere persönliche Daten</legend>
+
+                    <label class="required" for="geburtsort">Geburtsort</label>
+                    <input type="text" id="geburtsort" name="geburtsort" value="<?= e($werte['geburtsort']) ?>" required>
+
+                    <label class="required" for="strasse_hausnummer">Straße und Hausnummer</label>
+                    <input type="text" id="strasse_hausnummer" name="strasse_hausnummer" value="<?= e($werte['strasse_hausnummer']) ?>" required>
+
+                    <label class="required" for="plz">Postleitzahl</label>
+                    <input type="text" id="plz" name="plz" inputmode="numeric" value="<?= e($werte['plz']) ?>" required>
+
+                    <label class="required" for="email">E-Mail-Adresse</label>
+                    <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
                 </fieldset>
 
                 <fieldset>
@@ -258,13 +258,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <label class="required" for="passwort_wiederholt">Passwort wiederholen</label>
                     <input type="password" id="passwort_wiederholt" name="passwort_wiederholt" minlength="8" required>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Foto</legend>
-                    <label class="required" for="foto">Foto von dir</label>
-                    <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp" required>
-                    <div class="hint">JPG, PNG oder WebP, maximal 10 MB.</div>
                 </fieldset>
 
                 <fieldset>
