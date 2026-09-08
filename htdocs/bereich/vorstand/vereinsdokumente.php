@@ -83,6 +83,18 @@ $zurueck = '../home.php';
     <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
     <link rel="manifest" href="../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
+    <style>
+        /* Vereinsdokumente-Tabelle hat viele Spalten mit teils langen
+           Bezeichnungen/Dateinamen - kompakter als die App-weite Tabellen-
+           Grundschrift, damit auf einem Laptop-Bildschirm alles ohne
+           horizontales Scrollen sichtbar ist. */
+        .vd-tabelle { font-size: 0.78rem; }
+        .vd-tabelle th,
+        .vd-tabelle td { padding: 5px 7px; }
+        .vd-tabelle .btn,
+        .vd-tabelle .btn-secondary { padding: 3px 7px; font-size: 0.72rem; }
+        .vd-tabelle .badge { padding: 2px 7px; font-size: 0.7rem; }
+    </style>
 </head>
 <body>
     <?php require __DIR__ . '/../../../includes/kopf.php'; ?>
@@ -111,13 +123,13 @@ $zurueck = '../home.php';
                     <?php if (empty($dokumente)) continue; ?>
                     <h2><?= e($kategorieName) ?></h2>
                     <div style="overflow-x:auto; margin-bottom:20px;">
-                    <table class="tabelle-einzeilig">
+                    <table class="tabelle-einzeilig vd-tabelle">
                         <thead>
                             <tr>
                                 <th>Bezeichnung</th>
                                 <th>Dateiname</th>
-                                <th>Hochgeladen am</th>
-                                <th>Hochgeladen von</th>
+                                <th>Datum</th>
+                                <th>Von</th>
                                 <th>Format</th>
                                 <th>Status</th>
                                 <th>Aktionen</th>
