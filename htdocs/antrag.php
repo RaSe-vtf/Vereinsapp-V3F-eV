@@ -290,13 +290,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <ul style="margin-top:0;">
                             <?php foreach ($aktuelleDokumente as $doc):
                                 // Nur PDFs werden im Browser inline angezeigt (Bilder werden beim
-                                // Upload immer zu PDF konvertiert, andere Formate bleiben Downloads).
-                                // Bei Downloads darf kein neuer Tab geoeffnet werden, sonst bleibt
-                                // dieser leer/weiss stehen, waehrend der eigentliche Download im
-                                // Hintergrund laeuft.
+                                // Upload immer zu PDF konvertiert). Andere Formate (Word,
+                                // PowerPoint, HTML, ...) fuehren erst auf eine Zwischenseite mit
+                                // Download-Button, statt die Datei ungefragt herunterzuladen.
                                 $istPdf = strtolower(pathinfo($doc['dateiname'], PATHINFO_EXTENSION)) === 'pdf';
+                                $ziel = $istPdf ? 'vereinsdokument.php?id=' . (int) $doc['id'] : 'vereinsdokument_download.php?id=' . (int) $doc['id'];
                             ?>
-                                <li><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>"<?= $istPdf ? ' target="_blank" rel="noopener"' : '' ?>><?= e($doc['original_dateiname'] ?? $doc['bezeichnung']) ?></a></li>
+                                <li><a href="<?= e($ziel) ?>" target="_blank" rel="noopener"><?= e($doc['original_dateiname'] ?? $doc['bezeichnung']) ?></a></li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
