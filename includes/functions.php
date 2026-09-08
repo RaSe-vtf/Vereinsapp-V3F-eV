@@ -763,11 +763,18 @@ function handleBelegUpload(array $file): string
 
 /**
  * Validiert und speichert ein hochgeladenes Vereinsdokument (Satzung,
- * Ordnung) als PDF.
+ * Ordnung). Es gibt bewusst keine Formatbeschraenkung beim Upload:
+ * - PDF bleibt PDF.
+ * - Bilder (JPG/PNG/WebP) werden automatisch in eine einseitige PDF
+ *   gewandelt, damit sie sich wie ein Dokument oeffnen/verlinken lassen.
+ * - Alle anderen Formate (z.B. Word/ODT) werden unveraendert im
+ *   Originalformat gespeichert - eine echte Wandlung dafuer braeuchte ein
+ *   externes Programm wie LibreOffice, das sich auf dem Webspace ohne
+ *   SSH-Zugang nicht installieren laesst.
  */
 function handleVereinsdokumentUpload(array $file): string
 {
-    $maxBytes = 15 * 1024 * 1024; // 15 MB
+    $maxBytes = 20 * 1024 * 1024; // 20 MB
 
     if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
         throw new RuntimeException('Bitte eine Datei auswählen.');
@@ -779,13 +786,7 @@ function handleVereinsdokumentUpload(array $file): string
         throw new RuntimeException('Ungültiger Datei-Upload.');
     }
     if ($file['size'] > $maxBytes) {
-        throw new RuntimeException('Die Datei darf maximal 15 MB groß sein.');
-    }
-
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->file($file['tmp_name']);
-    if ($mime !== 'application/pdf') {
-        throw new RuntimeException('Bitte nur PDF-Dateien hochladen.');
+        throw new RuntimeException('Die Datei darf maximal 20 MB groß sein.');
     }
 
     $zielOrdner = __DIR__ . '/../private/uploads/vereinsdokumente/';
@@ -793,10 +794,131 @@ function handleVereinsdokumentUpload(array $file): string
         throw new RuntimeException('Speicherort für Vereinsdokumente konnte nicht angelegt werden.');
     }
 
-    $dateiname = bin2hex(random_bytes(16)) . '.pdf';
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    $bildLader = ['image/jpeg' => 'imagecreatefromjpeg', 'image/png' => 'imagecreatefrompng', 'image/webp' => 'imagecreatefromwebp'];
+
+    if ($mime === 'application/pdf') {
+        $dateiname = bin2hex(random_bytes(16)) . '.pdf';
+        if (!move_uploaded_file($file['tmp_name'], $zielOrdner . $dateiname)) {
+            throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
+        }
+        return $dateiname;
+    }
+
+    if (isset($bildLader[$mime])) {
+        $dateiname = bin2hex(random_bytes(16)) . '.pdf';
+        file_put_contents($zielOrdner . $dateiname, wandleBildInEinseitigePdf($file['tmp_name'], $mime));
+        return $dateiname;
+    }
+
+    $endung = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!preg_match('/^[a-z0-9]{1,10}$/', $endung)) {
+        $endung = 'bin';
+    }
+    $dateiname = bin2hex(random_bytes(16)) . '.' . $endung;
     if (!move_uploaded_file($file['tmp_name'], $zielOrdner . $dateiname)) {
         throw new RuntimeException('Die Datei konnte nicht gespeichert werden.');
     }
 
     return $dateiname;
+}
+
+/**
+ * Wandelt ein hochgeladenes Bild in eine einseitige PDF-Datei (reines PHP,
+ * ohne externe Programme). Richtet JPEGs anhand der EXIF-Ausrichtung aus
+ * und verkleinert grosse Bilder wie beim Fotoupload.
+ */
+function wandleBildInEinseitigePdf(string $quellPfad, string $mime): string
+{
+    stelleAusreichendFotoSpeicherSicher();
+
+    $lader = match ($mime) {
+        'image/jpeg' => 'imagecreatefromjpeg',
+        'image/png' => 'imagecreatefrompng',
+        'image/webp' => 'imagecreatefromwebp',
+        default => null,
+    };
+    $bild = $lader !== null ? @$lader($quellPfad) : false;
+    if ($bild === false) {
+        throw new RuntimeException('Das Bild konnte nicht gelesen werden.');
+    }
+
+    if ($mime === 'image/jpeg') {
+        $exif = @exif_read_data($quellPfad);
+        if ($exif !== false && isset($exif['Orientation'])) {
+            $bild = korrigiereFotoAusrichtung($bild, (int) $exif['Orientation']);
+        }
+    }
+
+    $breite = imagesx($bild);
+    $hoehe = imagesy($bild);
+    if ($breite > FOTO_MAX_KANTE || $hoehe > FOTO_MAX_KANTE) {
+        $faktor = FOTO_MAX_KANTE / max($breite, $hoehe);
+        $neueBreite = (int) round($breite * $faktor);
+        $neueHoehe = (int) round($hoehe * $faktor);
+        $verkleinert = imagecreatetruecolor($neueBreite, $neueHoehe);
+        $weiss = imagecolorallocate($verkleinert, 255, 255, 255);
+        imagefill($verkleinert, 0, 0, $weiss);
+        imagecopyresampled($verkleinert, $bild, 0, 0, 0, 0, $neueBreite, $neueHoehe, $breite, $hoehe);
+        imagedestroy($bild);
+        $bild = $verkleinert;
+        $breite = $neueBreite;
+        $hoehe = $neueHoehe;
+    }
+
+    ob_start();
+    imagejpeg($bild, null, FOTO_JPEG_QUALITAET);
+    $jpegDaten = (string) ob_get_clean();
+    imagedestroy($bild);
+
+    return baueEinseitigePdfMitJpeg($jpegDaten, $breite, $hoehe);
+}
+
+/**
+ * Baut von Hand eine minimale, gueltige PDF-Datei mit genau einer Seite,
+ * die ein einzelnes JPEG-Bild seitenfuellend enthaelt (DCTDecode-Filter -
+ * JPEG-Bytes koennen unveraendert eingebettet werden, kein externes
+ * PDF-Tool noetig).
+ */
+function baueEinseitigePdfMitJpeg(string $jpegDaten, int $breitePx, int $hoehePx): string
+{
+    $dpiAnnahme = 150.0;
+    $breitePt = round($breitePx * 72 / $dpiAnnahme, 2);
+    $hoehePt = round($hoehePx * 72 / $dpiAnnahme, 2);
+
+    $inhaltStream = sprintf("q\n%.2F 0 0 %.2F 0 0 cm\n/Im0 Do\nQ", $breitePt, $hoehePt);
+
+    $objekte = [];
+    $objekte[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+    $objekte[2] = '<< /Type /Pages /Kids [3 0 R] /Count 1 >>';
+    $objekte[3] = sprintf(
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.2F %.2F] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>',
+        $breitePt,
+        $hoehePt
+    );
+    $objekte[4] = sprintf("<< /Length %d >>\nstream\n%s\nendstream", strlen($inhaltStream), $inhaltStream);
+    $objekte[5] = sprintf(
+        "<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length %d >>\nstream\n%s\nendstream",
+        $breitePx,
+        $hoehePx,
+        strlen($jpegDaten),
+        $jpegDaten
+    );
+
+    $pdf = "%PDF-1.4\n";
+    $offsets = [];
+    foreach ($objekte as $nr => $inhalt) {
+        $offsets[$nr] = strlen($pdf);
+        $pdf .= "$nr 0 obj\n$inhalt\nendobj\n";
+    }
+    $xrefStart = strlen($pdf);
+    $anzahl = count($objekte) + 1;
+    $pdf .= "xref\n0 $anzahl\n0000000000 65535 f \n";
+    for ($i = 1; $i <= count($objekte); $i++) {
+        $pdf .= sprintf("%010d 00000 n \n", $offsets[$i]);
+    }
+    $pdf .= "trailer\n<< /Size $anzahl /Root 1 0 R >>\nstartxref\n$xrefStart\n%%EOF";
+
+    return $pdf;
 }

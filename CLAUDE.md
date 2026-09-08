@@ -49,6 +49,17 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   Beteiligter) nicht sauber erkannt werden, anhand eines echten
   Beispielauszugs nachbessern – nicht von selbst nachfragen/andrängen, der
   Nutzer bringt bei Bedarf einen echten Auszug mit.
+- [ ] **Vereinsdokumente-Upload nach dem Rollout auf PDF-only umstellen**:
+  Der Upload unter Geschäftsstelle -> Vereinsdokumente
+  (`handleVereinsdokumentUpload()` in `includes/functions.php`) akzeptiert
+  aktuell bewusst jedes Dateiformat (PDF bleibt PDF, Bilder werden
+  automatisch in eine PDF-Seite gewandelt, alles andere z.B. Word/ODT wird
+  unverändert im Originalformat gespeichert) – das gilt ausdrücklich nur
+  bis zum Rollout, zur einfacheren Erstbefüllung. Nach dem Rollout soll das
+  wieder auf reine PDF-Pflicht zurückgestellt werden (Formate ohne
+  automatische Wandlung dann ablehnen statt im Originalformat zu
+  akzeptieren) – nicht von selbst nachfragen/andrängen, der Nutzer meldet
+  sich, wenn der Rollout so weit ist.
 
 ## Vereinsname im Fließtext
 

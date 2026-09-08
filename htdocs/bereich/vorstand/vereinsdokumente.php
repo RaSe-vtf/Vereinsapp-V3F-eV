@@ -111,6 +111,7 @@ $zurueck = '../home.php';
                             <tr>
                                 <th>Hochgeladen am</th>
                                 <th>Hochgeladen von</th>
+                                <th>Format</th>
                                 <th>Status</th>
                                 <th>Aktionen</th>
                             </tr>
@@ -120,6 +121,7 @@ $zurueck = '../home.php';
                                 <tr>
                                     <td><?= e((new DateTime($doc['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
                                     <td><?= $doc['vorname'] !== null ? e($doc['vorname'] . ' ' . $doc['nachname']) : '&ndash;' ?></td>
+                                    <td><?= e(strtoupper(pathinfo($doc['dateiname'], PATHINFO_EXTENSION))) ?></td>
                                     <td><?= $i === 0 ? '<span class="badge badge-angenommen">aktuell</span>' : '<span class="badge badge-neu">Historie</span>' ?></td>
                                     <td>
                                         <a class="btn btn-secondary" href="../../vereinsdokument.php?id=<?= (int) $doc['id'] ?>">Herunterladen</a>
@@ -139,7 +141,7 @@ $zurueck = '../home.php';
             <?php endif; ?>
 
             <h3>Neue Fassung hochladen</h3>
-            <p class="text-muted">Bei einer bereits vorhandenen Bezeichnung (z.B. "Satzung") wird die neue Datei als aktuelle Fassung geführt, die vorherige bleibt als Historie erhalten.</p>
+            <p class="text-muted">Bei einer bereits vorhandenen Bezeichnung (z.B. "Satzung") wird die neue Datei als aktuelle Fassung geführt, die vorherige bleibt als Historie erhalten. Es gibt keine Formatbeschränkung: PDF bleibt PDF, Bilder (JPG/PNG/WebP) werden automatisch in eine PDF-Seite gewandelt, andere Formate (z.B. Word) werden im Originalformat gespeichert.</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                 <input type="hidden" name="aktion" value="hochladen">
@@ -152,8 +154,8 @@ $zurueck = '../home.php';
                     <?php endforeach; ?>
                 </datalist>
 
-                <label class="required" for="datei">Datei (PDF)</label>
-                <input type="file" id="datei" name="datei" accept="application/pdf" required>
+                <label class="required" for="datei">Datei</label>
+                <input type="file" id="datei" name="datei" required>
 
                 <div style="margin-top:16px;">
                     <button type="submit" class="btn">Hochladen</button>

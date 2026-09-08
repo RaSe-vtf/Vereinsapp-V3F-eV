@@ -12,7 +12,7 @@ if (!$dokument) {
     exit;
 }
 
-// Dateiname stammt aus der DB und wurde beim Upload auf [a-f0-9]+.pdf beschraenkt.
+// Dateiname stammt aus der DB und wurde beim Upload auf [a-f0-9]+.<endung> beschraenkt.
 $pfad = __DIR__ . '/../private/uploads/vereinsdokumente/' . basename($dokument['dateiname']);
 
 if (!is_file($pfad)) {
@@ -20,8 +20,13 @@ if (!is_file($pfad)) {
     exit;
 }
 
-header('Content-Type: application/pdf');
-header('Content-Disposition: inline; filename="' . preg_replace('/[^A-Za-z0-9 _.-]/', '', $dokument['bezeichnung']) . '.pdf"');
+$finfo = new finfo(FILEINFO_MIME_TYPE);
+$mime = $finfo->file($pfad) ?: 'application/octet-stream';
+$endung = strtolower(pathinfo($dokument['dateiname'], PATHINFO_EXTENSION)) ?: 'bin';
+$anzeigename = preg_replace('/[^A-Za-z0-9 _.-]/', '', $dokument['bezeichnung']) . '.' . $endung;
+
+header('Content-Type: ' . $mime);
+header('Content-Disposition: inline; filename="' . $anzeigename . '"');
 header('Content-Length: ' . (string) filesize($pfad));
 header('Cache-Control: private, max-age=0, no-cache');
 readfile($pfad);
