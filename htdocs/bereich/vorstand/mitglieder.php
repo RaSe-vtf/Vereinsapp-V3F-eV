@@ -92,7 +92,6 @@ $flash = takeFlash();
                     <thead>
                         <tr>
                             <th>Foto</th>
-                            <th>Bildnutzung</th>
                             <th>Vorname</th>
                             <th>Nachname</th>
                             <th>Geburtsdatum</th>
@@ -102,9 +101,9 @@ $flash = takeFlash();
                             <th>E-Mail</th>
                             <th>Instagram</th>
                             <th>Rolle</th>
-                            <th>Status</th>
-                            <th>Passwort</th>
                             <th>Mitglied seit</th>
+                            <th>Bildnutzung</th>
+                            <th>Status</th>
                             <th>Aktionen</th>
                         </tr>
                     </thead>
@@ -120,7 +119,6 @@ $flash = takeFlash();
                                         <?php endif; ?>
                                     </a>
                                 </td>
-                                <td><?= $m['einverstaendnis_bildnutzung'] ? '<span class="badge badge-angenommen">ja</span>' : '<span class="badge badge-abgelehnt">nein</span>' ?></td>
                                 <td><?= e($m['vorname']) ?></td>
                                 <td><?= e($m['nachname']) ?></td>
                                 <td><?= e((new DateTime($m['geburtsdatum']))->format('d.m.Y')) ?></td>
@@ -141,9 +139,9 @@ $flash = takeFlash();
                                         </select>
                                     </form>
                                 </td>
-                                <td><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
-                                <td><?= $m['passwort_hash'] !== null ? 'gesetzt' : '<em>nicht gesetzt</em>' ?></td>
                                 <td><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
+                                <td><?= $m['einverstaendnis_bildnutzung'] ? '<span class="badge badge-angenommen">ja</span>' : '<span class="badge badge-abgelehnt">nein</span>' ?></td>
+                                <td><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
                                 <td>
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
