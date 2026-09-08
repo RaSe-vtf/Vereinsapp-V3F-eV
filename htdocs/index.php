@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e(VEREIN_NAME) ?></div>
+                <div class="top-header__subtitle"><?= e(vereinNameNowrap()) ?></div>
             </div>
         </div>
     </header>
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="hero">
             <img src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <h1>Willkommen bei der <?= e(APP_NAME) ?></h1>
-            <p><?= e(VEREIN_NAME) ?> verwaltet Mitgliedschaften, Anträge und Neuigkeiten hier in der App.</p>
+            <p><?= e(vereinNameNowrap()) ?> verwaltet Mitgliedschaften, Anträge und Neuigkeiten hier in der App.</p>
         </div>
 
         <div class="card" style="max-width:360px; margin:0 auto;">
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="card" style="max-width:360px; margin:24px auto 0; text-align:center;">
             <h2>Aufnahmeantrag</h2>
-            <p>Noch kein Mitglied? Hier kannst du deinen Aufnahmeantrag für <?= e(VEREIN_NAME) ?> ausfüllen. Der Vorstand bearbeitet deinen Antrag anschließend.</p>
+            <p>Noch kein Mitglied? Hier kannst du deinen Aufnahmeantrag für <?= e(vereinNameNowrap()) ?> ausfüllen. Der Vorstand bearbeitet deinen Antrag anschließend.</p>
             <a class="btn" href="antrag.php">Zum Aufnahmeantrag</a>
         </div>
     </main>

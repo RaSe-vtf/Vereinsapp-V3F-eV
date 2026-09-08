@@ -103,11 +103,11 @@ $zurueck = null;
             <?php endif; ?>
 
             <div class="card" style="background:var(--farbe-bg); box-shadow:none;">
-                <p style="margin-top:0;"><strong>Zahlungsempfänger:</strong> <?= e(VEREIN_NAME) ?><br>
+                <p style="margin-top:0;"><strong>Zahlungsempfänger:</strong> <?= e(vereinNameNowrap()) ?><br>
                 <strong>Gläubiger-Identifikationsnummer:</strong> <?= defined('SEPA_GLAEUBIGER_ID') ? e(SEPA_GLAEUBIGER_ID) : 'noch nicht hinterlegt' ?><br>
                 <strong>Mandatsreferenz:</strong> wird bei Erteilung vergeben und dir angezeigt</p>
 
-                <p>Ich ermächtige <?= e(VEREIN_NAME) ?>, Zahlungen von meinem Konto mittels Lastschrift einzuziehen, die gemäß der Beitragsordnung sowie der Startpassregelung der DTU (Deutsche Triathlon Union) entstehen. Zugleich weise ich mein Kreditinstitut an, die von <?= e(VEREIN_NAME) ?> auf mein Konto gezogenen Lastschriften einzulösen.</p>
+                <p>Ich ermächtige <?= e(vereinNameNowrap()) ?>, Zahlungen von meinem Konto mittels Lastschrift einzuziehen, die gemäß der Beitragsordnung sowie der Startpassregelung der DTU (Deutsche Triathlon Union) entstehen. Zugleich weise ich mein Kreditinstitut an, die von <?= e(vereinNameNowrap()) ?> auf mein Konto gezogenen Lastschriften einzulösen.</p>
 
                 <p class="text-muted" style="margin-bottom:0;">Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.</p>
             </div>

@@ -41,6 +41,17 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   (z.B. nach endgültiger Eintragung ins Vereinsregister), hier und in der
   Config nachziehen.
 
+## Vereinsname im Fließtext
+
+"Vonsys Tri Family e.V." (bzw. der jeweils aktuelle Wert von `VEREIN_NAME`)
+soll im sichtbaren Text nie über eine Zeile umbrechen, sondern immer wie ein
+zusammenhängendes Wort erscheinen. Dafür gibt es `vereinNameNowrap()` in
+`includes/functions.php` (ersetzt Leerzeichen durch geschützte Leerzeichen
+`\u{00A0}`) – bei sichtbarem Fließtext `e(vereinNameNowrap())` statt
+`e(VEREIN_NAME)` verwenden. Ausgenommen sind `alt`-Attribute sowie reiner
+Klartext ohne Umbruchsproblem (E-Mail-Texte, SEPA-XML) – dort weiterhin
+`VEREIN_NAME` direkt nutzen.
+
 ## Marken-Farbverlauf
 
 Der Akzent-Farbverlauf orientiert sich am App-Icon und wird für Banner-Rahmen

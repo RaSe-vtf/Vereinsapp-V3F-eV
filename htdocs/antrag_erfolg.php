@@ -23,7 +23,7 @@ require_once __DIR__ . '/../includes/functions.php';
             <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e(VEREIN_NAME) ?></div>
+                <div class="top-header__subtitle"><?= e(vereinNameNowrap()) ?></div>
             </div>
         </div>
     </header>
@@ -31,7 +31,7 @@ require_once __DIR__ . '/../includes/functions.php';
     <main class="container">
         <div class="card" style="text-align:center;">
             <h2>Vielen Dank für deinen Aufnahmeantrag!</h2>
-            <p>Dein Antrag ist bei uns eingegangen. Der Vorstand von <?= e(VEREIN_NAME) ?> prüft deine Angaben und meldet sich zeitnah bei dir.</p>
+            <p>Dein Antrag ist bei uns eingegangen. Der Vorstand von <?= e(vereinNameNowrap()) ?> prüft deine Angaben und meldet sich zeitnah bei dir.</p>
             <a class="btn btn-secondary" href="index.php">Zurück zur Startseite</a>
         </div>
     </main>

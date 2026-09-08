@@ -35,7 +35,7 @@ $zurueck = 'home.php';
 
     <main class="container">
         <h2 style="margin-top:0;">Sportlerprofile</h2>
-        <p class="text-muted">Alle aktiven Mitglieder von <?= e(VEREIN_NAME) ?>.</p>
+        <p class="text-muted">Alle aktiven Mitglieder von <?= e(vereinNameNowrap()) ?></p>
 
         <?php if (empty($mitgliederListe)): ?>
             <p>Noch keine aktiven Mitglieder vorhanden.</p>

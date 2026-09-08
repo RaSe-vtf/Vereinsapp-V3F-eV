@@ -154,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e(VEREIN_NAME) ?></div>
+                <div class="top-header__subtitle"><?= e(vereinNameNowrap()) ?></div>
             </div>
         </div>
     </header>
@@ -162,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="container">
         <div class="card">
             <h2>Aufnahmeantrag</h2>
-            <p>Mit diesem Formular beantragst du gleichzeitig deine Mitgliedschaft bei <?= e(VEREIN_NAME) ?>. Bitte fülle alle Felder aus &ndash; nur die Einwilligung zur Bildnutzung ist freiwillig.</p>
+            <p>Mit diesem Formular beantragst du deine Mitgliedschaft bei <?= e(vereinNameNowrap()) ?> Das Formular ist vollständig auszufüllen.</p>
 
             <?php if (!empty($fehler)): ?>
                 <div class="alert alert-error">
@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <h3 style="margin-bottom:2px;">Für alle Mitglieder sichtbar</h3>
-                <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem Sportlerprofil, das alle Mitglieder von <?= e(VEREIN_NAME) ?> sehen können.</p>
+                <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem Sportlerprofil, das alle Mitglieder von <?= e(vereinNameNowrap()) ?> sehen können.</p>
 
                 <fieldset>
                     <legend>Persönliche Daten</legend>
@@ -207,13 +207,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label for="ort">Wohnort</label>
                             <input type="text" id="ort" name="ort" value="<?= e($werte['ort']) ?>" required>
-                            <div class="hint">Erscheint als Heimatort auf deinem Sportlerprofil.</div>
                         </div>
                     </div>
 
                     <label for="telefon">Telefonnummer</label>
                     <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
-                    <div class="hint">Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung), die vollständige Nummer sieht nur die Vereinsverwaltung.</div>
+                    <div class="hint">Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung), die vollständige Nummer sieht nur der Vorstand.</div>
 
                     <label for="instagram">Instagram</label>
                     <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>" required>
@@ -227,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </select>
 
                     <label for="portraet">Kurzes Porträt zur Vorstellung</label>
-                    <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich: seit wann du dabei bist, was dir am Verein gefällt, deine Ziele ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;" required><?= e($werte['portraet']) ?></textarea>
+                    <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern etwas über deine sportlichen Vorlieben und Interessen ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;" required><?= e($werte['portraet']) ?></textarea>
 
                     <label for="foto" style="margin-top:14px;">Foto von dir</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp" required>
@@ -236,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <hr style="border:none; border-top:2px solid var(--farbe-border); margin:28px 0;">
 
-                <h3 style="margin-bottom:2px;">Nur für die Vereinsverwaltung sichtbar</h3>
+                <h3 style="margin-bottom:2px;">Nur für den Vorstand sichtbar</h3>
                 <p class="text-muted" style="margin-top:0;">Diese Angaben sind aus Sicherheitsgründen nicht öffentlich einsehbar &ndash; Zugriff hat ausschließlich der Vorstand bzw. die Geschäftsführung.</p>
 
                 <fieldset>
@@ -271,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <label class="inline">
                         <input type="checkbox" name="ein_satzung" value="1" <?= !empty($_POST['ein_satzung']) ? 'checked' : '' ?> required>
-                        <span>Ich habe die Satzung und alle Ordnungen von <?= e(VEREIN_NAME) ?> gelesen und erkenne diese verbindlich an.</span>
+                        <span>Ich habe die Satzung und alle Ordnungen von <?= e(vereinNameNowrap()) ?> gelesen und erkenne diese verbindlich an.</span>
                     </label>
 
                     <label class="inline">

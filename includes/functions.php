@@ -6,6 +6,15 @@ function e(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Vereinsname mit geschuetzten Leerzeichen, damit er auf Bildschirmtext
+ * nie umbricht und immer als ein zusammenhaengendes "Wort" erscheint.
+ */
+function vereinNameNowrap(): string
+{
+    return str_replace(' ', "\u{00A0}", VEREIN_NAME);
+}
+
 function getCsrfToken(): string
 {
     if (empty($_SESSION['csrf_token'])) {

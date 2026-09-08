@@ -23,7 +23,7 @@ require_once __DIR__ . '/../includes/functions.php';
             <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div>
                 <div class="top-header__title"><?= e(APP_NAME) ?></div>
-                <div class="top-header__subtitle"><?= e(VEREIN_NAME) ?></div>
+                <div class="top-header__subtitle"><?= e(vereinNameNowrap()) ?></div>
             </div>
         </div>
     </header>
