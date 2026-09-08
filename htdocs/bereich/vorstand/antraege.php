@@ -31,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
 
                     $insert = $pdo->prepare(
                         'INSERT INTO mitglieder
-                            (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, passwort_hash, aktiv)
+                            (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, shirt_groesse, portraet, rolle, passwort_hash, aktiv)
                          VALUES
-                            (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, "vollmitglied", :passwort_hash, 1)'
+                            (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :shirt_groesse, :portraet, "vollmitglied", :passwort_hash, 1)'
                     );
                     $insert->execute([
                         'antrag_id' => $antrag['id'],
@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                         'email' => $antrag['email'],
                         'instagram' => $antrag['instagram'],
                         'foto_dateiname' => $antrag['foto_dateiname'],
+                        'shirt_groesse' => $antrag['shirt_groesse'],
+                        'portraet' => $antrag['portraet'],
                         'passwort_hash' => $passwortHash,
                     ]);
                     $mitgliedId = (int) $pdo->lastInsertId();

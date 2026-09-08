@@ -59,6 +59,22 @@ function generateInitialPasswort(): string
     return bin2hex(random_bytes(5));
 }
 
+const SHIRT_GROESSEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+/**
+ * Telefonnummer fuer das oeffentliche Sportlerprofil maskiert (nur die
+ * letzten 4 Ziffern, zur WhatsApp-Zuordnung) - die vollstaendige Nummer
+ * bleibt der Vereinsverwaltung vorbehalten.
+ */
+function maskiereTelefon(string $telefon): string
+{
+    $ziffern = preg_replace('/\D/', '', $telefon) ?? '';
+    if (strlen($ziffern) < 4) {
+        return '••••';
+    }
+    return '•••• ' . substr($ziffern, -4);
+}
+
 /**
  * Verschickt eine Rundmail per Bcc an die angegebenen Adressen, in Bloecken
  * von je 40 Empfaengern (schont Mailserver-Limits und schuetzt die

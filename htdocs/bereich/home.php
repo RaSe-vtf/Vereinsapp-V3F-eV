@@ -36,6 +36,10 @@ $zurueck = null;
                 <span class="kachel-icon">👤</span>
                 <span>Meine Daten</span>
             </a>
+            <a href="sportlerprofile.php" class="kachel">
+                <span class="kachel-icon">🏊</span>
+                <span>Sportlerprofile</span>
+            </a>
             <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
                 <a href="vorstand/antraege.php" class="kachel">
                     <span class="kachel-icon">🏢</span>

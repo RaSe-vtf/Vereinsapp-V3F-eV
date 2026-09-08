@@ -16,6 +16,8 @@ $werte = [
     'telefon' => '',
     'email' => '',
     'instagram' => '',
+    'shirt_groesse' => '',
+    'portraet' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -61,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($werte['shirt_groesse'] !== '' && !in_array($werte['shirt_groesse'], SHIRT_GROESSEN, true)) {
+        $fehler[] = 'Bitte wähle eine gültige Shirt-Größe.';
+    }
+
     $passwort = (string) ($_POST['passwort'] ?? '');
     $passwortWiederholt = (string) ($_POST['passwort_wiederholt'] ?? '');
     if (strlen($passwort) < 8) {
@@ -91,9 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = getPdo()->prepare(
                 'INSERT INTO antraege
-                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, passwort_hash, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
+                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, shirt_groesse, portraet, passwort_hash, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
                  VALUES
-                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :passwort_hash, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
+                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :shirt_groesse, :portraet, :passwort_hash, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
             );
             $stmt->execute([
                 'vorname' => $werte['vorname'],
@@ -107,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'email' => $werte['email'],
                 'instagram' => $werte['instagram'] !== '' ? $werte['instagram'] : null,
                 'foto_dateiname' => $fotoDateiname,
+                'shirt_groesse' => $werte['shirt_groesse'] !== '' ? $werte['shirt_groesse'] : null,
+                'portraet' => $werte['portraet'] !== '' ? $werte['portraet'] : null,
                 'passwort_hash' => password_hash($passwort, PASSWORD_DEFAULT),
                 'ein_satzung' => $einSatzung,
                 'ein_datenschutz' => $einDatenschutz,
@@ -186,9 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div>
                             <label class="required" for="geburtsdatum">Geburtsdatum</label>
                             <input type="date" id="geburtsdatum" name="geburtsdatum" value="<?= e($werte['geburtsdatum']) ?>" required>
+                            <div class="hint">Erscheint auf deinem öffentlichen Sportlerprofil.</div>
                         </div>
                         <div>
-                            <label class="required" for="geburtsort">Geburtsort</label>
+                            <label class="required" for="geburtsort">Geburtsort <span class="badge-intern">nur Vereinsverwaltung</span></label>
                             <input type="text" id="geburtsort" name="geburtsort" value="<?= e($werte['geburtsort']) ?>" required>
                         </div>
                     </div>
@@ -197,29 +206,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <fieldset>
                     <legend>Adresse & Kontakt</legend>
 
-                    <label class="required" for="strasse_hausnummer">Straße und Hausnummer</label>
+                    <label class="required" for="strasse_hausnummer">Straße und Hausnummer <span class="badge-intern">nur Vereinsverwaltung</span></label>
                     <input type="text" id="strasse_hausnummer" name="strasse_hausnummer" value="<?= e($werte['strasse_hausnummer']) ?>" required>
 
                     <div class="form-row">
                         <div>
-                            <label class="required" for="plz">Postleitzahl</label>
+                            <label class="required" for="plz">Postleitzahl <span class="badge-intern">nur Vereinsverwaltung</span></label>
                             <input type="text" id="plz" name="plz" inputmode="numeric" value="<?= e($werte['plz']) ?>" required>
                         </div>
                         <div>
                             <label class="required" for="ort">Ort</label>
                             <input type="text" id="ort" name="ort" value="<?= e($werte['ort']) ?>" required>
+                            <div class="hint">Als Heimatort auf deinem Sportlerprofil sichtbar.</div>
                         </div>
                     </div>
 
                     <label class="required" for="telefon">Telefonnummer</label>
                     <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
+                    <div class="hint">Die vollständige Nummer sieht nur die Vereinsverwaltung. Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung).</div>
 
-                    <label class="required" for="email">E-Mail-Adresse</label>
+                    <label class="required" for="email">E-Mail-Adresse <span class="badge-intern">nur Vereinsverwaltung</span></label>
                     <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
 
                     <label for="instagram">Instagram (optional)</label>
                     <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>">
-                    <div class="hint">Freiwillige Angabe, z.B. für Vereins-Verlinkungen.</div>
+                    <div class="hint">Freiwillige Angabe, erscheint auf deinem Sportlerprofil.</div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Sportlerprofil</legend>
+                    <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem für alle Mitglieder sichtbaren Sportlerprofil.</p>
+
+                    <label for="shirt_groesse">Shirt-Größe (optional)</label>
+                    <select id="shirt_groesse" name="shirt_groesse">
+                        <option value="">Keine Angabe</option>
+                        <?php foreach (SHIRT_GROESSEN as $groesse): ?>
+                            <option value="<?= e($groesse) ?>" <?= $werte['shirt_groesse'] === $groesse ? 'selected' : '' ?>><?= e($groesse) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <label for="portraet">Kurzes Porträt zur Vorstellung (optional)</label>
+                    <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich: seit wann du dabei bist, was dir am Verein gefällt, deine Ziele ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;"><?= e($werte['portraet']) ?></textarea>
                 </fieldset>
 
                 <fieldset>

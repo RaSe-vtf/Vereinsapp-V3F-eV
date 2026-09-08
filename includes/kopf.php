@@ -21,6 +21,7 @@
             <button type="button" class="menu-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="hauptmenue">&#9776;</button>
             <nav class="menu-dropdown" id="hauptmenue" hidden>
                 <a href="<?= e($tiefe) ?>index.php" class="<?= $aktivReiter === 'meine-daten' ? 'active' : '' ?>">Meine Daten</a>
+                <a href="<?= e($tiefe) ?>sportlerprofile.php" class="<?= $aktivReiter === 'sportlerprofile' ? 'active' : '' ?>">Sportlerprofile</a>
                 <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
                     <a href="<?= e($tiefe) ?>vorstand/antraege.php" class="<?= $aktivReiter === 'geschaeftsstelle' ? 'active' : '' ?>">Geschäftsstelle</a>
                 <?php endif; ?>

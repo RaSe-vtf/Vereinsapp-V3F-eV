@@ -17,10 +17,8 @@ if ($typ === 'antrag') {
     }
     $stmt = getPdo()->prepare('SELECT foto_dateiname FROM antraege WHERE id = :id');
 } elseif ($typ === 'mitglied') {
-    if ($mitglied['rolle'] !== 'vorstandsmitglied' && $id !== (int) $mitglied['id']) {
-        http_response_code(403);
-        exit;
-    }
+    // Mitgliederfotos sind fuer alle eingeloggten Mitglieder sichtbar
+    // (Sportlerprofile), unabhaengig von Rolle.
     $stmt = getPdo()->prepare('SELECT foto_dateiname FROM mitglieder WHERE id = :id');
 } else {
     http_response_code(400);

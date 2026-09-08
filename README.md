@@ -53,7 +53,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Vorstand informiert ist.
 - **Navigation im eingeloggten Bereich**: Das Logo oben links führt immer zur
   Startseite `bereich/home.php` mit einer Kachel pro Bereich (Meine Daten,
-  Geschäftsstelle, Admin — je nachdem, was die Rolle/das Admin-Flag erlaubt).
+  Sportlerprofile, Geschäftsstelle, Admin — je nachdem, was die Rolle/das
+  Admin-Flag erlaubt).
   Oben rechts im Banner öffnet ein Menü-Symbol (☰) ein Dropdown mit denselben
   Bereichen sowie "Abmelden" ganz unten. Unterhalb des Banners zeigt jede
   Seite oben rechts einen kleinen "← Zurück"-Pfeil zur jeweils nächst höheren
@@ -62,13 +63,27 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   `includes/kopf.php` und `htdocs/assets/js/menue.js`.
 - Mitgliederbereich (`htdocs/bereich/`):
   - **Meine Daten**: für alle eingeloggten Mitglieder, eigene Stammdaten
-    (Name, Geburtsdatum/-ort, Adresse, Telefon, E-Mail, Instagram, Foto)
-    selbst ändern bzw. ergänzen und eigenes Passwort ändern. Pflichtfelder
-    bleiben Pflicht (gleiche Validierung wie beim Aufnahmeantrag), die
-    E-Mail-Adresse wird auf Eindeutigkeit geprüft. Rolle, Kontostatus und
-    Passwort-Reset bleiben Sache des Vorstands. Widerruf der
-    Bildnutzungs-Einwilligung läuft bewusst nicht über einen Schalter in
-    der App, sondern per E-Mail an den Vorstand (siehe Datenschutzerklärung).
+    (Name, Geburtsdatum/-ort, Adresse, Telefon, E-Mail, Instagram, Foto,
+    Shirt-Größe, Kurzporträt) selbst ändern bzw. ergänzen und eigenes
+    Passwort ändern. Pflichtfelder bleiben Pflicht (gleiche Validierung wie
+    beim Aufnahmeantrag), die E-Mail-Adresse wird auf Eindeutigkeit geprüft.
+    Rolle, Kontostatus und Passwort-Reset bleiben Sache des Vorstands.
+    Widerruf der Bildnutzungs-Einwilligung läuft bewusst nicht über einen
+    Schalter in der App, sondern per E-Mail an den Vorstand (siehe
+    Datenschutzerklärung).
+  - **Sportlerprofile** (`sportlerprofile.php` / `sportlerprofil.php`): für
+    alle eingeloggten Mitglieder sichtbare Übersicht (Kachel je Sportler
+    mit Foto, Vorname, Nachname) und Detailseite je Mitglied. Zeigt nur
+    Angaben, die für die öffentliche Vorstellung gedacht sind: Foto,
+    Shirt-Größe (als Tag), Geburtsdatum, Mitglied seit, Heimatort (nur
+    Ort, nicht die volle Adresse), Handynummer maskiert auf die letzten 4
+    Ziffern (zur WhatsApp-Zuordnung) sowie Instagram und ein freiwilliges
+    Kurzporträt. Verwaltungsinterne Daten (volle Adresse, volle
+    Telefonnummer, Geburtsort, E-Mail, Rolle, Passwort-Status,
+    Bankverbindung) erscheinen hier bewusst nicht. Auf dem eigenen Profil
+    gibt es zusätzlich einen "Profil bearbeiten"-Link zu "Meine Daten".
+    Mitgliederfotos sind dafür in `foto.php` für alle eingeloggten
+    Mitglieder freigegeben (nicht mehr nur Vorstand/eigenes Foto).
   - **Geschäftsstelle**: nur sichtbar und aufrufbar für die Rolle
     Vorstandsmitglied (Reiter heißt bewusst nicht "Vorstand", um Bereich
     und Personen-Rolle sprachlich zu trennen). Enthält:
@@ -202,8 +217,10 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
   bereich/                  -> eingeloggter Bereich (alle Mitglieder)
     home.php                -> Startseite mit Kacheln (Logo-Ziel, Menü-Ziel bei "Meine Daten" etc.)
     index.php               -> "Meine Daten" + Passwort ändern
+    sportlerprofile.php     -> Sportlerprofile: Übersicht aller aktiven Mitglieder
+    sportlerprofil.php      -> Sportlerprofile: Detailansicht eines Mitglieds
     sepa_mandat.php         -> Pflicht-Gate: SEPA-Lastschriftmandat vor erstem Zugriff
-    foto.php                -> liefert Fotos aus (eigenes Foto oder, für Vorstand, alle)
+    foto.php                -> liefert Mitgliederfotos aus (alle eingeloggten Mitglieder) bzw. Antragsfotos (nur Vorstand)
     vorstand/                -> nur Rolle Vorstandsmitglied
       antraege.php           -> Aufnahmeanträge verwalten (Standardfilter: alle)
       antrag_ansehen.php

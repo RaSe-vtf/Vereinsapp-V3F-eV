@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     email VARCHAR(190) NOT NULL,
     instagram VARCHAR(100) NULL,
     foto_dateiname VARCHAR(255) NULL,
+    shirt_groesse VARCHAR(10) NULL,
+    portraet TEXT NULL,
     rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
     ist_admin TINYINT(1) NOT NULL DEFAULT 0,
     passwort_hash VARCHAR(255) NULL,
@@ -51,6 +53,8 @@ CREATE TABLE IF NOT EXISTS antraege (
     email VARCHAR(190) NOT NULL,
     instagram VARCHAR(100) NULL,
     foto_dateiname VARCHAR(255) NOT NULL,
+    shirt_groesse VARCHAR(10) NULL,
+    portraet TEXT NULL,
     passwort_hash VARCHAR(255) NULL,
     einverstaendnis_satzung TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_datenschutz TINYINT(1) NOT NULL DEFAULT 0,
@@ -102,3 +106,7 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS sepa_mandatsreferenz VARCHAR(35)
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS sepa_erteilt_am DATETIME NULL AFTER sepa_mandatsreferenz;
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS sepa_erste_lastschrift_erfolgt TINYINT(1) NOT NULL DEFAULT 0 AFTER sepa_erteilt_am;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS passwort_hash VARCHAR(255) NULL AFTER foto_dateiname;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL AFTER foto_dateiname;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL AFTER foto_dateiname;
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
