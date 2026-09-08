@@ -8,7 +8,12 @@ require_once __DIR__ . '/../../../includes/auth.php';
 $mitglied = requireVorstand('../../login.php', '../index.php');
 
 $id = (int) ($_GET['id'] ?? 0);
-$stmt = getPdo()->prepare('SELECT * FROM antraege WHERE id = :id');
+$stmt = getPdo()->prepare(
+    'SELECT a.*, m.sepa_erteilt_am
+     FROM antraege a
+     LEFT JOIN mitglieder m ON m.id = a.mitglied_id
+     WHERE a.id = :id'
+);
 $stmt->execute(['id' => $id]);
 $antrag = $stmt->fetch();
 
@@ -58,6 +63,18 @@ if (!$antrag) {
                         <tr><th>Satzung akzeptiert</th><td><?= $antrag['einverstaendnis_satzung'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Datenschutz zur Kenntnis genommen</th><td><?= $antrag['einverstaendnis_datenschutz'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Bildnutzung Social Media erlaubt</th><td><?= $antrag['einverstaendnis_bildnutzung'] ? 'Ja' : 'Nein' ?></td></tr>
+                        <tr>
+                            <th>Einzugsermächtigung erteilt</th>
+                            <td>
+                                <?php if ($antrag['mitglied_id'] === null): ?>
+                                    &ndash; <span class="text-muted">(noch kein Mitgliedskonto)</span>
+                                <?php elseif ($antrag['sepa_erteilt_am'] !== null): ?>
+                                    Ja <span class="text-muted">(erteilt am <?= e((new DateTime($antrag['sepa_erteilt_am']))->format('d.m.Y')) ?>)</span>
+                                <?php else: ?>
+                                    Nein <span class="text-muted">(noch nicht erteilt)</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
                         <tr><th>Eingegangen am</th><td class="nowrap-wert"><?= e((new DateTime($antrag['erstellt_am']))->format('d.m.Y H:i')) ?> Uhr</td></tr>
                     </table>
                 </div>
