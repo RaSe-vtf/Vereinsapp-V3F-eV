@@ -771,7 +771,7 @@ const VEREINSDOKUMENT_KATEGORIEN = ['Satzung', 'Ordnungen', 'Sonstiges'];
 function kategorisiereVereinsdokument(string $bezeichnung): string
 {
     $b = mb_strtolower(trim($bezeichnung));
-    if ($b === 'satzung') {
+    if (str_contains($b, 'satzung')) {
         return 'Satzung';
     }
     if (str_contains($b, 'ordnung')) {
