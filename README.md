@@ -120,9 +120,14 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       nach Rolle, rein zum schnelleren Finden/Auswählen - ändert nichts an
       bereits gesetzten Häkchen). Der Zähler über der Liste zeigt die
       Anzahl tatsächlich ausgewählter Empfänger, unabhängig vom Filter.
-    - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich mit
-      eigenem Sub-Menü (analog Admin → Konten/Bilder). Zugriff wie der Rest
-      der Geschäftsstelle an die Rolle Vorstandsmitglied gebunden.
+    - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich,
+      Zugriff wie der Rest der Geschäftsstelle an die Rolle
+      Vorstandsmitglied gebunden. Der Link "Kassenwart" in der
+      Geschäftsstelle-Navigation führt auf `index.php` mit drei Kacheln
+      (Bankverbindungen/Beitragsposten/SEPA-Export, analog den
+      Kacheln auf der Startseite); innerhalb der drei Unterseiten bleibt
+      zusätzlich eine schlichte Textzeile zum direkten Wechseln
+      untereinander erhalten.
       - **Bankverbindungen**: Liste aller aktiven Mitglieder mit Rolle,
         Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
         ein Mandat, steht dort "kein Mandat hinterlegt". Die angezeigte
@@ -235,6 +240,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
       kassenwart/
+        index.php             -> Kassenwart-Startseite mit 3 Kacheln
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
         beitragsposten.php    -> Kostenpunkte anlegen/verwalten
         export.php             -> SEPA-Sammellastschrift (pain.008.001.02) erzeugen

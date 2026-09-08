@@ -80,7 +80,7 @@ $flash = takeFlash();
             <a href="antraege.php">Aufnahmeanträge</a>
             <a href="mitglieder.php">Mitgliederverwaltung</a>
             <a href="verteiler.php" class="active">E-Mail-Verteiler</a>
-            <a href="kassenwart/bankverbindungen.php">Kassenwart</a>
+            <a href="kassenwart/index.php">Kassenwart</a>
         </nav>
 
         <div class="card">

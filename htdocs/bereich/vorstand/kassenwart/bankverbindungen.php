@@ -17,7 +17,7 @@ $mitgliederListe = $pdo->query(
 
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
-$zurueck = '../../home.php';
+$zurueck = 'index.php';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -40,7 +40,7 @@ $zurueck = '../../home.php';
             <a href="../antraege.php">Aufnahmeanträge</a>
             <a href="../mitglieder.php">Mitgliederverwaltung</a>
             <a href="../verteiler.php">E-Mail-Verteiler</a>
-            <a href="bankverbindungen.php" class="active">Kassenwart</a>
+            <a href="index.php" class="active">Kassenwart</a>
         </nav>
 
         <nav class="subnav">
