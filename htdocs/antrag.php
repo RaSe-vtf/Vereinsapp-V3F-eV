@@ -7,8 +7,8 @@ require_once __DIR__ . '/../includes/functions.php';
 // Aktuelle Fassung je Datei (juengstes Hochladedatum je Bezeichnung +
 // Original-Dateiname), damit Antragsteller Satzung/Ordnungen vor dem
 // Absenden einsehen koennen. Mehrere unterschiedliche Dateien duerfen
-// dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen"), daher wird bei
-// Mehrdeutigkeit der Dateiname mit angezeigt.
+// dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen"), daher wird als
+// Linktext immer der Dateiname verwendet.
 $aktuelleDokumente = getPdo()->query(
     "SELECT v1.id, v1.bezeichnung, v1.original_dateiname FROM vereinsdokumente v1
      LEFT JOIN vereinsdokumente v2 ON v2.bezeichnung = v1.bezeichnung
@@ -25,11 +25,6 @@ usort($aktuelleDokumente, static function (array $a, array $b) use ($kategorieRa
     $rangB = $kategorieRang[kategorisiereVereinsdokument($b['bezeichnung'])];
     return $rangA <=> $rangB ?: strnatcasecmp($a['bezeichnung'], $b['bezeichnung']);
 });
-
-$bezeichnungAnzahl = [];
-foreach ($aktuelleDokumente as $doc) {
-    $bezeichnungAnzahl[$doc['bezeichnung']] = ($bezeichnungAnzahl[$doc['bezeichnung']] ?? 0) + 1;
-}
 
 $fehler = [];
 $werte = [
@@ -188,18 +183,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h2>Aufnahmeantrag</h2>
             <p>Mit diesem Formular beantragst du deine Mitgliedschaft bei <?= e(vereinNameNowrap()) ?> Das Formular ist vollständig auszufüllen.</p>
 
-            <?php if (!empty($aktuelleDokumente)): ?>
-                <p class="text-muted">
-                    Satzung und Ordnungen:
-                    <?php foreach ($aktuelleDokumente as $i => $doc):
-                        $label = $doc['bezeichnung'];
-                        if ($bezeichnungAnzahl[$doc['bezeichnung']] > 1 && $doc['original_dateiname'] !== null) {
-                            $label .= ' – ' . pathinfo($doc['original_dateiname'], PATHINFO_FILENAME);
-                        }
-                    ?><?= $i > 0 ? ' &middot; ' : '' ?><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($label) ?></a><?php endforeach; ?>
-                </p>
-            <?php endif; ?>
-
             <?php if (!empty($fehler)): ?>
                 <div class="alert alert-error">
                     <strong>Bitte korrigiere folgende Angaben:</strong>
@@ -300,6 +283,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="passwort_wiederholt">Passwort wiederholen</label>
                     <input type="password" id="passwort_wiederholt" name="passwort_wiederholt" minlength="8" required>
                 </fieldset>
+
+                <?php if (!empty($aktuelleDokumente)): ?>
+                    <div class="text-muted" style="margin-bottom:16px;">
+                        <p style="margin-bottom:6px;">Satzung und Ordnungen zum Nachlesen:</p>
+                        <ul style="margin-top:0;">
+                            <?php foreach ($aktuelleDokumente as $doc): ?>
+                                <li><a href="vereinsdokument.php?id=<?= (int) $doc['id'] ?>" target="_blank" rel="noopener"><?= e($doc['original_dateiname'] ?? $doc['bezeichnung']) ?></a></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
 
                 <fieldset>
                     <legend>Einverständniserklärungen</legend>
