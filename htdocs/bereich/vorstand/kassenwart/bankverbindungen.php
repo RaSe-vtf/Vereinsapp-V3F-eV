@@ -45,7 +45,7 @@ $zurueck = 'index.php';
 
         <nav class="subnav">
             <a href="bankverbindungen.php" class="active">Bankverbindungen</a>
-            <a href="beitragsposten.php">Beitragsposten</a>
+            <a href="beitraege.php">Beiträge</a>
             <a href="export.php">SEPA-Export</a>
         </nav>
 

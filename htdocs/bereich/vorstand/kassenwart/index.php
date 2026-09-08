@@ -42,9 +42,9 @@ $zurueck = '../../home.php';
                 <span class="kachel-icon">🏦</span>
                 <span>Bankverbindungen</span>
             </a>
-            <a href="beitragsposten.php" class="kachel">
+            <a href="beitraege.php" class="kachel">
                 <span class="kachel-icon">🧾</span>
-                <span>Beitragsposten</span>
+                <span>Beiträge</span>
             </a>
             <a href="export.php" class="kachel">
                 <span class="kachel-icon">📤</span>

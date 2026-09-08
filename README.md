@@ -124,7 +124,7 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Zugriff wie der Rest der Geschäftsstelle an die Rolle
       Vorstandsmitglied gebunden. Der Link "Kassenwart" in der
       Geschäftsstelle-Navigation führt auf `index.php` mit drei Kacheln
-      (Bankverbindungen/Beitragsposten/SEPA-Export, analog den
+      (Bankverbindungen/Beiträge/SEPA-Export, analog den
       Kacheln auf der Startseite); innerhalb der drei Unterseiten bleibt
       zusätzlich eine schlichte Textzeile zum direkten Wechseln
       untereinander erhalten.
@@ -135,11 +135,13 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
         `includes/functions.php`): Admins und Vorstandsmitglieder gelten
         hier unabhängig von ihrer sonstigen Rolle als Vollmitglieder — das
         gilt ebenso für die Beitragszuordnung im SEPA-Export.
-      - **Beitragsposten**: frei anlegbare Kostenpunkte (Bezeichnung, Betrag,
-        optional an eine Rolle gebunden — ohne Rolle gilt der Posten für
-        alle aktiven Mitglieder mit Mandat, z.B. eine Startpassgebühr der
-        DTU). Aktivieren/Deaktivieren/Löschen einzeln möglich.
-      - **SEPA-Export**: Checkbox-Auswahl, welche aktiven Beitragsposten in
+      - **Beiträge**: feste Positionen statt freier Verwaltung — oben
+        "Mitgliedsbeiträge" mit einem monatlichen €-Betrag je Mitgliederart,
+        darunter "Startpässe" mit den jährlichen Startpasskosten (z.B. DTU).
+        Nur diese Beträge sind im SEPA-Mandat abgedeckt und dürfen in den
+        SEPA-Export; andere Zahlungen laufen immer als direkte Überweisung
+        außerhalb der App.
+      - **SEPA-Export**: Checkbox-Auswahl, welche aktiven Beiträge in
         diesen Lauf einfließen, plus Fälligkeitstermin (mind. 5 Tage
         Vorlauf). Eine Live-Vorschau (ohne Neuladen) zeigt Anzahl und
         Gesamtbetrag der einbezogenen Mitglieder sowie, wie viele mangels
@@ -242,7 +244,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
       kassenwart/
         index.php             -> Kassenwart-Startseite mit 3 Kacheln
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
-        beitragsposten.php    -> Kostenpunkte anlegen/verwalten
+        beitraege.php          -> Mitgliedsbeiträge je Rolle + Startpasskosten
         export.php             -> SEPA-Sammellastschrift (pain.008.001.02) erzeugen
     admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben

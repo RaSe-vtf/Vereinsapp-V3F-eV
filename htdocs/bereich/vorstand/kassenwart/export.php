@@ -123,7 +123,7 @@ $zurueck = 'index.php';
 
         <nav class="subnav">
             <a href="bankverbindungen.php">Bankverbindungen</a>
-            <a href="beitragsposten.php">Beitragsposten</a>
+            <a href="beitraege.php">Beiträge</a>
             <a href="export.php" class="active">SEPA-Export</a>
         </nav>
 
@@ -140,7 +140,7 @@ $zurueck = 'index.php';
             <?php endif; ?>
 
             <?php if (empty($postenListe)): ?>
-                <p>Noch keine aktiven Beitragsposten vorhanden. Bitte zuerst unter "Beitragsposten" welche anlegen.</p>
+                <p>Noch keine aktiven Beiträge hinterlegt. Bitte zuerst unter "Beiträge" Beträge eintragen.</p>
             <?php else: ?>
                 <form method="post" id="export-form">
                     <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -150,7 +150,7 @@ $zurueck = 'index.php';
                         <?php foreach ($postenListe as $p): ?>
                             <label class="inline">
                                 <input type="checkbox" name="posten[]" value="<?= (int) $p['id'] ?>" data-betrag="<?= e(number_format((float) $p['betrag'], 2, '.', '')) ?>" data-rolle="<?= $p['rolle'] !== null ? e($p['rolle']) : '' ?>" <?= in_array((string) $p['id'], (array) ($_POST['posten'] ?? []), true) ? 'checked' : '' ?>>
-                                <span><?= e($p['bezeichnung']) ?> (<?= number_format((float) $p['betrag'], 2, ',', '.') ?> € &ndash; <?= $p['rolle'] !== null ? e(rollenLabel($p['rolle'])) : 'alle' ?>)</span>
+                                <span><?= e($p['bezeichnung']) ?> (<?= number_format((float) $p['betrag'], 2, ',', '.') ?> € &ndash; <?= $p['rolle'] !== null ? e(rollenLabel($p['rolle'])) : 'alle' ?>, <?= $p['ist_startpass'] ? 'jährlich' : 'monatlich' ?>)</span>
                             </label>
                         <?php endforeach; ?>
                     </fieldset>

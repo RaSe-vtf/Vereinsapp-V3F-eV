@@ -66,14 +66,16 @@ CREATE TABLE IF NOT EXISTS antraege (
     CONSTRAINT fk_antraege_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Kassenwart: frei konfigurierbare Beitragsposten (Mitgliedsbeitrag je Rolle,
--- weitere Kostenpunkte wie Startpassgebuehren). rolle = NULL bedeutet: gilt
--- fuer alle aktiven Mitglieder mit Mandat, unabhaengig von deren Rolle.
+-- Kassenwart/Beitraege: feste Positionen (Mitgliedsbeitrag je Rolle, monatlich,
+-- sowie Startpasskosten, jaehrlich). rolle = NULL + ist_startpass = 1 ist die
+-- Startpass-Zeile; rolle gesetzt + ist_startpass = 0 ist der Mitgliedsbeitrag
+-- der jeweiligen Rolle. Nur diese Positionen duerfen in den SEPA-Export.
 CREATE TABLE IF NOT EXISTS beitragsposten (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     bezeichnung VARCHAR(150) NOT NULL,
     betrag DECIMAL(10,2) NOT NULL,
     rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NULL,
+    ist_startpass TINYINT(1) NOT NULL DEFAULT 0,
     aktiv TINYINT(1) NOT NULL DEFAULT 1,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
@@ -110,3 +112,4 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL A
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL AFTER foto_dateiname;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
+ALTER TABLE beitragsposten ADD COLUMN IF NOT EXISTS ist_startpass TINYINT(1) NOT NULL DEFAULT 0 AFTER rolle;
