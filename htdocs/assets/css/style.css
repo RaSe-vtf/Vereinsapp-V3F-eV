@@ -17,36 +17,42 @@
     box-sizing: border-box;
 }
 
-body {
-    position: relative;
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--farbe-bg);
-    color: var(--farbe-text);
-    line-height: 1.5;
-}
-
-/* Dezenter Streifen-Hintergrund (App-Icon-Optik) auf jeder Seite. Deckkraft
-   zentral ueber --hintergrund-deckkraft anpassbar. Fest positioniert, damit
-   er beim Scrollen nicht mitwandert; z-index -1 haelt ihn hinter dem
-   normalen Seiteninhalt, ohne dass andere Elemente eigene z-index-Regeln
-   brauchen.
+/* Dezenter Streifen-Hintergrund (App-Icon-Optik) auf jeder Seite, direkt als
+   Hintergrund von body (kein position:fixed-Zusatzelement mehr - das hatte
+   auf manchen Mobilgeraeten, u.a. iPhone im "Zum Home-Bildschirm hinzufuegen"-
+   Vollbildmodus, den Hintergrund komplett verschwinden lassen; vermutlich ein
+   iOS-Safari-Eigenheit bei fixed-positionierten Elementen, die sich in dieser
+   Umgebung ohne echtes Safari nicht nachstellen liess). Die weissliche
+   Ueberlagerung (erste Ebene, per --hintergrund-deckkraft steuerbar) macht
+   das Bild dezenter, ohne die CSS-Elementeigenschaft "opacity" zu benutzen,
+   die auch den Seiteninhalt mit ausblassen wuerde.
    Das Bild ist breiter als hoch. Es wird immer als Ganzes, unverzerrt und
    ohne Wiederholung gezeigt ("contain") - auf sehr hohen/schmalen Bild-
-   schirmen bleibt dadurch oberhalb/unterhalb des Bildes einfach die normale
+   schirmen bleibt dadurch unterhalb des Bildes einfach die normale
    Seitenfarbe sichtbar, statt das Bild zu verzerren, Teile davon
    abzuschneiden oder es wiederholt aneinanderzureihen. */
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image: url("../img/hintergrund-streifen.jpg");
-    background-size: contain;
-    background-position: top center;
-    background-repeat: no-repeat;
-    opacity: var(--hintergrund-deckkraft);
-    z-index: -1;
-    pointer-events: none;
+body {
+    margin: 0;
+    /* Ohne Mindesthoehe schrumpft body auf kurzen Seiten (z.B. Login) auf
+       die Hoehe seines Inhalts - "background-size: contain" wuerde das Bild
+       dann auf diese kurze Hoehe herunterrechnen und dabei auch viel
+       schmaler machen, bis es kaum noch zu sehen ist. min-height sorgt
+       dafuer, dass immer mindestens die Bildschirmhoehe zur Verfuegung
+       steht. 100dvh (dynamischeViewport-Hoehe) zuerst fuer mobile Browser
+       mit ein-/ausblendbarer Adressleiste, 100vh als Fallback fuer aeltere
+       Browser, die dvh nicht kennen. */
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--farbe-bg);
+    background-image:
+        linear-gradient(rgba(246, 249, 250, calc(1 - var(--hintergrund-deckkraft))), rgba(246, 249, 250, calc(1 - var(--hintergrund-deckkraft)))),
+        url("../img/hintergrund-streifen.jpg");
+    background-size: 100% 100%, contain;
+    background-position: top center, top center;
+    background-repeat: no-repeat, no-repeat;
+    color: var(--farbe-text);
+    line-height: 1.5;
 }
 
 a {
