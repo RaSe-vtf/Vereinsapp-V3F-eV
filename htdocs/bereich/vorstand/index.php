@@ -55,6 +55,10 @@ $zurueck = '../home.php';
                 <span class="kachel-icon">🗒️</span>
                 <span>Protokolle</span>
             </a>
+            <a href="notizen.php" class="kachel">
+                <span class="kachel-icon">📓</span>
+                <span>Notizen</span>
+            </a>
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>

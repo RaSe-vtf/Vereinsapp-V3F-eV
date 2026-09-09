@@ -170,7 +170,8 @@ input[type="tel"],
 input[type="date"],
 input[type="password"],
 input[type="file"],
-select {
+select,
+textarea {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--farbe-border);
@@ -180,7 +181,12 @@ select {
     color: var(--farbe-text);
 }
 
-input:focus, select:focus {
+textarea {
+    font-family: inherit;
+    resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
     outline: 2px solid var(--farbe-primary);
     outline-offset: 1px;
 }
@@ -786,4 +792,64 @@ th {
 .sportlerprofil-feld dd {
     margin: 2px 0 0;
     font-size: 1rem;
+}
+
+/* Notizbuch: Liste der Seiten */
+.notiz-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.notiz-eintrag {
+    display: block;
+    padding: 14px 18px;
+    background: var(--farbe-card);
+    border: 1px solid var(--farbe-border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.08s ease;
+}
+
+.notiz-eintrag:hover {
+    box-shadow: 0 4px 14px rgba(20, 60, 70, 0.1);
+}
+
+.notiz-eintrag h3 {
+    margin: 0 0 4px;
+    color: var(--farbe-primary-dark);
+}
+
+.notiz-eintrag .notiz-meta {
+    color: var(--farbe-text-soft);
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+}
+
+.notiz-eintrag .notiz-anriss {
+    color: var(--farbe-text);
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.notiz-inhalt-feld {
+    position: relative;
+}
+
+.btn-diktieren {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.btn-diktieren.diktier-aktiv {
+    background: var(--farbe-error);
+    color: #fff;
 }

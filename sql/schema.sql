@@ -263,3 +263,17 @@ CREATE TABLE IF NOT EXISTS finanz_loeschprotokoll (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ALTER TABLE kontoauszuege ADD COLUMN IF NOT EXISTS auszugsnummer SMALLINT UNSIGNED NULL AFTER monat;
 ALTER TABLE kontoauszuege ADD UNIQUE INDEX IF NOT EXISTS uniq_jahr_auszugsnummer (jahr, auszugsnummer);
+
+-- Notizbuch: freie Notizseiten der Geschaeftsstelle (Ueberschrift + Freitext,
+-- z.B. auch per Diktierfunktion eingetippt). Jede Zeile ist eine eigene Seite.
+CREATE TABLE IF NOT EXISTS notizen (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    titel VARCHAR(200) NOT NULL,
+    inhalt LONGTEXT NOT NULL,
+    mitglied_id INT UNSIGNED NULL,
+    erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    aktualisiert_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_aktualisiert_am (aktualisiert_am),
+    CONSTRAINT fk_notizen_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
