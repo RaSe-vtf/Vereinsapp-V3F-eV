@@ -79,9 +79,14 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
     nur einmal vergebbar, das setzt die App durch. Das Impressum zieht die
     Vertretungsberechtigung (§ 26 BGB) jetzt automatisch aus der/dem
     hinterlegten Vorsitzenden.
-  - [ ] Mitgliederversammlung/Jahreshauptversammlung (Einladung,
-    Tagesordnung, Beschlüsse, Anwesenheitsliste) – die "Protokolle"-Seite
-    ist dafür aktuell nur ein leerer Platzhalter.
+  - [x] Mitgliederversammlung/Jahreshauptversammlung – bewusst kein
+    eigenes Feature in der App (Aufwand/Nutzen), stattdessen vier
+    Word-Vorlagen (Einladung, Tagesordnung, Anwesenheitsliste,
+    Niederschrift/Beschlussprotokoll) erstellt, mit den einschlägigen
+    Fristen/Mehrheiten/Stimmrecht-Regeln aus §§ 8, 14–17 der Satzung als
+    Hinweistexte direkt in den Vorlagen. Die "Protokolle"-Seite bleibt ein
+    Platzhalter. Offen beim Nutzer: die vier Vorlagen selbst unter
+    Geschäftsstelle -> Vereinsdokumente hochladen.
   - [ ] Vereinskalender/Terminverwaltung für Training/Wettkämpfe.
 
 ## Vereinsname im Fließtext
