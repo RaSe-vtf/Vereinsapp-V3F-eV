@@ -204,8 +204,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                 <input type="hidden" name="aktion" value="daten_aendern">
 
-                <label class="text-muted" style="font-weight:600;">Rolle</label>
+                <label class="text-muted" style="font-weight:600;">Mitgliedsart</label>
                 <div style="margin-bottom:14px;"><?= e(rollenLabel($mitglied['rolle'])) ?></div>
+
+                <?php if ($mitglied['vorstandsamt'] !== null): ?>
+                    <label class="text-muted" style="font-weight:600;">Vorstandsamt</label>
+                    <div style="margin-bottom:14px;"><?= e(vorstandsamtLabel($mitglied['vorstandsamt'])) ?></div>
+                <?php endif; ?>
 
                 <div class="form-row">
                     <div>

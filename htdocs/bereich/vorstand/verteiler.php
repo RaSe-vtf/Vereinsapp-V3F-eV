@@ -79,7 +79,7 @@ $flash = takeFlash();
 
         <div class="card">
             <h2 style="margin-top:0;">E-Mail-Verteiler</h2>
-            <p class="text-muted">Verschickt eine Rundmail per Bcc, sodass Mitglieder die E-Mail-Adressen der anderen Empfänger nicht sehen. Häkchen setzen, wer die Mail bekommen soll &ndash; über das Filter-Symbol bei "Rolle" lässt sich die Liste zum schnelleren Auswählen eingrenzen.</p>
+            <p class="text-muted">Verschickt eine Rundmail per Bcc, sodass Mitglieder die E-Mail-Adressen der anderen Empfänger nicht sehen. Häkchen setzen, wer die Mail bekommen soll &ndash; über das Filter-Symbol bei "Mitgliedsart" lässt sich die Liste zum schnelleren Auswählen eingrenzen.</p>
 
             <?php if ($flash): ?>
                 <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
@@ -105,7 +105,7 @@ $flash = takeFlash();
                             <th>Nachname</th>
                             <th>Vorname</th>
                             <th>
-                                Rolle
+                                Mitgliedsart
                                 <button type="button" class="th-filter-btn" id="rollen-filter-btn" aria-haspopup="true" aria-expanded="false">Filter &#9662;</button>
                             </th>
                             <th>E-Mail</th>
@@ -128,7 +128,7 @@ $flash = takeFlash();
                 <div id="rollen-filter-dropdown" class="filter-dropdown-panel" hidden>
                     <label class="inline">
                         <input type="checkbox" id="rollen-filter-alle" checked>
-                        <span><strong>Alle Rollen</strong></span>
+                        <span><strong>Alle Mitgliedsarten</strong></span>
                     </label>
                     <hr style="border:none; border-top:1px solid var(--farbe-border); margin:8px 0;">
                     <?php foreach (ROLLEN_LABELS as $wert => $label): ?>

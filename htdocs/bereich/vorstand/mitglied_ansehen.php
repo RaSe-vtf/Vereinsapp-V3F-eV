@@ -51,7 +51,8 @@ if (!$angesehen) {
                     <span class="badge badge-<?= $angesehen['aktiv'] ? 'angenommen' : 'abgelehnt' ?>"><?= $angesehen['aktiv'] ? 'aktiv' : 'inaktiv' ?></span>
 
                     <table class="tabelle-eigenschaften" style="margin-top:16px;">
-                        <tr><th>Rolle</th><td><?= e(rollenLabel($angesehen['rolle'])) ?></td></tr>
+                        <tr><th>Mitgliedsart</th><td><?= e(rollenLabel($angesehen['rolle'])) ?></td></tr>
+                        <tr><th>Vorstandsamt</th><td><?= $angesehen['vorstandsamt'] !== null ? e(vorstandsamtLabel($angesehen['vorstandsamt'])) : '&ndash;' ?></td></tr>
                         <tr><th>Geburtsdatum</th><td class="nowrap-wert"><?= e((new DateTime($angesehen['geburtsdatum']))->format('d.m.Y')) ?></td></tr>
                         <tr><th>Geburtsort</th><td><?= e($angesehen['geburtsort']) ?></td></tr>
                         <tr><th>Adresse</th><td><?= e($angesehen['strasse_hausnummer']) ?>, <?= e($angesehen['plz'] . ' ' . $angesehen['ort']) ?></td></tr>

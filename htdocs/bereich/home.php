@@ -40,7 +40,7 @@ $zurueck = null;
                 <span class="kachel-icon">🏊</span>
                 <span>Sportlerprofile</span>
             </a>
-            <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
+            <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
                 <a href="vorstand/index.php" class="kachel">
                     <span class="kachel-icon">🏢</span>
                     <span>Geschäftsstelle</span>

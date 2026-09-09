@@ -26,7 +26,7 @@ if (!$stmtStartpass->fetch()) {
 }
 $pdo->exec(
     "UPDATE beitragsposten SET aktiv = 0
-     WHERE (ist_startpass = 0 AND (rolle IS NULL OR rolle NOT IN ('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied')))
+     WHERE (ist_startpass = 0 AND (rolle IS NULL OR rolle NOT IN ('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied')))
         OR (ist_startpass = 1 AND rolle IS NOT NULL)"
 );
 

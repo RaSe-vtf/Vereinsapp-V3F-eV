@@ -10,7 +10,7 @@ $pdo = getPdo();
 verarbeiteFaelligeAustritte($pdo);
 
 $mitgliederListe = $pdo->query(
-    "SELECT vorname, nachname, rolle, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am
+    "SELECT vorname, nachname, rolle, vorstandsamt, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am
      FROM mitglieder
      WHERE aktiv = 1
      ORDER BY nachname, vorname"
@@ -70,7 +70,7 @@ $zurueck = 'index.php';
                         <tr>
                             <th>Nachname</th>
                             <th>Vorname</th>
-                            <th>Rolle</th>
+                            <th>Mitgliedsart</th>
                             <th>Kontoinhaber</th>
                             <th>IBAN</th>
                             <th>BIC</th>

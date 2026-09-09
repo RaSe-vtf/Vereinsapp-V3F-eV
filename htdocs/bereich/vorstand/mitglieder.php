@@ -14,39 +14,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
         $rolleInput = $_POST['rolle'] ?? null;
 
         if ($_POST['aktion'] === 'rolle_aendern' && $rolleInput !== null && array_key_exists($rolleInput, ROLLEN_LABELS)) {
-            if ($zielId === (int) $mitglied['id'] && $rolleInput !== 'vorstandsmitglied') {
-                setFlash('error', 'Du kannst dir nicht selbst die Rolle Vorstandsmitglied entziehen. Bitte ein anderes Vorstandsmitglied bitten.');
-            } elseif ($rolleInput === 'vorstandsmitglied') {
-                $pdo->prepare('UPDATE mitglieder SET rolle = :rolle WHERE id = :id')
-                    ->execute(['rolle' => $rolleInput, 'id' => $zielId]);
-                setFlash('success', 'Rolle wurde aktualisiert.');
-            } else {
-                // Ein Vorstandsamt setzt Rolle "Vorstandsmitglied" voraus - bei Rollenwechsel weg davon
-                // entfaellt ein evtl. gehaltenes Amt automatisch mit.
-                $pdo->prepare('UPDATE mitglieder SET rolle = :rolle, vorstandsamt = NULL WHERE id = :id')
-                    ->execute(['rolle' => $rolleInput, 'id' => $zielId]);
-                setFlash('success', 'Rolle wurde aktualisiert.');
-            }
+            $pdo->prepare('UPDATE mitglieder SET rolle = :rolle WHERE id = :id')
+                ->execute(['rolle' => $rolleInput, 'id' => $zielId]);
+            setFlash('success', 'Mitgliedsart wurde aktualisiert.');
         } elseif ($_POST['aktion'] === 'amt_aendern') {
             $amtInput = ($_POST['amt'] ?? '') !== '' ? $_POST['amt'] : null;
             if ($amtInput !== null && !array_key_exists($amtInput, VORSTANDSAEMTER_LABELS)) {
                 setFlash('error', 'Ungültiges Vorstandsamt.');
+            } elseif ($zielId === (int) $mitglied['id'] && $amtInput === null) {
+                setFlash('error', 'Du kannst dir dein eigenes Vorstandsamt nicht selbst entziehen. Bitte ein anderes Vorstandsmitglied bitten.');
             } else {
-                $stmtZielRolle = $pdo->prepare('SELECT rolle FROM mitglieder WHERE id = :id');
-                $stmtZielRolle->execute(['id' => $zielId]);
-                if ($stmtZielRolle->fetchColumn() !== 'vorstandsmitglied') {
-                    setFlash('error', 'Ein Vorstandsamt kann nur einem Vorstandsmitglied zugewiesen werden.');
-                } else {
-                    if ($amtInput !== null && in_array($amtInput, VORSTANDSAEMTER_EINMALIG, true)) {
-                        // Dieses Amt ist laut Satzung nur einmal vergebbar - der bisherigen
-                        // Person automatisch entziehen, bevor es neu zugewiesen wird.
-                        $pdo->prepare('UPDATE mitglieder SET vorstandsamt = NULL WHERE vorstandsamt = :amt AND id != :id')
-                            ->execute(['amt' => $amtInput, 'id' => $zielId]);
-                    }
-                    $pdo->prepare('UPDATE mitglieder SET vorstandsamt = :amt WHERE id = :id')
+                if ($amtInput !== null && in_array($amtInput, VORSTANDSAEMTER_EINMALIG, true)) {
+                    // Dieses Amt ist laut Satzung nur einmal vergebbar - der bisherigen
+                    // Person automatisch entziehen, bevor es neu zugewiesen wird.
+                    $pdo->prepare('UPDATE mitglieder SET vorstandsamt = NULL WHERE vorstandsamt = :amt AND id != :id')
                         ->execute(['amt' => $amtInput, 'id' => $zielId]);
-                    setFlash('success', 'Vorstandsamt wurde aktualisiert.');
                 }
+                $pdo->prepare('UPDATE mitglieder SET vorstandsamt = :amt WHERE id = :id')
+                    ->execute(['amt' => $amtInput, 'id' => $zielId]);
+                setFlash('success', 'Vorstandsamt wurde aktualisiert.');
             }
         } elseif ($_POST['aktion'] === 'aktiv_umschalten') {
             if ($zielId === (int) $mitglied['id']) {
@@ -167,7 +153,7 @@ $flash = takeFlash();
                             <th>Telefon</th>
                             <th>E-Mail</th>
                             <th>Instagram</th>
-                            <th>Rolle</th>
+                            <th>Mitgliedsart</th>
                             <th>Amt</th>
                             <th>Mitglied seit</th>
                             <th>Bildnutzung</th>
@@ -208,21 +194,17 @@ $flash = takeFlash();
                                     </form>
                                 </td>
                                 <td>
-                                    <?php if ($m['rolle'] === 'vorstandsmitglied'): ?>
-                                        <form method="post" class="inline-form">
-                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
-                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
-                                            <input type="hidden" name="aktion" value="amt_aendern">
-                                            <select name="amt" class="role-select" onchange="this.form.submit()">
-                                                <option value="">&ndash; kein Amt &ndash;</option>
-                                                <?php foreach (VORSTANDSAEMTER_LABELS as $wert => $label): ?>
-                                                    <option value="<?= e($wert) ?>" <?= $m['vorstandsamt'] === $wert ? 'selected' : '' ?>><?= e($label) ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </form>
-                                    <?php else: ?>
-                                        &ndash;
-                                    <?php endif; ?>
+                                    <form method="post" class="inline-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                        <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                        <input type="hidden" name="aktion" value="amt_aendern">
+                                        <select name="amt" class="role-select" onchange="this.form.submit()">
+                                            <option value="">&ndash; kein Amt &ndash;</option>
+                                            <?php foreach (VORSTANDSAEMTER_LABELS as $wert => $label): ?>
+                                                <option value="<?= e($wert) ?>" <?= $m['vorstandsamt'] === $wert ? 'selected' : '' ?>><?= e($label) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </form>
                                 </td>
                                 <td><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
                                 <td><?= $m['einverstaendnis_bildnutzung'] ? '<span class="badge badge-angenommen">ja</span>' : '<span class="badge badge-abgelehnt">nein</span>' ?></td>

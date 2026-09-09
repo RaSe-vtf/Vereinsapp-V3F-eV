@@ -92,7 +92,7 @@ $flash = takeFlash();
                         <tr>
                             <th>Name</th>
                             <th>E-Mail</th>
-                            <th>Rolle</th>
+                            <th>Mitgliedsart</th>
                             <th>Admin</th>
                             <th>Passwort</th>
                             <th>Aktionen</th>
@@ -103,7 +103,7 @@ $flash = takeFlash();
                             <tr>
                                 <td data-label="Name"><?= e($m['vorname'] . ' ' . $m['nachname']) ?></td>
                                 <td data-label="E-Mail"><?= e($m['email']) ?></td>
-                                <td data-label="Rolle"><?= e(rollenLabel($m['rolle'])) ?></td>
+                                <td data-label="Mitgliedsart"><?= e(rollenLabel($m['rolle'])) ?></td>
                                 <td data-label="Admin">
                                     <?php if ((int) $m['id'] === (int) $mitglied['id']): ?>
                                         <span class="badge badge-angenommen">du</span>

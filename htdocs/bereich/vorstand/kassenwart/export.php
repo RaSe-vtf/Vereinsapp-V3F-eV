@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ausgewaehltePosten = $stmtPosten->fetchAll();
 
             $mitgliederListe = $pdo->query(
-                "SELECT id, vorname, nachname, rolle, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am, sepa_erste_lastschrift_erfolgt
+                "SELECT id, vorname, nachname, rolle, vorstandsamt, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am, sepa_erste_lastschrift_erfolgt
                  FROM mitglieder WHERE aktiv = 1"
             )->fetchAll();
 
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $postenListe = $pdo->query('SELECT * FROM beitragsposten WHERE aktiv = 1 ORDER BY bezeichnung')->fetchAll();
-$mitgliederFuerVorschau = $pdo->query("SELECT rolle, ist_admin, (sepa_erteilt_am IS NOT NULL) AS hat_mandat FROM mitglieder WHERE aktiv = 1")->fetchAll();
+$mitgliederFuerVorschau = $pdo->query("SELECT rolle, vorstandsamt, ist_admin, (sepa_erteilt_am IS NOT NULL) AS hat_mandat FROM mitglieder WHERE aktiv = 1")->fetchAll();
 $gekuendigteMitglieder = holeGekuendigteAktiveMitglieder($pdo);
 
 $tiefe = '../../';

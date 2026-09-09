@@ -107,9 +107,9 @@ $antragId = (int) $pdo->lastInsertId();
 
 $mitgliedStmt = $pdo->prepare(
     'INSERT INTO mitglieder
-        (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, ist_admin, passwort_hash, aktiv)
+        (antrag_id, vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, rolle, vorstandsamt, ist_admin, passwort_hash, aktiv)
      VALUES
-        (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, "vorstandsmitglied", 1, :passwort_hash, 1)'
+        (:antrag_id, :vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, "vollmitglied", "vorsitz", 1, :passwort_hash, 1)'
 );
 $mitgliedStmt->execute([
     'antrag_id' => $antragId,

@@ -11,7 +11,7 @@ $typ = $_GET['typ'] ?? '';
 $id = (int) ($_GET['id'] ?? 0);
 
 if ($typ === 'antrag') {
-    if ($mitglied['rolle'] !== 'vorstandsmitglied') {
+    if (empty($mitglied['vorstandsamt']) && empty($mitglied['ist_admin'])) {
         http_response_code(403);
         exit;
     }

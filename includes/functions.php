@@ -39,7 +39,6 @@ function formatiereDateigroesse(int $bytes): string
 const ROLLEN_LABELS = [
     'vollmitglied' => 'Vollmitglied',
     'trainingsmitglied' => 'Trainingsmitglied',
-    'vorstandsmitglied' => 'Vorstandsmitglied',
     'ehrenmitglied' => 'Ehrenmitglied',
     'foerdermitglied' => 'Fördermitglied',
 ];
@@ -166,14 +165,14 @@ function holeGekuendigteAktiveMitglieder(PDO $pdo): array
 }
 
 /**
- * Rolle eines Mitglieds fuer den Bankbereich (Bankverbindungen-Liste,
- * Zuordnung der Beitragsposten im SEPA-Export): Admins und
- * Vorstandsmitglieder gelten hier unabhaengig von ihrer sonstigen Rolle
- * als Vollmitglieder.
+ * Mitgliedsart eines Mitglieds fuer den Bankbereich (Bankverbindungen-Liste,
+ * Zuordnung der Beitragsposten im SEPA-Export): Admins und Mitglieder mit
+ * einem Vorstandsamt gelten hier unabhaengig von ihrer sonstigen
+ * Mitgliedsart als Vollmitglieder.
  */
 function bankRolle(array $mitglied): string
 {
-    if (!empty($mitglied['ist_admin']) || $mitglied['rolle'] === 'vorstandsmitglied') {
+    if (!empty($mitglied['ist_admin']) || !empty($mitglied['vorstandsamt'])) {
         return 'vollmitglied';
     }
     return $mitglied['rolle'];

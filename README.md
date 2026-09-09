@@ -2,8 +2,9 @@
 
 Webapp für Vonsys Tri Family e.V.: Mitglieder stellen über ein Formular ihren Aufnahmeantrag,
 der Vorstand nimmt ihn im Mitgliederbereich an, wodurch ein Mitgliedskonto mit
-Rolle entsteht. Rollen steuern den Zugriff, z.B. sieht nur die Rolle
-Vorstandsmitglied den Reiter "Geschäftsstelle".
+Mitgliedsart entsteht. Den Zugriff auf den Reiter "Geschäftsstelle" steuert
+nicht die Mitgliedsart, sondern ob ein Vorstandsamt (Vorsitz, Kassenwart, ...)
+hinterlegt ist.
 
 Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 (oder jedem anderen klassischen PHP-Webhosting).
@@ -32,12 +33,14 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
 - Impressum & Datenschutzerklärung als Vorlage (öffentlich erreichbar, wie
   gesetzlich vorgeschrieben) — **muss noch mit den echten Vereinsdaten
   ausgefüllt werden**, siehe `htdocs/impressum.php` und `htdocs/datenschutz.php`.
-- Jedes Mitglied hat ein eigenes Login (E-Mail + Passwort) und eine Rolle:
-  Vollmitglied, Trainingsmitglied, Vorstandsmitglied, Ehrenmitglied,
-  Fördermitglied.
+- Jedes Mitglied hat ein eigenes Login (E-Mail + Passwort) und eine
+  Mitgliedsart: Vollmitglied, Trainingsmitglied, Fördermitglied,
+  Ehrenmitglied. Unabhängig davon kann ein Mitglied zusätzlich ein
+  Vorstandsamt innehaben (Vorsitz, stellv. Vorsitz, Kassenwart, Beisitzer/in)
+  — das steuert den Zugriff auf die Geschäftsstelle.
 - **SEPA-Lastschriftmandat** (`htdocs/bereich/sepa_mandat.php`): Beim ersten
   Login nach der Aufnahme (und bei jedem Bestandsmitglied, das noch kein
-  Mandat erteilt hat — Rolle spielt keine Rolle, betrifft auch Vorstand/
+  Mandat erteilt hat — Mitgliedsart spielt keine Rolle, betrifft auch Vorstand/
   Admin) führt die App zwingend zu dieser Seite, bevor irgendetwas anderes
   in der App möglich ist. Erfasst Kontoinhaber, IBAN (mit Format- und
   Prüfziffer-Validierung) und optional BIC, generiert eine Mandatsreferenz
@@ -60,8 +63,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
   Vorstand informiert ist.
 - **Navigation im eingeloggten Bereich**: Das Logo oben links führt immer zur
   Startseite `bereich/home.php` mit einer Kachel pro Bereich (Meine Daten,
-  Sportlerprofile, Geschäftsstelle, Admin — je nachdem, was die Rolle/das
-  Admin-Flag erlaubt).
+  Sportlerprofile, Geschäftsstelle, Admin — je nachdem, was Vorstandsamt
+  und Admin-Flag erlauben).
   Oben rechts im Banner öffnet ein Menü-Symbol (☰) ein Dropdown mit denselben
   Bereichen sowie "Abmelden" ganz unten. Unterhalb des Banners zeigt jede
   Seite oben rechts einen kleinen "← Zurück"-Pfeil zur jeweils nächst höheren
@@ -74,7 +77,7 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     Shirt-Größe, Kurzporträt) selbst ändern bzw. ergänzen und eigenes
     Passwort ändern. Pflichtfelder bleiben Pflicht (gleiche Validierung wie
     beim Aufnahmeantrag), die E-Mail-Adresse wird auf Eindeutigkeit geprüft.
-    Rolle, Kontostatus und Passwort-Reset bleiben Sache des Vorstands.
+    Mitgliedsart, Vorstandsamt, Kontostatus und Passwort-Reset bleiben Sache des Vorstands.
     Widerruf der Bildnutzungs-Einwilligung läuft bewusst nicht über einen
     Schalter in der App, sondern per E-Mail an den Vorstand (siehe
     Datenschutzerklärung).
@@ -86,14 +89,15 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
     Ort, nicht die volle Adresse), Handynummer maskiert auf die letzten 4
     Ziffern (zur WhatsApp-Zuordnung) sowie Instagram und ein kurzes
     Porträt (im Aufnahmeantrag Pflichtfelder). Verwaltungsinterne Daten (volle Adresse, volle
-    Telefonnummer, Geburtsort, E-Mail, Rolle, Passwort-Status,
+    Telefonnummer, Geburtsort, E-Mail, Mitgliedsart, Passwort-Status,
     Bankverbindung) erscheinen hier bewusst nicht. Auf dem eigenen Profil
     gibt es zusätzlich einen "Profil bearbeiten"-Link zu "Meine Daten".
     Mitgliederfotos sind dafür in `foto.php` für alle eingeloggten
     Mitglieder freigegeben (nicht mehr nur Vorstand/eigenes Foto).
-  - **Geschäftsstelle**: nur sichtbar und aufrufbar für die Rolle
-    Vorstandsmitglied (Reiter heißt bewusst nicht "Vorstand", um Bereich
-    und Personen-Rolle sprachlich zu trennen). Enthält:
+  - **Geschäftsstelle**: nur sichtbar und aufrufbar für Mitglieder mit
+    einem Vorstandsamt (unabhängig von der Mitgliedsart) sowie für Admins
+    (Reiter heißt bewusst nicht "Vorstand", um Bereich und Amt sprachlich
+    zu trennen). Enthält:
     - **Aufnahmeanträge**: zeigt standardmäßig alle Anträge (Filter "Alle"
       voreingestellt), die Filter-Buttons (Alle/Neu/Angenommen/Abgelehnt)
       sind kompakte Pillen oberhalb der Liste. Annehmen/Ablehnen/
@@ -108,8 +112,9 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Absage-Text, siehe `sendeEinzelMail()` in `includes/functions.php`).
     - **Mitgliederverwaltung**: Tabelle mit allen Stammdaten pro Person
       (Foto, Bildnutzung-Einwilligung, Vor-/Nachname, Geburtsdatum/-ort,
-      Adresse, Telefon, E-Mail, Instagram, Rolle, Status, Passwort-Status,
-      Mitglied seit) sowie Rolle ändern und Konto aktivieren/deaktivieren.
+      Adresse, Telefon, E-Mail, Instagram, Mitgliedsart, Vorstandsamt, Status,
+      Passwort-Status, Mitglied seit) sowie Mitgliedsart und Vorstandsamt
+      ändern und Konto aktivieren/deaktivieren.
       Die Spalte "Bildnutzung" zeigt ja/nein anhand der beim Aufnahmeantrag
       gegebenen (freiwilligen) Einwilligung zur Social-Media-Nutzung von
       Fotos/Videos (per LEFT JOIN auf `antraege.einverstaendnis_bildnutzung`
@@ -120,28 +125,27 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       und Passwort zurücksetzen sind in den Admin-Bereich umgezogen (siehe
       unten).
     - **E-Mail-Verteiler**: klassische Liste aller aktiven Mitglieder
-      (Nachname, Vorname, Rolle, E-Mail) mit eigener Checkbox je Zeile -
+      (Nachname, Vorname, Mitgliedsart, E-Mail) mit eigener Checkbox je Zeile -
       wer die Rundmail bekommen soll, wird direkt in der Liste angehakt.
       In der Kopfzeile eine "Alle sichtbaren auswählen"-Checkbox sowie ein
-      Filter-Rollup bei "Rolle" (Dropdown zum Ein-/Ausblenden von Zeilen
-      nach Rolle, rein zum schnelleren Finden/Auswählen - ändert nichts an
+      Filter-Rollup bei "Mitgliedsart" (Dropdown zum Ein-/Ausblenden von Zeilen
+      nach Mitgliedsart, rein zum schnelleren Finden/Auswählen - ändert nichts an
       bereits gesetzten Häkchen). Der Zähler über der Liste zeigt die
       Anzahl tatsächlich ausgewählter Empfänger, unabhängig vom Filter.
     - **Kassenwart** (`.../vorstand/kassenwart/`): eigener Unterbereich,
-      Zugriff wie der Rest der Geschäftsstelle an die Rolle
-      Vorstandsmitglied gebunden. Der Link "Kassenwart" in der
-      Geschäftsstelle-Navigation führt auf `index.php` mit vier Kacheln
-      (Bankverbindungen/Beiträge/SEPA-Export/Kassenbücher, analog den
-      Kacheln auf der Startseite); innerhalb der Unterseiten von
-      Bankverbindungen/Beiträge/SEPA-Export bleibt zusätzlich eine schlichte
-      Textzeile zum direkten Wechseln untereinander erhalten.
-      - **Bankverbindungen**: Liste aller aktiven Mitglieder mit Rolle,
+      Zugriff wie der Rest der Geschäftsstelle an ein Vorstandsamt (bzw.
+      Admin) gebunden, nicht an die Mitgliedsart. Der Link "Kassenwart" in
+      der Geschäftsstelle-Navigation führt auf `index.php` mit Kacheln
+      (Bankverbindungen/Beiträge/SEPA-Export/Kassenbücher/Kassenbericht/
+      Beitragsrechner/Löschprotokoll).
+      - **Bankverbindungen**: Liste aller aktiven Mitglieder mit Mitgliedsart,
         Kontoinhaber, IBAN, BIC, Mandatsreferenz und Erteilungsdatum; fehlt
         ein Mandat, steht dort "kein Mandat hinterlegt". Die angezeigte
-        Rolle ist die **Rolle im Bankbereich** (siehe `bankRolle()` in
-        `includes/functions.php`): Admins und Vorstandsmitglieder gelten
-        hier unabhängig von ihrer sonstigen Rolle als Vollmitglieder — das
-        gilt ebenso für die Beitragszuordnung im SEPA-Export.
+        Mitgliedsart ist die **Mitgliedsart im Bankbereich** (siehe
+        `bankRolle()` in `includes/functions.php`): Admins und Mitglieder
+        mit einem Vorstandsamt gelten hier unabhängig von ihrer sonstigen
+        Mitgliedsart als Vollmitglieder — das gilt ebenso für die
+        Beitragszuordnung im SEPA-Export.
       - **Beiträge**: feste Positionen statt freier Verwaltung — oben
         "Mitgliedsbeiträge" mit einem monatlichen €-Betrag je Mitgliederart,
         darunter "Startpässe" mit den jährlichen Startpasskosten (z.B. DTU).
@@ -197,8 +201,8 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       (hoch-/herunterladen, löschen) werden die Dokumente aber nur über
       diese Geschäftsstelle-Seite, also weiterhin nur vom Vorstand.
   - **Admin**: nur sichtbar und aufrufbar für Mitglieder mit dem
-    Admin-Flag (`ist_admin`, unabhängig von der Rolle — z.B. kann ein
-    Vorstandsmitglied zusätzlich Admin sein). Enthält:
+    Admin-Flag (`ist_admin`, unabhängig von Mitgliedsart und Vorstandsamt
+    — z.B. kann jemand mit Vorstandsamt zusätzlich Admin sein). Enthält:
     - **Konten**: Passwort zurücksetzen (z.B. wenn ein Mitglied sein
       Passwort vergessen hat — die eigentliche Passwortvergabe passiert
       ja schon beim Aufnahmeantrag), Konto endgültig löschen und
@@ -216,11 +220,12 @@ Reines PHP + MySQL, ohne Node/Build-Schritt — läuft direkt auf all-inkl KAS
       Altbestände, die vor Einführung der automatischen Verkleinerung
       z.B. per FTP/phpMyAdmin eingespielt wurden.
 - Nimmt der Vorstand einen Antrag an, wird automatisch ein Mitgliedskonto mit
-  Rolle "Vollmitglied" angelegt, mit dem beim Aufnahmeantrag selbst gewählten
-  Passwort — das Mitglied kann sich damit sofort einloggen.
-- Rollenänderungen und Deaktivierungen wirken sofort, auch bei bereits
-  eingeloggten Sitzungen.
-- Ein Vorstandsmitglied kann sich nicht selbst die Vorstandsrolle entziehen,
+  der beim Aufnahmeantrag gewünschten Mitgliedsart (Vollmitglied/
+  Trainingsmitglied/Fördermitglied) angelegt, mit dem beim Aufnahmeantrag
+  selbst gewählten Passwort — das Mitglied kann sich damit sofort einloggen.
+- Änderungen an Mitgliedsart/Vorstandsamt und Deaktivierungen wirken sofort,
+  auch bei bereits eingeloggten Sitzungen.
+- Ein Mitglied kann sich nicht selbst das eigene Vorstandsamt entziehen,
   das eigene Konto deaktivieren oder löschen (Schutz vor versehentlichem
   Aussperren).
 - **Mitglied löschen** (Admin → Konten): entfernt das Mitgliedskonto
@@ -277,18 +282,18 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
     sportlerprofile.php     -> Sportlerprofile: Übersicht aller aktiven Mitglieder
     sportlerprofil.php      -> Sportlerprofile: Detailansicht eines Mitglieds
     sepa_mandat.php         -> Pflicht-Gate: SEPA-Lastschriftmandat vor erstem Zugriff
-    foto.php                -> liefert Mitgliederfotos aus (alle eingeloggten Mitglieder) bzw. Antragsfotos (nur Vorstand)
-    vorstand/                -> nur Rolle Vorstandsmitglied
+    foto.php                -> liefert Mitgliederfotos aus (alle eingeloggten Mitglieder) bzw. Antragsfotos (nur Vorstand/Admin)
+    vorstand/                -> nur Vorstandsamt oder Admin
       antraege.php           -> Aufnahmeanträge verwalten (Standardfilter: alle)
       antrag_ansehen.php
-      mitglieder.php         -> Mitgliederverwaltung: alle Stammdaten, Rolle, Status
+      mitglieder.php         -> Mitgliederverwaltung: alle Stammdaten, Mitgliedsart, Vorstandsamt, Status
       mitglied_ansehen.php
       verteiler.php          -> E-Mail-Verteiler mit Live-Empfängervorschau
       vereinsdokumente.php   -> Satzung/Ordnungen hochladen/verwalten (mit Historie)
       kassenwart/
         index.php             -> Kassenwart-Startseite mit 4 Kacheln
         bankverbindungen.php -> Liste Kontoinhaber/IBAN/BIC aller aktiven Mitglieder
-        beitraege.php          -> Mitgliedsbeiträge je Rolle + Startpasskosten
+        beitraege.php          -> Mitgliedsbeiträge je Mitgliedsart + Startpasskosten
         export.php             -> SEPA-Sammellastschrift (pain.008.001.02) erzeugen
         kassenbuecher/
           index.php            -> Hub-Seite mit 2 Kacheln
@@ -296,7 +301,7 @@ htdocs/                     -> Dieser Ordner wird als Dokumentenstamm der Domain
           kontoauszug_datei.php -> Download einer gespeicherten Auszugsdatei
           barkasse.php         -> Kassenstand, Konto-Übernahmen, manuelle Ein-/Ausgaben
           beleg_datei.php      -> Ansicht eines Barkassen-Belegs (Foto/PDF)
-    admin/                   -> nur Admin-Flag (ist_admin), unabhängig von der Rolle
+    admin/                   -> nur Admin-Flag (ist_admin), unabhängig von Mitgliedsart und Vorstandsamt
       konten.php              -> Passwort zurücksetzen, Löschen, Admin-Rechte vergeben
       bilder.php              -> Ein-Klick-Button: bestehende Bilder prüfen und verkleinern
   assets/
@@ -359,8 +364,9 @@ nicht erreichbar. Als zusätzliche Absicherung liegt trotzdem eine
      Aufnahmeantrag an, damit das erste Vorstandsmitglied genau wie jedes
      andere Mitglied in der Anträge-Übersicht auftaucht.
    - Ohne SSH-Zugriff: das Mitglied direkt per phpMyAdmin in die Tabelle
-     `mitglieder` eintragen, mit `rolle = 'vorstandsmitglied'`,
-     `ist_admin = 1` (damit der Admin-Bereich erreichbar ist) und einem
+     `mitglieder` eintragen, mit `rolle = 'vollmitglied'`,
+     `vorstandsamt = 'vorsitz'` und `ist_admin = 1` (damit sowohl
+     Geschäftsstelle als auch Admin-Bereich erreichbar sind) und einem
      Passwort-Hash, den du lokal per
      `php -r "echo password_hash('DeinPasswort', PASSWORD_DEFAULT);"`
      erzeugst. In diesem Fall fehlt der zugehörige Aufnahmeantrag zunächst -

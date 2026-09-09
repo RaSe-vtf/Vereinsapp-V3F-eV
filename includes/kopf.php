@@ -22,7 +22,7 @@
             <nav class="menu-dropdown" id="hauptmenue" hidden>
                 <a href="<?= e($tiefe) ?>index.php" class="<?= $aktivReiter === 'meine-daten' ? 'active' : '' ?>">Meine Daten</a>
                 <a href="<?= e($tiefe) ?>sportlerprofile.php" class="<?= $aktivReiter === 'sportlerprofile' ? 'active' : '' ?>">Sportlerprofile</a>
-                <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
+                <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
                     <a href="<?= e($tiefe) ?>vorstand/index.php" class="<?= $aktivReiter === 'geschaeftsstelle' ? 'active' : '' ?>">Geschäftsstelle</a>
                 <?php endif; ?>
                 <?php if (!empty($mitglied['ist_admin'])): ?>

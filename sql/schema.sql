@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     foto_dateiname VARCHAR(255) NULL,
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
-    rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
     vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL,
     ist_admin TINYINT(1) NOT NULL DEFAULT 0,
     passwort_hash VARCHAR(255) NULL,
@@ -327,3 +327,14 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS ausgetreten_am DATETIME NULL AFT
 -- Satzung nur einmal vergeben sein - das setzt die App durch (siehe
 -- mitglieder.php, Aktion "amt_aendern").
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL AFTER rolle;
+
+-- "Vorstandsmitglied" faellt als eigener Wert der Mitgliedsart (rolle) weg -
+-- ob jemand Zugriff auf die Geschaeftsstelle hat, entscheidet ab jetzt nur
+-- noch das Vorstandsamt (vorstandsamt IS NOT NULL) bzw. das Admin-Flag,
+-- nicht mehr die Mitgliedsart. Migration in dieser Reihenfolge, damit
+-- niemand beim Update den Zugriff verliert: 1) wer noch kein Amt hat,
+-- bekommt "Beisitzer/in", 2) danach Mitgliedsart auf "Vollmitglied"
+-- umstellen, 3) erst dann den veralteten Wert aus der Spalte entfernen.
+UPDATE mitglieder SET vorstandsamt = 'beisitzer' WHERE rolle = 'vorstandsmitglied' AND vorstandsamt IS NULL;
+UPDATE mitglieder SET rolle = 'vollmitglied' WHERE rolle = 'vorstandsmitglied';
+ALTER TABLE mitglieder MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied';

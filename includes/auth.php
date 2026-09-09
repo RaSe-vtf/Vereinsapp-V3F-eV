@@ -62,12 +62,16 @@ function requireMemberLogin(string $loginPfad = 'login.php', bool $sepaGatePruef
 }
 
 /**
- * Erzwingt die Rolle Vorstandsmitglied, sonst Weiterleitung zum eigenen Bereich.
+ * Erzwingt ein Vorstandsamt (unabhaengig von der Mitgliedsart), sonst
+ * Weiterleitung zum eigenen Bereich. Admins kommen zusaetzlich immer durch,
+ * auch ohne eigenes Vorstandsamt - das ist der Notfall-Zugang, falls sich
+ * mal jemand aus Versehen aus der Geschaeftsstelle aussperrt (z.B. durch
+ * einen Fehler bei der Amt-Vergabe).
  */
 function requireVorstand(string $loginPfad = 'login.php', string $bereichPfad = 'index.php'): array
 {
     $mitglied = requireMemberLogin($loginPfad);
-    if ($mitglied['rolle'] !== 'vorstandsmitglied') {
+    if (empty($mitglied['vorstandsamt']) && empty($mitglied['ist_admin'])) {
         header('Location: ' . $bereichPfad);
         exit;
     }
