@@ -77,11 +77,6 @@ $zurueck = 'index.php';
     <?php require __DIR__ . '/../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="subnav">
-            <a href="bankverbindungen.php">Bankverbindungen</a>
-            <a href="beitraege.php" class="active">Beiträge</a>
-            <a href="export.php">SEPA-Export</a>
-        </nav>
 
         <div class="card">
             <h2 style="margin-top:0;">Mitgliedsbeiträge</h2>

@@ -87,15 +87,11 @@ $flash = takeFlash();
     $tiefe = '../';
     $seitenUntertitel = 'Admin';
     $aktivReiter = 'admin';
-    $zurueck = '../home.php';
+    $zurueck = 'index.php';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="subnav">
-            <a href="konten.php">Konten</a>
-            <a href="bilder.php" class="active">Bilder</a>
-        </nav>
 
         <div class="card">
             <h2 style="margin-top:0;">Bestehende Bilder optimieren</h2>

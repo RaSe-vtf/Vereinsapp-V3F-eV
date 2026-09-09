@@ -173,11 +173,6 @@ $zurueck = 'index.php';
     <?php require __DIR__ . '/../../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="subnav">
-            <a href="index.php">Kassenbücher</a>
-            <a href="vereinskonto.php" class="active">Vereinskonto</a>
-            <a href="barkasse.php">Barkasse</a>
-        </nav>
 
         <?php if (!empty($luecken['luecken'])): ?>
             <div class="alert alert-warning">

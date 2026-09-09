@@ -211,11 +211,6 @@ $zurueck = 'index.php';
     <?php require __DIR__ . '/../../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="subnav">
-            <a href="index.php">Kassenbücher</a>
-            <a href="vereinskonto.php">Vereinskonto</a>
-            <a href="barkasse.php" class="active">Barkasse</a>
-        </nav>
 
         <?php if ($flash): ?>
             <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>

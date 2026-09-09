@@ -47,7 +47,7 @@ $zurueck = null;
                 </a>
             <?php endif; ?>
             <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="admin/konten.php" class="kachel">
+                <a href="admin/index.php" class="kachel">
                     <span class="kachel-icon">⚙️</span>
                     <span>Admin</span>
                 </a>

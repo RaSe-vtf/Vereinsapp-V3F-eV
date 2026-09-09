@@ -26,7 +26,7 @@
                     <a href="<?= e($tiefe) ?>vorstand/index.php" class="<?= $aktivReiter === 'geschaeftsstelle' ? 'active' : '' ?>">Geschäftsstelle</a>
                 <?php endif; ?>
                 <?php if (!empty($mitglied['ist_admin'])): ?>
-                    <a href="<?= e($tiefe) ?>admin/konten.php" class="<?= $aktivReiter === 'admin' ? 'active' : '' ?>">Admin</a>
+                    <a href="<?= e($tiefe) ?>admin/index.php" class="<?= $aktivReiter === 'admin' ? 'active' : '' ?>">Admin</a>
                 <?php endif; ?>
                 <hr>
                 <a href="<?= e($tiefe) ?>../logout.php" class="menu-logout">Abmelden</a>
