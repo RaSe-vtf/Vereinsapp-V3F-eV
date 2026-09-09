@@ -621,16 +621,28 @@ th {
 }
 
 .zurueck-link {
-    display: inline-block;
-    font-size: 1.5rem;
-    line-height: 1;
-    font-weight: 600;
-    color: var(--farbe-text-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--farbe-border);
+    box-shadow: 0 2px 10px rgba(20, 60, 70, 0.08);
+    color: var(--farbe-text);
     text-decoration: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.zurueck-link svg {
+    width: 20px;
+    height: 20px;
 }
 
 .zurueck-link:hover {
-    color: var(--farbe-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 60, 70, 0.16);
 }
 
 .filter-pill {

@@ -41,7 +41,7 @@ $zurueck = null;
                 <span>Sportlerprofile</span>
             </a>
             <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
-                <a href="vorstand/antraege.php" class="kachel">
+                <a href="vorstand/index.php" class="kachel">
                     <span class="kachel-icon">🏢</span>
                     <span>Geschäftsstelle</span>
                 </a>

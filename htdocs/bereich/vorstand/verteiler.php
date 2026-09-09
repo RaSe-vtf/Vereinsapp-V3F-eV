@@ -71,7 +71,7 @@ $flash = takeFlash();
     $tiefe = '../';
     $seitenUntertitel = 'Geschäftsstelle';
     $aktivReiter = 'geschaeftsstelle';
-    $zurueck = '../home.php';
+    $zurueck = 'index.php';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 

@@ -69,7 +69,7 @@ foreach ($alleDokumente as $doc) {
 $flash = takeFlash();
 $tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
-$zurueck = '../home.php';
+$zurueck = 'index.php';
 ?>
 <!DOCTYPE html>
 <html lang="de">

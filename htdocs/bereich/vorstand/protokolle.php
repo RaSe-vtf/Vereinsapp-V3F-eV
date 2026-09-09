@@ -9,7 +9,7 @@ $mitglied = requireVorstand('../../login.php', '../index.php');
 
 $tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
-$zurueck = '../home.php';
+$zurueck = 'index.php';
 ?>
 <!DOCTYPE html>
 <html lang="de">

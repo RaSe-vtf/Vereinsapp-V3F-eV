@@ -23,7 +23,7 @@
                 <a href="<?= e($tiefe) ?>index.php" class="<?= $aktivReiter === 'meine-daten' ? 'active' : '' ?>">Meine Daten</a>
                 <a href="<?= e($tiefe) ?>sportlerprofile.php" class="<?= $aktivReiter === 'sportlerprofile' ? 'active' : '' ?>">Sportlerprofile</a>
                 <?php if ($mitglied['rolle'] === 'vorstandsmitglied'): ?>
-                    <a href="<?= e($tiefe) ?>vorstand/antraege.php" class="<?= $aktivReiter === 'geschaeftsstelle' ? 'active' : '' ?>">Geschäftsstelle</a>
+                    <a href="<?= e($tiefe) ?>vorstand/index.php" class="<?= $aktivReiter === 'geschaeftsstelle' ? 'active' : '' ?>">Geschäftsstelle</a>
                 <?php endif; ?>
                 <?php if (!empty($mitglied['ist_admin'])): ?>
                     <a href="<?= e($tiefe) ?>admin/konten.php" class="<?= $aktivReiter === 'admin' ? 'active' : '' ?>">Admin</a>
@@ -35,5 +35,9 @@
     </div>
 </header>
 <?php if ($zurueck !== null): ?>
-    <div class="container zurueck-zeile"><a class="zurueck-link" href="<?= e($zurueck) ?>" aria-label="Zurück" title="Zurück">&#8617;</a></div>
+    <div class="container zurueck-zeile">
+        <a class="zurueck-link" href="<?= e($zurueck) ?>" aria-label="Zurück" title="Zurück">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
+        </a>
+    </div>
 <?php endif; ?>
