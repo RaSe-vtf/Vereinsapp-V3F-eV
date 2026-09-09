@@ -31,6 +31,15 @@ $zurueck = 'index.php';
     <link rel="apple-touch-icon" href="../../../assets/img/apple-touch-icon.png">
     <link rel="manifest" href="../../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
+    <style>
+        /* Bankverbindungen hat viele Spalten (IBAN, BIC, Mandatsreferenz, ...)
+           - kompakter als die App-weite Tabellen-Grundschrift, damit mehr
+           ohne horizontales Scrollen direkt lesbar ist. */
+        .bank-tabelle { font-size: 0.78rem; }
+        .bank-tabelle th,
+        .bank-tabelle td { padding: 5px 7px; }
+        .bank-tabelle .badge { padding: 2px 7px; font-size: 0.7rem; }
+    </style>
 </head>
 <body>
     <?php require __DIR__ . '/../../../../includes/kopf.php'; ?>
@@ -50,7 +59,7 @@ $zurueck = 'index.php';
                 <p>Noch keine aktiven Mitglieder vorhanden.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-einzeilig bank-tabelle">
                     <thead>
                         <tr>
                             <th>Nachname</th>

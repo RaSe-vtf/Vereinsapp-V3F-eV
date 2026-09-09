@@ -53,6 +53,16 @@ $flash = takeFlash();
     <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
     <link rel="manifest" href="../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
+    <style>
+        /* Konten-Tabelle kompakter als die App-weite Tabellen-Grundschrift,
+           damit mehr ohne horizontales Scrollen direkt lesbar ist. */
+        .konten-tabelle { font-size: 0.78rem; }
+        .konten-tabelle th,
+        .konten-tabelle td { padding: 5px 7px; }
+        .konten-tabelle .btn,
+        .konten-tabelle .btn-secondary { padding: 3px 7px; font-size: 0.72rem; }
+        .konten-tabelle .badge { padding: 2px 7px; font-size: 0.7rem; }
+    </style>
 </head>
 <body>
     <?php
@@ -81,7 +91,7 @@ $flash = takeFlash();
                 <p>Noch keine Mitglieder angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-karten">
+                <table class="tabelle-karten konten-tabelle">
                     <thead>
                         <tr>
                             <th>Name</th>

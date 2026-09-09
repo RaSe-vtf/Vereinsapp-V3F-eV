@@ -59,6 +59,18 @@ $flash = takeFlash();
     <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
     <link rel="manifest" href="../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
+    <style>
+        /* Mitgliederverwaltung hat viele Spalten - kompakter als die
+           App-weite Tabellen-Grundschrift, damit mehr ohne horizontales
+           Scrollen direkt lesbar ist. */
+        .mv-tabelle { font-size: 0.78rem; }
+        .mv-tabelle th,
+        .mv-tabelle td { padding: 5px 7px; }
+        .mv-tabelle .btn,
+        .mv-tabelle .btn-secondary { padding: 3px 7px; font-size: 0.72rem; }
+        .mv-tabelle .badge { padding: 2px 7px; font-size: 0.7rem; }
+        .mv-tabelle .role-select { font-size: 0.72rem; padding: 3px 5px; }
+    </style>
 </head>
 <body>
     <?php
@@ -82,7 +94,7 @@ $flash = takeFlash();
                 <p>Noch keine Mitglieder angelegt.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-einzeilig mv-tabelle">
                     <thead>
                         <tr>
                             <th>Foto</th>
