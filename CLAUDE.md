@@ -72,9 +72,13 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
     Bankverbindungen/SEPA-Export. Offen beim Nutzer: den Cronjob im
     all-inkl-KAS-Panel einrichten und `CRON_SECRET` in
     `private/config.php` setzen.
-  - [ ] Vorstandsämter (Vorsitzende/r, Kassenwart, Schriftführer, ...) statt
-    nur der einen Rolle "Vorstandsmitglied" – relevant für die
-    Vertretungsberechtigung nach Satzung/§ 26 BGB.
+  - [x] Vorstandsämter – erledigt: eigenes Feld "Vorstandsamt" (Vorsitz,
+    stellv. Vorsitz, Kassenwart, Beisitzer/erweiterter Vorstand) je
+    Vorstandsmitglied, unabhängig von der Mitgliedschaftsart. Die drei
+    Ämter des geschäftsführenden Vorstands sind laut § 11 Abs. 2 Satzung
+    nur einmal vergebbar, das setzt die App durch. Das Impressum zieht die
+    Vertretungsberechtigung (§ 26 BGB) jetzt automatisch aus der/dem
+    hinterlegten Vorsitzenden.
   - [ ] Mitgliederversammlung/Jahreshauptversammlung (Einladung,
     Tagesordnung, Beschlüsse, Anwesenheitsliste) – die "Protokolle"-Seite
     ist dafür aktuell nur ein leerer Platzhalter.
