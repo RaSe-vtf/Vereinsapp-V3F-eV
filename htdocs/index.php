@@ -49,8 +49,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1f7a8c">
+    <style>
+        /* Login-Startseite: kompakter als der App-Standard, damit Logo,
+           Login-Formular und Aufnahmeantrag-Hinweis ohne Scrollen auf einen
+           typischen Handybildschirm passen. Scoped auf .startseite-kompakt,
+           damit .hero/.card auf anderen Seiten (z.B. Beitragsrechner)
+           unveraendert bleiben. */
+        .startseite-kompakt .top-header__inner {
+            padding: 8px 20px;
+        }
+        .startseite-kompakt .top-header__logo {
+            width: 34px;
+            height: 34px;
+        }
+        .startseite-kompakt .container {
+            padding-top: 10px;
+        }
+        .startseite-kompakt .hero {
+            padding: 2px 20px 0;
+        }
+        .startseite-kompakt .hero img {
+            width: 46px;
+            height: 46px;
+            margin-bottom: 6px;
+        }
+        .startseite-kompakt .hero h1 {
+            font-size: 1.05rem;
+            line-height: 1.2;
+            margin: 0;
+        }
+        .startseite-kompakt .card {
+            padding: 12px 20px;
+        }
+        .startseite-kompakt .card h2 {
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+        }
+        .startseite-kompakt .card p {
+            margin: 4px 0 8px;
+            font-size: 0.88rem;
+            line-height: 1.35;
+        }
+        .startseite-kompakt label {
+            margin: 6px 0 3px;
+        }
+        .startseite-kompakt footer {
+            padding: 6px 20px 10px;
+        }
+    </style>
 </head>
-<body>
+<body class="startseite-kompakt">
     <header class="top-header">
         <div class="top-header__inner">
             <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
@@ -58,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </header>
 
-    <main class="container" style="padding-bottom:12px;">
+    <main class="container" style="padding-bottom:8px;">
         <div class="hero">
             <img src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <h1>Willkommen bei <?= e(vereinNameNowrap()) ?></h1>
@@ -77,20 +125,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="email" id="email" name="email" required autofocus>
                 <label class="required" for="passwort">Passwort</label>
                 <input type="password" id="passwort" name="passwort" required>
-                <div style="margin-top:18px;">
+                <div style="margin-top:8px;">
                     <button type="submit" class="btn">Anmelden</button>
                 </div>
             </form>
         </div>
 
-        <div class="card" style="max-width:360px; margin:24px auto 0; text-align:center;">
+        <div class="card" style="max-width:360px; margin:8px auto 0; text-align:center;">
             <h2>Aufnahmeantrag</h2>
             <p>Noch kein Mitglied? Hier kannst du deinen Aufnahmeantrag für <?= e(vereinNameNowrap()) ?> stellen. Der Vorstand wird über deinen Antrag anschließend entscheiden.</p>
             <a class="btn" href="antrag.php">Zum Aufnahmeantrag</a>
         </div>
     </main>
 
-    <footer style="padding-top:8px;">
+    <footer>
         <a href="impressum.php">Impressum</a>
         <a href="datenschutz.php">Datenschutz</a>
     </footer>
