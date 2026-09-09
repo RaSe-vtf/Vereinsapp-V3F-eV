@@ -49,6 +49,42 @@ function rollenLabel(string $rolle): string
     return ROLLEN_LABELS[$rolle] ?? $rolle;
 }
 
+// Vorstandsaemter nach § 11 Abs. 2/3 der Satzung - unabhaengig von der
+// Mitgliedschaftsart (rolle). Die ersten drei bilden den geschaeftsfuehrenden
+// Vorstand mit Vertretungsmacht nach § 26 BGB, "beisitzer" den erweiterten
+// Vorstand ohne Vertretungsmacht.
+const VORSTANDSAEMTER_LABELS = [
+    'vorsitz' => 'Vorsitzende/r',
+    'stellv_vorsitz' => 'Stellvertretende/r Vorsitzende/r',
+    'kassenwart' => 'Kassenwart/in',
+    'beisitzer' => 'Beisitzer/in (erweiterter Vorstand)',
+];
+
+// Nur diese drei Aemter sind laut Satzung jeweils nur einmal vergebbar
+// (geschaeftsfuehrender Vorstand) - "beisitzer" darf mehrfach vorkommen.
+const VORSTANDSAEMTER_EINMALIG = ['vorsitz', 'stellv_vorsitz', 'kassenwart'];
+
+function vorstandsamtLabel(?string $amt): string
+{
+    if ($amt === null) {
+        return '';
+    }
+    return VORSTANDSAEMTER_LABELS[$amt] ?? $amt;
+}
+
+/**
+ * Name der/des aktuellen Vorsitzenden fuer die Vertretungsberechtigung im
+ * Impressum (§ 26 BGB) - null, wenn (noch) niemand als Vorsitzende/r
+ * hinterlegt ist.
+ */
+function holeAktuelleVorsitzende(PDO $pdo): ?string
+{
+    $stmt = $pdo->prepare("SELECT vorname, nachname FROM mitglieder WHERE vorstandsamt = 'vorsitz' AND aktiv = 1 LIMIT 1");
+    $stmt->execute();
+    $row = $stmt->fetch();
+    return $row ? $row['vorname'] . ' ' . $row['nachname'] : null;
+}
+
 // Mitgliedschaftsarten, die im Aufnahmeantrag zur Auswahl stehen -
 // Ehren- und Vorstandsmitglied werden nicht beantragt, sondern vom Verein
 // separat vergeben.

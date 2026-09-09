@@ -3,6 +3,8 @@ declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+
+$vorsitzende = holeAktuelleVorsitzende(getPdo());
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -40,7 +42,7 @@ require_once __DIR__ . '/../includes/functions.php';
             </p>
 
             <h2>Vertreten durch</h2>
-            <p>[Vorname Nachname, 1. Vorsitzende/r]</p>
+            <p><?= $vorsitzende !== null ? e($vorsitzende) . ', 1. Vorsitzende/r' : '[Vorname Nachname, 1. Vorsitzende/r]' ?></p>
 
             <h2>Kontakt</h2>
             <p>

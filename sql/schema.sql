@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
     rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL,
     ist_admin TINYINT(1) NOT NULL DEFAULT 0,
     passwort_hash VARCHAR(255) NULL,
     sepa_kontoinhaber VARCHAR(200) NULL,
@@ -317,3 +318,12 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS kuendigung_eingegangen_am DATE N
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS austrittsdatum DATE NULL AFTER kuendigung_eingegangen_am;
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS kuendigungsgrund TEXT NULL AFTER austrittsdatum;
 ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS ausgetreten_am DATETIME NULL AFTER kuendigungsgrund;
+
+-- Vorstandsamt (§ 11 Abs. 2/3 der Satzung): unabhaengig vom Mitgliedschafts-
+-- status (rolle) - ein Vorstandsmitglied kann eines der drei Aemter des
+-- geschaeftsfuehrenden Vorstands (Vorsitz, Kassenwart) mit Vertretungsmacht
+-- nach § 26 BGB innehaben, oder als Beisitzer/in dem erweiterten Vorstand
+-- ohne Vertretungsmacht angehoeren. Jedes der drei Hauptaemter darf laut
+-- Satzung nur einmal vergeben sein - das setzt die App durch (siehe
+-- mitglieder.php, Aktion "amt_aendern").
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL AFTER rolle;
