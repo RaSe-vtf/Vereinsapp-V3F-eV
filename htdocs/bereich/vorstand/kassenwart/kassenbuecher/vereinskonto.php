@@ -218,7 +218,7 @@ $zurueck = 'index.php';
                 <p>Keine Buchungen für diesen Monat vorhanden.</p>
             <?php else: ?>
                 <div style="overflow-x:auto;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-karten">
                     <thead>
                         <tr>
                             <th>Datum</th>
@@ -231,16 +231,16 @@ $zurueck = 'index.php';
                     <tbody>
                         <?php foreach ($buchungenMonat as $b): ?>
                             <tr>
-                                <td><?= e((new DateTime($b['buchungsdatum']))->format('d.m.Y')) ?></td>
-                                <td><?= e((string) $b['verwendungszweck']) ?></td>
-                                <td><?= e((string) $b['beteiligter']) ?></td>
-                                <td style="color:<?= (float) $b['betrag'] >= 0 ? 'var(--farbe-success)' : 'var(--farbe-error)' ?>;">
+                                <td data-label="Datum"><?= e((new DateTime($b['buchungsdatum']))->format('d.m.Y')) ?></td>
+                                <td data-label="Verwendungszweck"><?= e((string) $b['verwendungszweck']) ?></td>
+                                <td data-label="Beteiligter"><?= e((string) $b['beteiligter']) ?></td>
+                                <td data-label="Betrag" style="color:<?= (float) $b['betrag'] >= 0 ? 'var(--farbe-success)' : 'var(--farbe-error)' ?>;">
                                     <?= (float) $b['betrag'] >= 0 ? '+' : '' ?><?= number_format((float) $b['betrag'], 2, ',', '.') ?> €
                                     <?php if ((bool) $b['ist_bargeld_verdacht']): ?>
                                         <span class="badge badge-neu" title="Möglicherweise eine Bargeldabhebung &ndash; siehe Barkasse">Bargeld?</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Kategorie">
                                     <?php if ((bool) $b['in_barkasse_uebernommen']): ?>
                                         <span class="text-muted">&rarr; Barkasse</span>
                                     <?php else: ?>
@@ -272,7 +272,7 @@ $zurueck = 'index.php';
                 <p>Für diesen Monat wurde noch kein Kontoauszug hochgeladen.</p>
             <?php else: ?>
                 <div style="overflow-x:auto; margin-bottom:20px;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-karten">
                     <thead>
                         <tr>
                             <th>Hochgeladen am</th>
@@ -285,10 +285,10 @@ $zurueck = 'index.php';
                     <tbody>
                         <?php foreach ($auszuegeMonat as $a): ?>
                             <tr>
-                                <td><?= e((new DateTime($a['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
-                                <td><?= $a['format'] === 'camt053' ? 'CAMT.053' : 'MT940' ?></td>
-                                <td><?= $a['anfangssaldo'] !== null ? number_format((float) $a['anfangssaldo'], 2, ',', '.') . ' €' : '–' ?></td>
-                                <td><?= $a['endsaldo'] !== null ? number_format((float) $a['endsaldo'], 2, ',', '.') . ' €' : '–' ?></td>
+                                <td data-label="Hochgeladen am"><?= e((new DateTime($a['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
+                                <td data-label="Format"><?= $a['format'] === 'camt053' ? 'CAMT.053' : 'MT940' ?></td>
+                                <td data-label="Anfangssaldo"><?= $a['anfangssaldo'] !== null ? number_format((float) $a['anfangssaldo'], 2, ',', '.') . ' €' : '–' ?></td>
+                                <td data-label="Endsaldo"><?= $a['endsaldo'] !== null ? number_format((float) $a['endsaldo'], 2, ',', '.') . ' €' : '–' ?></td>
                                 <td>
                                     <a class="btn btn-secondary" href="kontoauszug_datei.php?id=<?= (int) $a['id'] ?>">Herunterladen</a>
                                     <form method="post" class="inline-form">
