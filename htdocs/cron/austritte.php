@@ -10,7 +10,7 @@ declare(strict_types=1);
  * auf diesem Hosting verfuegbar). Kein Login noetig - laeuft ausserhalb
  * jeder Mitglieder-Session.
  *
- * Aufruf: https://deine-domain.de/cron/austritte.php?token=DEIN_GEHEIMWORT
+ * Aufruf: https://vonsystrifamilyev.de/cron/austritte.php?token=DEIN_GEHEIMWORT
  */
 
 require_once __DIR__ . '/../../includes/db.php';

@@ -47,5 +47,5 @@ define('VEREIN_BIC', '');
 // Frei gewähltes Geheimwort, das den Cronjob-Aufruf (htdocs/cron/austritte.php)
 // vor externem Missbrauch schützt. Hier durch ein eigenes, langes Zufallswort
 // ersetzen und dasselbe Wort in der Cronjob-URL im all-inkl KAS-Panel
-// verwenden, z.B.: https://deine-domain.de/cron/austritte.php?token=DEIN_GEHEIMWORT
+// verwenden, z.B.: https://vonsystrifamilyev.de/cron/austritte.php?token=DEIN_GEHEIMWORT
 define('CRON_SECRET', 'HIER_EIGENES_GEHEIMWORT_EINTRAGEN');
