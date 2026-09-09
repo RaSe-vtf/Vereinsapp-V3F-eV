@@ -134,14 +134,6 @@ $flash = takeFlash();
     ?>
 
     <main class="container" style="max-width:960px;">
-        <nav class="subnav">
-            <a href="antraege.php" class="active">Aufnahmeanträge</a>
-            <a href="mitglieder.php">Mitgliederverwaltung</a>
-            <a href="verteiler.php">E-Mail-Verteiler</a>
-            <a href="kassenwart/index.php">Kassenwart</a>
-            <a href="vereinsdokumente.php">Vereinsdokumente</a>
-            <a href="protokolle.php">Protokolle</a>
-        </nav>
 
         <div class="card">
             <h2 style="margin-top:0;">Aufnahmeanträge</h2>

@@ -168,15 +168,6 @@ function eGeld(float $betrag): string
     <?php require __DIR__ . '/../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1200px;">
-        <nav class="subnav">
-            <a href="../antraege.php">Aufnahmeanträge</a>
-            <a href="../mitglieder.php">Mitgliederverwaltung</a>
-            <a href="../verteiler.php">E-Mail-Verteiler</a>
-            <a href="index.php" class="active">Kassenwart</a>
-            <a href="../vereinsdokumente.php">Vereinsdokumente</a>
-            <a href="../protokolle.php">Protokolle</a>
-        </nav>
-
         <?php if ($flash): ?>
             <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
         <?php endif; ?>

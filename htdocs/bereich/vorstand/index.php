@@ -37,7 +37,7 @@ $zurueck = '../home.php';
             </a>
             <a href="mitglieder.php" class="kachel">
                 <span class="kachel-icon">👥</span>
-                <span>Mitgliederverwaltung</span>
+                <span>Mitglieder</span>
             </a>
             <a href="verteiler.php" class="kachel">
                 <span class="kachel-icon">📧</span>

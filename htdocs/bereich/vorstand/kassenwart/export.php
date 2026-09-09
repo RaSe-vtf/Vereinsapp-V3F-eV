@@ -115,15 +115,6 @@ $zurueck = 'index.php';
 
     <main class="container" style="max-width:1040px;">
         <nav class="subnav">
-            <a href="../antraege.php">Aufnahmeanträge</a>
-            <a href="../mitglieder.php">Mitgliederverwaltung</a>
-            <a href="../verteiler.php">E-Mail-Verteiler</a>
-            <a href="index.php" class="active">Kassenwart</a>
-            <a href="../vereinsdokumente.php">Vereinsdokumente</a>
-            <a href="../protokolle.php">Protokolle</a>
-        </nav>
-
-        <nav class="subnav">
             <a href="bankverbindungen.php">Bankverbindungen</a>
             <a href="beitraege.php">Beiträge</a>
             <a href="export.php" class="active">SEPA-Export</a>

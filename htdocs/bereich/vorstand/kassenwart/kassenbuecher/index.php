@@ -28,14 +28,6 @@ $zurueck = '../index.php';
     <?php require __DIR__ . '/../../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
-        <nav class="subnav">
-            <a href="../../antraege.php">Aufnahmeanträge</a>
-            <a href="../../mitglieder.php">Mitgliederverwaltung</a>
-            <a href="../../verteiler.php">E-Mail-Verteiler</a>
-            <a href="../index.php" class="active">Kassenwart</a>
-            <a href="../../vereinsdokumente.php">Vereinsdokumente</a>
-            <a href="../../protokolle.php">Protokolle</a>
-        </nav>
 
         <h2 style="margin-top:0;">Kassenbücher</h2>
 
