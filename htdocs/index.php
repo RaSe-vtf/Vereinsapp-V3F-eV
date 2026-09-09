@@ -56,45 +56,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            damit .hero/.card auf anderen Seiten (z.B. Beitragsrechner)
            unveraendert bleiben. */
         .startseite-kompakt .top-header__inner {
-            padding: 8px 20px;
+            padding: 12px 20px;
         }
         .startseite-kompakt .top-header__logo {
-            width: 34px;
-            height: 34px;
+            width: 40px;
+            height: 40px;
         }
         .startseite-kompakt .container {
-            padding-top: 10px;
+            padding-top: 14px;
         }
         .startseite-kompakt .hero {
-            padding: 2px 20px 0;
+            padding: 6px 20px 2px;
         }
         .startseite-kompakt .hero img {
-            width: 46px;
-            height: 46px;
-            margin-bottom: 6px;
+            width: 64px;
+            height: 64px;
+            margin-bottom: 10px;
         }
         .startseite-kompakt .hero h1 {
-            font-size: 1.05rem;
-            line-height: 1.2;
+            font-size: 1.35rem;
+            line-height: 1.25;
             margin: 0;
         }
         .startseite-kompakt .card {
-            padding: 12px 20px;
+            padding: 18px 22px;
         }
         .startseite-kompakt .card h2 {
-            font-size: 1.05rem;
-            margin-bottom: 6px;
+            font-size: 1.25rem;
+            margin-bottom: 10px;
         }
         .startseite-kompakt .card p {
-            margin: 4px 0 8px;
-            font-size: 0.88rem;
-            line-height: 1.35;
+            margin: 6px 0 12px;
+            font-size: 0.95rem;
+            line-height: 1.4;
         }
         .startseite-kompakt label {
-            margin: 6px 0 3px;
+            margin: 10px 0 5px;
         }
         .startseite-kompakt footer {
-            padding: 6px 20px 10px;
+            padding: 10px 20px 16px;
         }
     </style>
 </head>
@@ -125,13 +125,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="email" id="email" name="email" required autofocus>
                 <label class="required" for="passwort">Passwort</label>
                 <input type="password" id="passwort" name="passwort" required>
-                <div style="margin-top:8px;">
+                <div style="margin-top:14px;">
                     <button type="submit" class="btn">Anmelden</button>
                 </div>
             </form>
         </div>
 
-        <div class="card" style="max-width:360px; margin:8px auto 0; text-align:center;">
+        <div class="card" style="max-width:360px; margin:14px auto 0; text-align:center;">
             <h2>Aufnahmeantrag</h2>
             <p>Noch kein Mitglied? Hier kannst du deinen Aufnahmeantrag für <?= e(vereinNameNowrap()) ?> stellen. Der Vorstand wird über deinen Antrag anschließend entscheiden.</p>
             <a class="btn" href="antrag.php">Zum Aufnahmeantrag</a>
