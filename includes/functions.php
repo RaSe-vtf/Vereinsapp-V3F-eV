@@ -71,6 +71,65 @@ function istMinderjaehrig(string $geburtsdatum, ?DateTime $stichtag = null): boo
 }
 
 /**
+ * Berechnet das satzungsgemaesse Austrittsdatum nach § 6 Abs. 2 der Satzung:
+ * "Der Austritt ist gegenueber dem Vorstand in Textform zu erklaeren. Er ist
+ * mit einer Frist von sechs Wochen zum Ende eines Quartals moeglich." -
+ * gibt das naechste Quartalsende zurueck, das mindestens sechs Wochen (42
+ * Tage) nach dem Kuendigungseingang liegt.
+ */
+function berechneAustrittsdatumNachSatzung(DateTime $eingang): DateTime
+{
+    $schwelle = (clone $eingang)->modify('+42 days');
+    $jahr = (int) $schwelle->format('Y');
+    $quartalsenden = [
+        DateTime::createFromFormat('Y-m-d', $jahr . '-03-31'),
+        DateTime::createFromFormat('Y-m-d', $jahr . '-06-30'),
+        DateTime::createFromFormat('Y-m-d', $jahr . '-09-30'),
+        DateTime::createFromFormat('Y-m-d', $jahr . '-12-31'),
+    ];
+    foreach ($quartalsenden as $quartalsende) {
+        if ($quartalsende >= $schwelle) {
+            return $quartalsende;
+        }
+    }
+    return DateTime::createFromFormat('Y-m-d', ($jahr + 1) . '-03-31');
+}
+
+/**
+ * Deaktiviert alle Mitglieder, deren berechnetes Austrittsdatum erreicht
+ * oder ueberschritten ist und die noch nicht ausgetreten sind. Wird sowohl
+ * beim Aufruf der Mitgliederverwaltung (opportunistisch) als auch vom
+ * Cronjob-Skript aufgerufen - nicht-destruktiv und beliebig oft
+ * wiederholbar, da nur aktiv=1-Mitglieder mit erreichtem Austrittsdatum
+ * betroffen sind. Gibt die Anzahl der deaktivierten Mitglieder zurueck.
+ */
+function verarbeiteFaelligeAustritte(PDO $pdo): int
+{
+    $stmt = $pdo->prepare(
+        "UPDATE mitglieder
+         SET aktiv = 0, ausgetreten_am = NOW()
+         WHERE aktiv = 1 AND austrittsdatum IS NOT NULL AND austrittsdatum <= CURDATE()"
+    );
+    $stmt->execute();
+    return $stmt->rowCount();
+}
+
+/**
+ * Aktive Mitglieder mit einer erfassten, noch nicht vollzogenen Kuendigung -
+ * fuer den Hinweis im Kassenwart-Bereich (Bankverbindungen, SEPA-Export),
+ * damit absehbare Wegfaelle von SEPA-Mandaten beim Beitragseinzug beruecksichtigt werden.
+ */
+function holeGekuendigteAktiveMitglieder(PDO $pdo): array
+{
+    return $pdo->query(
+        "SELECT id, vorname, nachname, austrittsdatum
+         FROM mitglieder
+         WHERE aktiv = 1 AND austrittsdatum IS NOT NULL
+         ORDER BY austrittsdatum, nachname, vorname"
+    )->fetchAll();
+}
+
+/**
  * Rolle eines Mitglieds fuer den Bankbereich (Bankverbindungen-Liste,
  * Zuordnung der Beitragsposten im SEPA-Export): Admins und
  * Vorstandsmitglieder gelten hier unabhaengig von ihrer sonstigen Rolle

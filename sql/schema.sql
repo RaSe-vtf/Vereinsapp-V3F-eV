@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     sepa_erteilt_am DATETIME NULL,
     sepa_erste_lastschrift_erfolgt TINYINT(1) NOT NULL DEFAULT 0,
     aktiv TINYINT(1) NOT NULL DEFAULT 1,
+    kuendigung_eingegangen_am DATE NULL,
+    austrittsdatum DATE NULL,
+    kuendigungsgrund TEXT NULL,
+    ausgetreten_am DATETIME NULL,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uniq_email (email)
@@ -302,3 +306,14 @@ ALTER TABLE antraege ADD COLUMN IF NOT EXISTS gewuenschte_rolle ENUM('vollmitgli
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS vertreter_name VARCHAR(200) NULL AFTER gewuenschte_rolle;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS vertreter_anschrift VARCHAR(300) NULL AFTER vertreter_name;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS einverstaendnis_vertreter TINYINT(1) NOT NULL DEFAULT 0 AFTER vertreter_anschrift;
+
+-- Mitglieder-Austritt (Kuendigung): austrittsdatum wird automatisch nach
+-- § 6 Abs. 2 der Satzung berechnet (Frist von sechs Wochen zum Quartalsende)
+-- und ist nicht frei eingebbar - siehe berechneAustrittsdatumNachSatzung()
+-- in includes/functions.php. ausgetreten_am wird gesetzt, sobald die
+-- automatische Deaktivierung (Seitenaufruf oder Cronjob) tatsaechlich
+-- stattgefunden hat.
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS kuendigung_eingegangen_am DATE NULL AFTER aktiv;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS austrittsdatum DATE NULL AFTER kuendigung_eingegangen_am;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS kuendigungsgrund TEXT NULL AFTER austrittsdatum;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS ausgetreten_am DATETIME NULL AFTER kuendigungsgrund;

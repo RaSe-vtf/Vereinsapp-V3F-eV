@@ -33,11 +33,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
                 }
                 setFlash('success', 'Status wurde aktualisiert.');
             }
+        } elseif ($_POST['aktion'] === 'kuendigung_erfassen') {
+            $eingegangenAm = trim((string) ($_POST['eingegangen_am'] ?? ''));
+            $grund = trim((string) ($_POST['grund'] ?? ''));
+            $eingang = DateTime::createFromFormat('Y-m-d', $eingegangenAm);
+            if (!$eingang || $eingang > new DateTime()) {
+                setFlash('error', 'Bitte gib ein gültiges Eingangsdatum (nicht in der Zukunft) an.');
+            } else {
+                $austrittsdatum = berechneAustrittsdatumNachSatzung($eingang);
+                $pdo->prepare(
+                    'UPDATE mitglieder SET kuendigung_eingegangen_am = :eingegangen_am, austrittsdatum = :austrittsdatum, kuendigungsgrund = :grund WHERE id = :id'
+                )->execute([
+                    'eingegangen_am' => $eingang->format('Y-m-d'),
+                    'austrittsdatum' => $austrittsdatum->format('Y-m-d'),
+                    'grund' => $grund !== '' ? $grund : null,
+                    'id' => $zielId,
+                ]);
+                setFlash('success', 'Kündigung erfasst. Satzungsgemäßes Austrittsdatum (§ 6 Abs. 2 Satzung): ' . $austrittsdatum->format('d.m.Y') . '.');
+            }
+        } elseif ($_POST['aktion'] === 'kuendigung_zurueckziehen') {
+            $pdo->prepare('UPDATE mitglieder SET kuendigung_eingegangen_am = NULL, austrittsdatum = NULL, kuendigungsgrund = NULL WHERE id = :id')
+                ->execute(['id' => $zielId]);
+            setFlash('success', 'Kündigung wurde zurückgezogen.');
+        } elseif ($_POST['aktion'] === 'austrittsdatum_anpassen') {
+            $neuesDatum = trim((string) ($_POST['austrittsdatum'] ?? ''));
+            $datum = DateTime::createFromFormat('Y-m-d', $neuesDatum);
+            if (!$datum) {
+                setFlash('error', 'Bitte gib ein gültiges Datum an.');
+            } else {
+                $pdo->prepare('UPDATE mitglieder SET austrittsdatum = :austrittsdatum WHERE id = :id')
+                    ->execute(['austrittsdatum' => $datum->format('Y-m-d'), 'id' => $zielId]);
+                setFlash('success', 'Austrittsdatum wurde manuell auf ' . $datum->format('d.m.Y') . ' angepasst.');
+            }
         }
     }
     header('Location: mitglieder.php');
     exit;
 }
+
+verarbeiteFaelligeAustritte($pdo);
 
 $mitgliederListe = $pdo->query(
     'SELECT m.*, a.einverstaendnis_bildnutzung
@@ -147,7 +181,17 @@ $flash = takeFlash();
                                 </td>
                                 <td><?= e((new DateTime($m['erstellt_am']))->format('d.m.Y')) ?></td>
                                 <td><?= $m['einverstaendnis_bildnutzung'] ? '<span class="badge badge-angenommen">ja</span>' : '<span class="badge badge-abgelehnt">nein</span>' ?></td>
-                                <td><?= $m['aktiv'] ? '<span class="badge badge-angenommen">aktiv</span>' : '<span class="badge badge-abgelehnt">inaktiv</span>' ?></td>
+                                <td>
+                                    <?php if ($m['aktiv'] && $m['austrittsdatum']): ?>
+                                        <span class="badge badge-neu" title="Kündigung eingegangen am <?= e((new DateTime($m['kuendigung_eingegangen_am']))->format('d.m.Y')) ?>, § 6 Abs. 2 Satzung">gekündigt zum <?= e((new DateTime($m['austrittsdatum']))->format('d.m.Y')) ?></span>
+                                    <?php elseif ($m['aktiv']): ?>
+                                        <span class="badge badge-angenommen">aktiv</span>
+                                    <?php elseif ($m['ausgetreten_am']): ?>
+                                        <span class="badge badge-abgelehnt">ausgetreten am <?= e((new DateTime($m['ausgetreten_am']))->format('d.m.Y')) ?></span>
+                                    <?php else: ?>
+                                        <span class="badge badge-abgelehnt">inaktiv</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <form method="post" class="inline-form">
                                         <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -155,6 +199,42 @@ $flash = takeFlash();
                                         <input type="hidden" name="aktion" value="aktiv_umschalten">
                                         <button type="submit" class="btn btn-secondary"><?= $m['aktiv'] ? 'Deaktivieren' : 'Aktivieren' ?></button>
                                     </form>
+
+                                    <?php if ($m['aktiv'] && !$m['austrittsdatum']): ?>
+                                        <details>
+                                            <summary class="btn btn-secondary">Kündigung erfassen</summary>
+                                            <form method="post" style="margin-top:6px; min-width:200px;">
+                                                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                                <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                                <input type="hidden" name="aktion" value="kuendigung_erfassen">
+                                                <label class="required" style="margin-top:6px;">Eingegangen am</label>
+                                                <input type="date" name="eingegangen_am" value="<?= e((new DateTime())->format('Y-m-d')) ?>" required>
+                                                <label>Grund (optional)</label>
+                                                <textarea name="grund" rows="2" style="width:100%; padding:6px 8px; border:1px solid var(--farbe-border); border-radius:6px; font-family:inherit; font-size:inherit;"></textarea>
+                                                <div class="hint">Austrittsdatum wird automatisch nach § 6 Abs. 2 der Satzung berechnet (6 Wochen zum Quartalsende).</div>
+                                                <button type="submit" class="btn btn-secondary" style="margin-top:6px;">Speichern</button>
+                                            </form>
+                                        </details>
+                                    <?php elseif ($m['aktiv'] && $m['austrittsdatum']): ?>
+                                        <form method="post" class="inline-form">
+                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                            <input type="hidden" name="aktion" value="kuendigung_zurueckziehen">
+                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Kündigung von <?= e($m['vorname']) ?> wirklich zurückziehen?');">Kündigung zurückziehen</button>
+                                        </form>
+                                        <details>
+                                            <summary class="btn btn-secondary">Austrittsdatum anpassen</summary>
+                                            <form method="post" style="margin-top:6px; min-width:180px;">
+                                                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                                <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                                <input type="hidden" name="aktion" value="austrittsdatum_anpassen">
+                                                <label class="required" style="margin-top:6px;">Neues Austrittsdatum</label>
+                                                <input type="date" name="austrittsdatum" value="<?= e($m['austrittsdatum']) ?>" required>
+                                                <div class="hint">Nur für begründete Sonderfälle - Standard ist die automatische Berechnung.</div>
+                                                <button type="submit" class="btn btn-secondary" style="margin-top:6px;">Speichern</button>
+                                            </form>
+                                        </details>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

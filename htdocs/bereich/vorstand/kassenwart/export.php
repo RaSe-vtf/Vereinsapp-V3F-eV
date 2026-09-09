@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../../includes/auth.php';
 
 $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $pdo = getPdo();
+verarbeiteFaelligeAustritte($pdo);
 
 $fehler = [];
 $ausgewaehlteIds = [];
@@ -92,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $postenListe = $pdo->query('SELECT * FROM beitragsposten WHERE aktiv = 1 ORDER BY bezeichnung')->fetchAll();
 $mitgliederFuerVorschau = $pdo->query("SELECT rolle, ist_admin, (sepa_erteilt_am IS NOT NULL) AS hat_mandat FROM mitglieder WHERE aktiv = 1")->fetchAll();
+$gekuendigteMitglieder = holeGekuendigteAktiveMitglieder($pdo);
 
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
@@ -124,6 +126,25 @@ $zurueck = 'index.php';
                     <ul style="margin:0; padding-left:20px;">
                         <?php foreach ($fehler as $f): ?><li><?= e($f) ?></li><?php endforeach; ?>
                     </ul>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($gekuendigteMitglieder)): ?>
+                <?php
+                $faelligkeitsdatumObjekt = DateTime::createFromFormat('Y-m-d', $faelligkeitsdatum) ?: null;
+                $vorFaelligkeit = [];
+                foreach ($gekuendigteMitglieder as $g) {
+                    if ($faelligkeitsdatumObjekt && (new DateTime($g['austrittsdatum'])) <= $faelligkeitsdatumObjekt) {
+                        $vorFaelligkeit[] = $g;
+                    }
+                }
+                ?>
+                <div class="alert alert-warning">
+                    ⚠ <?= count($gekuendigteMitglieder) === 1 ? '1 Mitglied hat' : count($gekuendigteMitglieder) . ' Mitglieder haben' ?> gekündigt:
+                    <?php foreach ($gekuendigteMitglieder as $i => $g): ?><?= $i > 0 ? ', ' : ' ' ?><?= e($g['vorname'] . ' ' . $g['nachname']) ?> (Austritt zum <?= e((new DateTime($g['austrittsdatum']))->format('d.m.Y')) ?>)<?php endforeach; ?>.
+                    <?php if (!empty($vorFaelligkeit)): ?>
+                        <strong>Achtung:</strong> beim gewählten Fälligkeitstermin (<?= e($faelligkeitsdatumObjekt->format('d.m.Y')) ?>) ist der Austritt von <?= implode(', ', array_map(static fn (array $g): string => e($g['vorname'] . ' ' . $g['nachname']), $vorFaelligkeit)) ?> bereits wirksam oder wird es sein &ndash; bitte prüfen, ob diese Mitglieder in diesem Lauf noch einbezogen werden sollen.
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../../includes/auth.php';
 
 $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $pdo = getPdo();
+verarbeiteFaelligeAustritte($pdo);
 
 $mitgliederListe = $pdo->query(
     "SELECT vorname, nachname, rolle, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am
@@ -14,6 +15,8 @@ $mitgliederListe = $pdo->query(
      WHERE aktiv = 1
      ORDER BY nachname, vorname"
 )->fetchAll();
+
+$gekuendigteMitglieder = holeGekuendigteAktiveMitglieder($pdo);
 
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
@@ -49,6 +52,14 @@ $zurueck = 'index.php';
         <div class="card">
             <h2 style="margin-top:0;">Bankverbindungen</h2>
             <p class="text-muted">Kontoinhaber und IBAN aller aktiven Mitglieder für den Beitragseinzug. Admins und Vorstandsmitglieder gelten im Bankbereich als Vollmitglieder.</p>
+
+            <?php if (!empty($gekuendigteMitglieder)): ?>
+                <div class="alert alert-warning">
+                    ⚠ <?= count($gekuendigteMitglieder) === 1 ? '1 Mitglied hat' : count($gekuendigteMitglieder) . ' Mitglieder haben' ?> gekündigt:
+                    <?php foreach ($gekuendigteMitglieder as $i => $g): ?><?= $i > 0 ? ', ' : ' ' ?><?= e($g['vorname'] . ' ' . $g['nachname']) ?> (Austritt zum <?= e((new DateTime($g['austrittsdatum']))->format('d.m.Y')) ?>)<?php endforeach; ?>.
+                    Beim nächsten Beitragseinzug berücksichtigen.
+                </div>
+            <?php endif; ?>
 
             <?php if (empty($mitgliederListe)): ?>
                 <p>Noch keine aktiven Mitglieder vorhanden.</p>

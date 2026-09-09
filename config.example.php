@@ -42,3 +42,10 @@ define('SEPA_GLAEUBIGER_ID', 'DE00ZZZ00000000000');
 // leer bleiben, dann wird in der Exportdatei "NOTPROVIDED" eingetragen.
 define('VEREIN_IBAN', 'DE00000000000000000000');
 define('VEREIN_BIC', '');
+
+// --- Cronjob: automatische Verarbeitung fälliger Mitglieder-Austritte ---
+// Frei gewähltes Geheimwort, das den Cronjob-Aufruf (htdocs/cron/austritte.php)
+// vor externem Missbrauch schützt. Hier durch ein eigenes, langes Zufallswort
+// ersetzen und dasselbe Wort in der Cronjob-URL im all-inkl KAS-Panel
+// verwenden, z.B.: https://deine-domain.de/cron/austritte.php?token=DEIN_GEHEIMWORT
+define('CRON_SECRET', 'HIER_EIGENES_GEHEIMWORT_EINTRAGEN');
