@@ -241,3 +241,21 @@ CREATE TABLE IF NOT EXISTS vereinsdokumente (
 ALTER TABLE vereinsdokumente ADD COLUMN IF NOT EXISTS original_dateiname VARCHAR(255) NULL AFTER dateiname;
 ALTER TABLE kontobewegungen ADD COLUMN IF NOT EXISTS kategorie_id INT UNSIGNED NULL AFTER beteiligter;
 ALTER TABLE barkasse_buchungen ADD COLUMN IF NOT EXISTS kategorie_id INT UNSIGNED NULL AFTER empfaenger;
+
+-- Loeschprotokoll fuer die Barkasse: dauerhafte, unveraenderliche Dokumentation
+-- jeder Loeschung (wer, wann, was genau, warum) - die App fuehrt auf dieser
+-- Tabelle nie ein UPDATE oder DELETE aus, nur INSERT. Der geloeschte
+-- Datensatz selbst ist danach weg, daher haelt "beschreibung" eine Kopie
+-- der wichtigsten Felder fest.
+CREATE TABLE IF NOT EXISTS finanz_loeschprotokoll (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    geloescht_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    mitglied_id INT UNSIGNED NULL,
+    quelle VARCHAR(50) NOT NULL,
+    datensatz_id INT UNSIGNED NOT NULL,
+    beschreibung TEXT NOT NULL,
+    grund TEXT NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_geloescht_am (geloescht_am),
+    CONSTRAINT fk_finanz_loeschprotokoll_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

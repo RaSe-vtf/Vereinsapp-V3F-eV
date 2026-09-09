@@ -101,23 +101,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (($_POST['aktion'] ?? '') === 'loeschen' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
-        $stmt = $pdo->prepare('SELECT * FROM barkasse_buchungen WHERE id = :id');
-        $stmt->execute(['id' => $id]);
-        $buchung = $stmt->fetch();
-        if ($buchung) {
-            $pdo->beginTransaction();
-            $pdo->prepare('DELETE FROM barkasse_buchungen WHERE id = :id')->execute(['id' => $id]);
-            if ($buchung['kontobewegung_id'] !== null) {
-                $pdo->prepare('UPDATE kontobewegungen SET in_barkasse_uebernommen = 0 WHERE id = :id')->execute(['id' => $buchung['kontobewegung_id']]);
-            }
-            $pdo->commit();
-            if ($buchung['beleg_dateiname']) {
-                $pfad = __DIR__ . '/../../../../../private/uploads/belege/' . basename($buchung['beleg_dateiname']);
-                if (is_file($pfad)) {
-                    unlink($pfad);
+        $grund = trim((string) ($_POST['grund'] ?? ''));
+        if ($grund === '') {
+            setFlash('error', 'Bitte einen Grund für die Löschung angeben.');
+        } else {
+            $stmt = $pdo->prepare('SELECT * FROM barkasse_buchungen WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            $buchung = $stmt->fetch();
+            if ($buchung) {
+                $typLabelsFuerProtokoll = ['einnahme_konto' => 'Einnahme (vom Konto)', 'einnahme_manuell' => 'Einnahme', 'ausgabe' => 'Ausgabe'];
+                $beschreibung = sprintf(
+                    '%s vom %s über %s € - %s%s',
+                    $typLabelsFuerProtokoll[$buchung['typ']],
+                    (new DateTime($buchung['datum']))->format('d.m.Y'),
+                    number_format((float) $buchung['betrag'], 2, ',', '.'),
+                    (string) $buchung['beschreibung'],
+                    $buchung['empfaenger'] !== null ? ' (Empfänger: ' . $buchung['empfaenger'] . ')' : ''
+                );
+
+                $pdo->beginTransaction();
+                $pdo->prepare('DELETE FROM barkasse_buchungen WHERE id = :id')->execute(['id' => $id]);
+                if ($buchung['kontobewegung_id'] !== null) {
+                    $pdo->prepare('UPDATE kontobewegungen SET in_barkasse_uebernommen = 0 WHERE id = :id')->execute(['id' => $buchung['kontobewegung_id']]);
                 }
+                protokolliereFinanzLoeschung($pdo, (int) $mitglied['id'], 'barkasse_buchung', $id, $beschreibung, $grund);
+                $pdo->commit();
+                if ($buchung['beleg_dateiname']) {
+                    $pfad = __DIR__ . '/../../../../../private/uploads/belege/' . basename($buchung['beleg_dateiname']);
+                    if (is_file($pfad)) {
+                        unlink($pfad);
+                    }
+                }
+                setFlash('success', 'Buchung wurde gelöscht und im Löschprotokoll dokumentiert.');
             }
-            setFlash('success', 'Buchung wurde gelöscht.');
         }
     }
     $zielJahr = isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) date('Y');
@@ -343,12 +359,18 @@ $zurueck = 'index.php';
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <form method="post" class="inline-form">
-                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
-                                        <input type="hidden" name="aktion" value="loeschen">
-                                        <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
-                                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Buchung wirklich löschen?');">Löschen</button>
-                                    </form>
+                                    <details>
+                                        <summary class="btn btn-secondary" style="display:inline-block; cursor:pointer;">Löschen</summary>
+                                        <form method="post" style="margin-top:8px; max-width:320px;">
+                                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                            <input type="hidden" name="aktion" value="loeschen">
+                                            <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
+                                            <label class="required" for="grund_<?= (int) $b['id'] ?>">Grund der Löschung</label>
+                                            <textarea id="grund_<?= (int) $b['id'] ?>" name="grund" rows="2" required style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;"></textarea>
+                                            <p class="text-muted" style="font-size:0.78rem;">Diese Löschung wird dauerhaft mit Datum, Person und Grund im Löschprotokoll dokumentiert und kann nicht rückgängig gemacht werden.</p>
+                                            <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Buchung wirklich endgültig löschen?');">Endgültig löschen</button>
+                                        </form>
+                                    </details>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

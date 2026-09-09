@@ -1262,3 +1262,23 @@ function svgTortendiagramm(array $segmente, int $groesse = 200): string
 
     return sprintf('<svg viewBox="0 0 %1$d %1$d" width="%1$d" height="%1$d" role="img" aria-label="Tortendiagramm">%2$s</svg>', $groesse, $inhalt);
 }
+
+/**
+ * Haelt eine Loeschung in der Finanzverwaltung dauerhaft fest (wer, wann,
+ * welcher Datensatz, warum) - fuer eine gerichtsfeste Dokumentation. Diese
+ * Funktion fuegt nur Zeilen ein, es gibt an keiner Stelle im Code ein
+ * UPDATE/DELETE auf finanz_loeschprotokoll.
+ */
+function protokolliereFinanzLoeschung(PDO $pdo, int $mitgliedId, string $quelle, int $datensatzId, string $beschreibung, string $grund): void
+{
+    $pdo->prepare(
+        'INSERT INTO finanz_loeschprotokoll (mitglied_id, quelle, datensatz_id, beschreibung, grund)
+         VALUES (:mitglied_id, :quelle, :datensatz_id, :beschreibung, :grund)'
+    )->execute([
+        'mitglied_id' => $mitgliedId,
+        'quelle' => $quelle,
+        'datensatz_id' => $datensatzId,
+        'beschreibung' => $beschreibung,
+        'grund' => $grund,
+    ]);
+}
