@@ -62,6 +62,17 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   automatische Wandlung dann ablehnen statt im Originalformat zu
   akzeptieren) – nicht von selbst nachfragen/andrängen, der Nutzer meldet
   sich, wenn der Rollout so weit ist.
+- [ ] **Geschäftsstelle – weitere Bausteine**: Auf Nachfrage identifizierte
+  Lücken, die Schritt für Schritt angegangen werden:
+  - [ ] Mitglieder-Austritt als geregelter Prozess (Kündigungsdatum,
+    Kündigungsfrist, Nachweis) statt nur dem Aktiv/Inaktiv-Schalter.
+  - [ ] Vorstandsämter (Vorsitzende/r, Kassenwart, Schriftführer, ...) statt
+    nur der einen Rolle "Vorstandsmitglied" – relevant für die
+    Vertretungsberechtigung nach Satzung/§ 26 BGB.
+  - [ ] Mitgliederversammlung/Jahreshauptversammlung (Einladung,
+    Tagesordnung, Beschlüsse, Anwesenheitsliste) – die "Protokolle"-Seite
+    ist dafür aktuell nur ein leerer Platzhalter.
+  - [ ] Vereinskalender/Terminverwaltung für Training/Wettkämpfe.
 
 ## Vereinsname im Fließtext
 
