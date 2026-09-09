@@ -64,8 +64,14 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   sich, wenn der Rollout so weit ist.
 - [ ] **Geschäftsstelle – weitere Bausteine**: Auf Nachfrage identifizierte
   Lücken, die Schritt für Schritt angegangen werden:
-  - [ ] Mitglieder-Austritt als geregelter Prozess (Kündigungsdatum,
-    Kündigungsfrist, Nachweis) statt nur dem Aktiv/Inaktiv-Schalter.
+  - [x] Mitglieder-Austritt als geregelter Prozess – erledigt: Vorstand
+    erfasst nur das Kündigungseingangsdatum, Austrittsdatum wird
+    automatisch nach § 6 Abs. 2 der Satzung berechnet (6 Wochen zum
+    Quartalsende), Deaktivierung läuft automatisch (opportunistisch +
+    Cronjob `htdocs/cron/austritte.php`), Kassenwart bekommt Hinweise in
+    Bankverbindungen/SEPA-Export. Offen beim Nutzer: den Cronjob im
+    all-inkl-KAS-Panel einrichten und `CRON_SECRET` in
+    `private/config.php` setzen.
   - [ ] Vorstandsämter (Vorsitzende/r, Kassenwart, Schriftführer, ...) statt
     nur der einen Rolle "Vorstandsmitglied" – relevant für die
     Vertretungsberechtigung nach Satzung/§ 26 BGB.
