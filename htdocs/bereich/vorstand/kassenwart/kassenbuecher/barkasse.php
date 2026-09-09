@@ -32,6 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             setFlash('success', 'Bargeldabhebung wurde als Kassenzugang übernommen.');
         }
+    } elseif (($_POST['aktion'] ?? '') === 'verdacht_verwerfen' && isset($_POST['kontobewegung_id'])) {
+        $pdo->prepare('UPDATE kontobewegungen SET ist_bargeld_verdacht = 0 WHERE id = :id AND in_barkasse_uebernommen = 0')
+            ->execute(['id' => (int) $_POST['kontobewegung_id']]);
+        setFlash('success', 'Buchung wurde nicht als Kassenzugang übernommen und aus den Vorschlägen entfernt.');
     } elseif (($_POST['aktion'] ?? '') === 'einnahme_manuell') {
         $datum = trim((string) ($_POST['datum'] ?? ''));
         $betragRoh = str_replace(',', '.', trim((string) ($_POST['betrag'] ?? '')));
@@ -255,6 +259,12 @@ $zurueck = 'index.php';
                                     <input type="hidden" name="aktion" value="konto_uebernehmen">
                                     <input type="hidden" name="kontobewegung_id" value="<?= (int) $k['id'] ?>">
                                     <button type="submit" class="btn btn-secondary">Als Kassenzugang übernehmen</button>
+                                </form>
+                                <form method="post" class="inline-form">
+                                    <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                    <input type="hidden" name="aktion" value="verdacht_verwerfen">
+                                    <input type="hidden" name="kontobewegung_id" value="<?= (int) $k['id'] ?>">
+                                    <button type="submit" class="btn btn-secondary" onclick="return confirm('Diese Buchung wirklich nicht als Kassenzugang übernehmen?');">Kein Kassenzugang</button>
                                 </form>
                             </td>
                         </tr>
