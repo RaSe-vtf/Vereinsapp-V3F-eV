@@ -238,7 +238,7 @@ $zurueck = 'index.php';
             <h2 style="margin-top:0;">Vorschläge aus dem Vereinskonto</h2>
             <p class="text-muted">Diese Kontobewegungen sehen nach einer Bargeldabhebung aus. Bitte bestätigen, wenn das Geld tatsächlich in die Barkasse geflossen ist.</p>
             <div style="overflow-x:auto;">
-            <table class="tabelle-einzeilig">
+            <table class="tabelle-karten">
                 <thead>
                     <tr>
                         <th>Datum</th>
@@ -250,9 +250,9 @@ $zurueck = 'index.php';
                 <tbody>
                     <?php foreach ($kandidaten as $k): ?>
                         <tr>
-                            <td><?= e((new DateTime($k['buchungsdatum']))->format('d.m.Y')) ?></td>
-                            <td><?= e((string) $k['verwendungszweck']) ?></td>
-                            <td><?= number_format(abs((float) $k['betrag']), 2, ',', '.') ?> €</td>
+                            <td data-label="Datum"><?= e((new DateTime($k['buchungsdatum']))->format('d.m.Y')) ?></td>
+                            <td data-label="Verwendungszweck"><?= e((string) $k['verwendungszweck']) ?></td>
+                            <td data-label="Betrag"><?= number_format(abs((float) $k['betrag']), 2, ',', '.') ?> €</td>
                             <td>
                                 <form method="post" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
@@ -295,7 +295,7 @@ $zurueck = 'index.php';
                 <p>Keine Buchungen für diesen Monat vorhanden.</p>
             <?php else: ?>
                 <div style="overflow-x:auto; margin-bottom:20px;">
-                <table class="tabelle-einzeilig">
+                <table class="tabelle-karten">
                     <thead>
                         <tr>
                             <th>Datum</th>
@@ -311,14 +311,14 @@ $zurueck = 'index.php';
                     <tbody>
                         <?php foreach ($buchungenMonat as $b): ?>
                             <tr>
-                                <td><?= e((new DateTime($b['datum']))->format('d.m.Y')) ?></td>
-                                <td><?= e($typLabels[$b['typ']]) ?></td>
-                                <td><?= e((string) $b['beschreibung']) ?></td>
-                                <td><?= e((string) $b['empfaenger']) ?></td>
-                                <td style="color:<?= $b['typ'] === 'ausgabe' ? 'var(--farbe-error)' : 'var(--farbe-success)' ?>;">
+                                <td data-label="Datum"><?= e((new DateTime($b['datum']))->format('d.m.Y')) ?></td>
+                                <td data-label="Typ"><?= e($typLabels[$b['typ']]) ?></td>
+                                <td data-label="Beschreibung"><?= e((string) $b['beschreibung']) ?></td>
+                                <td data-label="Empfänger"><?= e((string) $b['empfaenger']) ?></td>
+                                <td data-label="Betrag" style="color:<?= $b['typ'] === 'ausgabe' ? 'var(--farbe-error)' : 'var(--farbe-success)' ?>;">
                                     <?= $b['typ'] === 'ausgabe' ? '-' : '+' ?><?= number_format((float) $b['betrag'], 2, ',', '.') ?> €
                                 </td>
-                                <td>
+                                <td data-label="Kategorie">
                                     <?php if ($b['typ'] === 'einnahme_konto'): ?>
                                         <span class="text-muted">&larr; Vereinskonto</span>
                                     <?php else: ?>
@@ -335,7 +335,7 @@ $zurueck = 'index.php';
                                         </form>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Beleg">
                                     <?php if ($b['beleg_dateiname']): ?>
                                         <a href="beleg_datei.php?id=<?= (int) $b['id'] ?>">ansehen</a>
                                     <?php else: ?>
