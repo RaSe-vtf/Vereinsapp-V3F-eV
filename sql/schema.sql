@@ -277,3 +277,16 @@ CREATE TABLE IF NOT EXISTS notizen (
     KEY idx_aktualisiert_am (aktualisiert_am),
     CONSTRAINT fk_notizen_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Bilder je Notizseite. Beim Loeschen einer Notiz werden die Bild-Zeilen
+-- per ON DELETE CASCADE automatisch mitgeloescht - die App raeumt zusaetzlich
+-- die zugehoerigen Dateien in private/uploads/notizen/ auf.
+CREATE TABLE IF NOT EXISTS notiz_bilder (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    notiz_id INT UNSIGNED NOT NULL,
+    dateiname VARCHAR(255) NOT NULL,
+    hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_notiz_id (notiz_id),
+    CONSTRAINT fk_notiz_bilder_notiz FOREIGN KEY (notiz_id) REFERENCES notizen (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -43,14 +43,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (($_POST['aktion'] ?? '') === 'loeschen' && $postId !== null) {
+        $stmt = $pdo->prepare('SELECT dateiname FROM notiz_bilder WHERE notiz_id = :notiz_id');
+        $stmt->execute(['notiz_id' => $postId]);
+        $zuLoeschendeDateien = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
         $pdo->prepare('DELETE FROM notizen WHERE id = :id')->execute(['id' => $postId]);
+
+        foreach ($zuLoeschendeDateien as $dateiname) {
+            $pfad = __DIR__ . '/../../../private/uploads/notizen/' . basename($dateiname);
+            if (is_file($pfad)) {
+                unlink($pfad);
+            }
+        }
         setFlash('success', 'Notiz wurde gelöscht.');
+        header('Location: notizen.php');
+        exit;
+    }
+
+    if (($_POST['aktion'] ?? '') === 'bild_hochladen' && $postId !== null) {
+        $dateien = $_FILES['bilder'] ?? null;
+        $hochgeladen = 0;
+        $fehler = [];
+
+        if ($dateien && is_array($dateien['name'])) {
+            $anzahl = count($dateien['name']);
+            for ($i = 0; $i < $anzahl; $i++) {
+                if ($dateien['error'][$i] === UPLOAD_ERR_NO_FILE) {
+                    continue;
+                }
+                $einzelnesFile = [
+                    'name' => $dateien['name'][$i],
+                    'type' => $dateien['type'][$i],
+                    'tmp_name' => $dateien['tmp_name'][$i],
+                    'error' => $dateien['error'][$i],
+                    'size' => $dateien['size'][$i],
+                ];
+                try {
+                    $bildDateiname = handleNotizBildUpload($einzelnesFile);
+                    $pdo->prepare('INSERT INTO notiz_bilder (notiz_id, dateiname) VALUES (:notiz_id, :dateiname)')
+                        ->execute(['notiz_id' => $postId, 'dateiname' => $bildDateiname]);
+                    $hochgeladen++;
+                } catch (Throwable $e) {
+                    $fehler[] = $e->getMessage();
+                }
+            }
+        }
+
+        if ($hochgeladen > 0 && empty($fehler)) {
+            setFlash('success', $hochgeladen === 1 ? 'Bild wurde hochgeladen.' : $hochgeladen . ' Bilder wurden hochgeladen.');
+        } elseif ($hochgeladen > 0) {
+            setFlash('error', $hochgeladen . ' Bild(er) hochgeladen, aber: ' . implode(' ', $fehler));
+        } elseif (!empty($fehler)) {
+            setFlash('error', implode(' ', $fehler));
+        } else {
+            setFlash('error', 'Bitte mindestens ein Bild auswählen.');
+        }
+        header('Location: notiz.php?id=' . $postId);
+        exit;
+    }
+
+    if (($_POST['aktion'] ?? '') === 'bild_loeschen' && isset($_POST['bild_id'])) {
+        $bildId = (int) $_POST['bild_id'];
+        $stmt = $pdo->prepare('SELECT notiz_id, dateiname FROM notiz_bilder WHERE id = :id');
+        $stmt->execute(['id' => $bildId]);
+        $bild = $stmt->fetch();
+        if ($bild) {
+            $pdo->prepare('DELETE FROM notiz_bilder WHERE id = :id')->execute(['id' => $bildId]);
+            $pfad = __DIR__ . '/../../../private/uploads/notizen/' . basename($bild['dateiname']);
+            if (is_file($pfad)) {
+                unlink($pfad);
+            }
+            setFlash('success', 'Bild wurde gelöscht.');
+            header('Location: notiz.php?id=' . (int) $bild['notiz_id']);
+            exit;
+        }
         header('Location: notizen.php');
         exit;
     }
 }
 
 $notiz = ['titel' => '', 'inhalt' => ''];
+$bilder = [];
 if ($id !== null) {
     $stmt = $pdo->prepare('SELECT * FROM notizen WHERE id = :id');
     $stmt->execute(['id' => $id]);
@@ -61,6 +134,10 @@ if ($id !== null) {
         exit;
     }
     $notiz = $gefunden;
+
+    $stmtBilder = $pdo->prepare('SELECT * FROM notiz_bilder WHERE notiz_id = :notiz_id ORDER BY id');
+    $stmtBilder->execute(['notiz_id' => $id]);
+    $bilder = $stmtBilder->fetchAll();
 }
 
 $flash = takeFlash();
@@ -119,10 +196,46 @@ $zurueck = 'notizen.php';
                     <input type="hidden" name="aktion" value="loeschen">
                     <input type="hidden" name="id" value="<?= (int) $id ?>">
                 </form>
+
+                <hr>
+                <h3>Bilder</h3>
+
+                <?php if (!empty($bilder)): ?>
+                    <div class="notiz-bilder-grid">
+                        <?php foreach ($bilder as $b): ?>
+                            <div class="notiz-bild">
+                                <img class="foto-zoombar" src="notiz_bild.php?id=<?= (int) $b['id'] ?>" alt="Bild zu <?= e($notiz['titel']) ?>">
+                                <form method="post" class="inline-form">
+                                    <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                    <input type="hidden" name="aktion" value="bild_loeschen">
+                                    <input type="hidden" name="bild_id" value="<?= (int) $b['id'] ?>">
+                                    <button type="submit" class="btn btn-secondary" onclick="return confirm('Dieses Bild wirklich löschen?');">Löschen</button>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted">Noch keine Bilder hochgeladen.</p>
+                <?php endif; ?>
+
+                <form method="post" enctype="multipart/form-data" style="margin-top:14px;">
+                    <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                    <input type="hidden" name="aktion" value="bild_hochladen">
+                    <input type="hidden" name="id" value="<?= (int) $id ?>">
+                    <label for="bilder">Bilder hinzufügen</label>
+                    <input type="file" id="bilder" name="bilder[]" accept="image/jpeg,image/png,image/webp" multiple>
+                    <div style="margin-top:10px;">
+                        <button type="submit" class="btn btn-secondary">Hochladen</button>
+                    </div>
+                </form>
+            <?php else: ?>
+                <hr>
+                <p class="text-muted">Bilder können hinzugefügt werden, nachdem die Seite einmal gespeichert wurde.</p>
             <?php endif; ?>
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>
+    <script src="../../assets/js/lightbox.js" defer></script>
     <script>
         (function () {
             var btn = document.getElementById('diktier-btn');

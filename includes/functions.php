@@ -417,6 +417,48 @@ function handleFotoUpload(array $file): string
 }
 
 /**
+ * Validiert und speichert ein zu einer Notiz hochgeladenes Bild - nutzt
+ * dieselbe Verarbeitung (EXIF-Ausrichtung, Verkleinerung, JPEG-Kompression)
+ * wie handleFotoUpload(), speichert aber in einem eigenen Ordner.
+ * Gibt den gespeicherten Dateinamen zurueck oder wirft eine RuntimeException.
+ */
+function handleNotizBildUpload(array $file): string
+{
+    $erlaubteTypen = ['image/jpeg', 'image/png', 'image/webp'];
+    $maxBytes = 10 * 1024 * 1024; // 10 MB
+
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException('Bitte ein Bild auswaehlen.');
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Beim Hochladen des Bildes ist ein Fehler aufgetreten.');
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('Ungültiger Bild-Upload.');
+    }
+    if ($file['size'] > $maxBytes) {
+        throw new RuntimeException('Das Bild darf maximal 10 MB groß sein.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+
+    if (!in_array($mime, $erlaubteTypen, true)) {
+        throw new RuntimeException('Bitte nur JPG-, PNG- oder WebP-Bilder hochladen.');
+    }
+
+    $zielOrdner = __DIR__ . '/../private/uploads/notizen/';
+    if (!is_dir($zielOrdner) && !mkdir($zielOrdner, 0750, true) && !is_dir($zielOrdner)) {
+        throw new RuntimeException('Speicherort für Bilder konnte nicht angelegt werden.');
+    }
+
+    $dateiname = bin2hex(random_bytes(16)) . '.jpg';
+    verarbeiteUndSpeichereFoto($file['tmp_name'], $mime, $zielOrdner . $dateiname);
+
+    return $dateiname;
+}
+
+/**
  * Laedt ein Bild von $quellPfad, korrigiert die EXIF-Ausrichtung (nur
  * JPEG traegt diese Information), verkleinert es bei Bedarf und speichert
  * es als JPEG unter $zielPfad. Wird sowohl vom Web-Upload als auch vom
