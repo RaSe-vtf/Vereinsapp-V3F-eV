@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS antraege (
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
     passwort_hash VARCHAR(255) NULL,
+    gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    vertreter_name VARCHAR(200) NULL,
+    vertreter_anschrift VARCHAR(300) NULL,
+    einverstaendnis_vertreter TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_satzung TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_datenschutz TINYINT(1) NOT NULL DEFAULT 0,
     einverstaendnis_bildnutzung TINYINT(1) NOT NULL DEFAULT 0,
@@ -290,3 +294,11 @@ CREATE TABLE IF NOT EXISTS notiz_bilder (
     KEY idx_notiz_id (notiz_id),
     CONSTRAINT fk_notiz_bilder_notiz FOREIGN KEY (notiz_id) REFERENCES notizen (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Aufnahmeantrag: gewuenschte Mitgliedschaftsart sowie Angaben zum
+-- gesetzlichen Vertreter bei minderjaehrigen Antragstellern (§ 5 Abs. 1
+-- der Satzung).
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied' AFTER passwort_hash;
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS vertreter_name VARCHAR(200) NULL AFTER gewuenschte_rolle;
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS vertreter_anschrift VARCHAR(300) NULL AFTER vertreter_name;
+ALTER TABLE antraege ADD COLUMN IF NOT EXISTS einverstaendnis_vertreter TINYINT(1) NOT NULL DEFAULT 0 AFTER vertreter_anschrift;

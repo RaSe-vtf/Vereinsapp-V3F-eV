@@ -49,6 +49,27 @@ function rollenLabel(string $rolle): string
     return ROLLEN_LABELS[$rolle] ?? $rolle;
 }
 
+// Mitgliedschaftsarten, die im Aufnahmeantrag zur Auswahl stehen -
+// Ehren- und Vorstandsmitglied werden nicht beantragt, sondern vom Verein
+// separat vergeben.
+const ANTRAG_ROLLEN = ['vollmitglied', 'trainingsmitglied', 'foerdermitglied'];
+
+/**
+ * Prueft, ob eine Person anhand ihres Geburtsdatums zum Stichtag (Default:
+ * jetzt) noch minderjaehrig ist - fuer die Pflicht zur Angabe eines
+ * gesetzlichen Vertreters im Aufnahmeantrag (§ 5 Abs. 1 der Satzung).
+ */
+function istMinderjaehrig(string $geburtsdatum, ?DateTime $stichtag = null): bool
+{
+    $geburt = DateTime::createFromFormat('Y-m-d', $geburtsdatum);
+    if (!$geburt) {
+        return false;
+    }
+    $stichtag ??= new DateTime();
+    $alter = $geburt->diff($stichtag)->y;
+    return $alter < 18;
+}
+
 /**
  * Rolle eines Mitglieds fuer den Bankbereich (Bankverbindungen-Liste,
  * Zuordnung der Beitragsposten im SEPA-Export): Admins und

@@ -60,6 +60,11 @@ if (!$antrag) {
                         <tr><th>Telefon</th><td class="nowrap-wert"><?= e($antrag['telefon']) ?></td></tr>
                         <tr><th>E-Mail</th><td><a href="mailto:<?= e($antrag['email']) ?>"><?= e($antrag['email']) ?></a></td></tr>
                         <tr><th>Instagram</th><td><?= $antrag['instagram'] ? '@' . e($antrag['instagram']) : '&ndash;' ?></td></tr>
+                        <tr><th>Gewünschte Mitgliedschaftsart</th><td><?= e(rollenLabel($antrag['gewuenschte_rolle'])) ?></td></tr>
+                        <?php if ($antrag['vertreter_name']): ?>
+                            <tr><th>Gesetzlicher Vertreter</th><td><?= e($antrag['vertreter_name']) ?><?= $antrag['vertreter_anschrift'] ? ', ' . e($antrag['vertreter_anschrift']) : '' ?></td></tr>
+                            <tr><th>Zustimmung Vertreter (§ 5 Abs. 1 Satzung)</th><td><?= $antrag['einverstaendnis_vertreter'] ? 'Ja' : 'Nein' ?></td></tr>
+                        <?php endif; ?>
                         <tr><th>Satzung akzeptiert</th><td><?= $antrag['einverstaendnis_satzung'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Datenschutz zur Kenntnis genommen</th><td><?= $antrag['einverstaendnis_datenschutz'] ? 'Ja' : 'Nein' ?></td></tr>
                         <tr><th>Bildnutzung Social Media erlaubt</th><td><?= $antrag['einverstaendnis_bildnutzung'] ? 'Ja' : 'Nein' ?></td></tr>

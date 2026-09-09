@@ -40,6 +40,9 @@ $werte = [
     'instagram' => '',
     'shirt_groesse' => '',
     'portraet' => '',
+    'gewuenschte_rolle' => '',
+    'vertreter_name' => '',
+    'vertreter_anschrift' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -59,13 +62,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($werte['vorname'] === '') $fehler[] = 'Bitte gib deinen Vornamen an.';
     if ($werte['nachname'] === '') $fehler[] = 'Bitte gib deinen Nachnamen an.';
 
+    $istMinderjaehrig = false;
     if ($werte['geburtsdatum'] === '') {
         $fehler[] = 'Bitte gib dein Geburtsdatum an.';
     } else {
         $datum = DateTime::createFromFormat('Y-m-d', $werte['geburtsdatum']);
         if (!$datum || $datum > new DateTime()) {
             $fehler[] = 'Bitte gib ein gültiges Geburtsdatum an.';
+        } else {
+            $istMinderjaehrig = istMinderjaehrig($werte['geburtsdatum']);
         }
+    }
+
+    if (!in_array($werte['gewuenschte_rolle'], ANTRAG_ROLLEN, true)) {
+        $fehler[] = 'Bitte wähle die gewünschte Mitgliedschaftsart aus.';
+    }
+
+    $einVertreter = isset($_POST['ein_vertreter']) ? 1 : 0;
+    if ($istMinderjaehrig) {
+        if ($werte['vertreter_name'] === '') {
+            $fehler[] = 'Bitte gib Namen und Vornamen des gesetzlichen Vertreters an.';
+        }
+        if (!$einVertreter) {
+            $fehler[] = 'Bei minderjährigen Antragstellern muss der gesetzliche Vertreter der Aufnahme zustimmen.';
+        }
+    } else {
+        $werte['vertreter_name'] = '';
+        $werte['vertreter_anschrift'] = '';
+        $einVertreter = 0;
     }
 
     if ($werte['geburtsort'] === '') $fehler[] = 'Bitte gib deinen Geburtsort an.';
@@ -125,9 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = getPdo()->prepare(
                 'INSERT INTO antraege
-                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, shirt_groesse, portraet, passwort_hash, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
+                    (vorname, nachname, geburtsdatum, geburtsort, strasse_hausnummer, plz, ort, telefon, email, instagram, foto_dateiname, shirt_groesse, portraet, passwort_hash, gewuenschte_rolle, vertreter_name, vertreter_anschrift, einverstaendnis_vertreter, einverstaendnis_satzung, einverstaendnis_datenschutz, einverstaendnis_bildnutzung)
                  VALUES
-                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :shirt_groesse, :portraet, :passwort_hash, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
+                    (:vorname, :nachname, :geburtsdatum, :geburtsort, :strasse_hausnummer, :plz, :ort, :telefon, :email, :instagram, :foto_dateiname, :shirt_groesse, :portraet, :passwort_hash, :gewuenschte_rolle, :vertreter_name, :vertreter_anschrift, :ein_vertreter, :ein_satzung, :ein_datenschutz, :ein_bildnutzung)'
             );
             $stmt->execute([
                 'vorname' => $werte['vorname'],
@@ -144,6 +168,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'shirt_groesse' => $werte['shirt_groesse'] !== '' ? $werte['shirt_groesse'] : null,
                 'portraet' => $werte['portraet'] !== '' ? $werte['portraet'] : null,
                 'passwort_hash' => password_hash($passwort, PASSWORD_DEFAULT),
+                'gewuenschte_rolle' => $werte['gewuenschte_rolle'],
+                'vertreter_name' => $werte['vertreter_name'] !== '' ? $werte['vertreter_name'] : null,
+                'vertreter_anschrift' => $werte['vertreter_anschrift'] !== '' ? $werte['vertreter_anschrift'] : null,
+                'ein_vertreter' => $einVertreter,
                 'ein_satzung' => $einSatzung,
                 'ein_datenschutz' => $einDatenschutz,
                 'ein_bildnutzung' => $einBildnutzung,
@@ -156,6 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['geburtsdatum']);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -274,6 +304,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </fieldset>
 
                 <fieldset>
+                    <legend>Gewünschte Mitgliedschaftsart</legend>
+                    <p class="text-muted" style="margin-top:0;">Über die Aufnahme als Vollmitglied entscheidet der Vorstand mit einfacher Mehrheit, über die Aufnahme als Trainings- oder Fördermitglied nach freiem Ermessen. Ein Aufnahmeanspruch besteht nicht.</p>
+
+                    <?php foreach (ANTRAG_ROLLEN as $rolleOption): ?>
+                        <label class="inline">
+                            <input type="radio" name="gewuenschte_rolle" value="<?= e($rolleOption) ?>" <?= $werte['gewuenschte_rolle'] === $rolleOption ? 'checked' : '' ?> required>
+                            <span><?= e(rollenLabel($rolleOption)) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+
+                <fieldset id="vertreter-fieldset" <?= $vertreterAnzeigen ? '' : 'hidden' ?>>
+                    <legend>Angaben zum gesetzlichen Vertreter</legend>
+                    <p class="text-muted" style="margin-top:0;">Nur auszufüllen, wenn der/die Antragsteller/in beim Absenden dieses Formulars noch minderjährig ist.</p>
+
+                    <label for="vertreter_name">Name, Vorname des gesetzlichen Vertreters</label>
+                    <input type="text" id="vertreter_name" name="vertreter_name" value="<?= e($werte['vertreter_name']) ?>">
+
+                    <label for="vertreter_anschrift">Anschrift (falls abweichend)</label>
+                    <input type="text" id="vertreter_anschrift" name="vertreter_anschrift" value="<?= e($werte['vertreter_anschrift']) ?>">
+
+                    <label class="inline">
+                        <input type="checkbox" name="ein_vertreter" value="1" <?= !empty($_POST['ein_vertreter']) ? 'checked' : '' ?>>
+                        <span>Ich/Wir stimme(n) der Aufnahme meines/unseres Kindes als Mitglied zu (§ 5 Abs. 1 der Satzung).</span>
+                    </label>
+                </fieldset>
+
+                <fieldset>
                     <legend>Zugangsdaten</legend>
                     <p class="text-muted" style="margin-top:0;">Wähle hier dein Passwort für den Mitgliederbereich. Sobald der Vorstand deinen Antrag annimmt, kannst du dich direkt damit einloggen.</p>
 
@@ -331,5 +389,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="impressum.php">Impressum</a>
         <a href="datenschutz.php">Datenschutz</a>
     </footer>
+    <script>
+        (function () {
+            var geburtsdatumFeld = document.getElementById('geburtsdatum');
+            var vertreterFieldset = document.getElementById('vertreter-fieldset');
+
+            function istMinderjaehrig(wert) {
+                var geburt = new Date(wert);
+                if (isNaN(geburt.getTime())) {
+                    return false;
+                }
+                var heute = new Date();
+                var alter = heute.getFullYear() - geburt.getFullYear();
+                var vorGeburtstagDiesesJahr = (heute.getMonth() < geburt.getMonth())
+                    || (heute.getMonth() === geburt.getMonth() && heute.getDate() < geburt.getDate());
+                if (vorGeburtstagDiesesJahr) {
+                    alter--;
+                }
+                return alter < 18;
+            }
+
+            function aktualisieren() {
+                vertreterFieldset.hidden = !istMinderjaehrig(geburtsdatumFeld.value);
+            }
+
+            geburtsdatumFeld.addEventListener('change', aktualisieren);
+            aktualisieren();
+        })();
+    </script>
 </body>
 </html>
