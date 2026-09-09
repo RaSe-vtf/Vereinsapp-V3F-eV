@@ -46,9 +46,11 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   Standardformate CAMT.053 (ISO-20022-XML) und MT940 (SWIFT) ab. Zeigt sich
   anhand echter Auszüge der tatsächlich genutzten Bank, dass das Format
   abweicht (z.B. eigenes CSV) oder Feldbesonderheiten (Verwendungszweck,
-  Beteiligter) nicht sauber erkannt werden, anhand eines echten
-  Beispielauszugs nachbessern – nicht von selbst nachfragen/andrängen, der
-  Nutzer bringt bei Bedarf einen echten Auszug mit.
+  Beteiligter, oder die automatisch aus `<LglSeqNb>` bzw. `:28C:`
+  ausgelesene Auszugsnummer für die Lückenprüfung) nicht sauber erkannt
+  werden, anhand eines echten Beispielauszugs nachbessern – nicht von
+  selbst nachfragen/andrängen, der Nutzer bringt bei Bedarf einen echten
+  Auszug mit.
 - [ ] **Vereinsdokumente-Upload nach dem Rollout auf PDF-only umstellen**:
   Der Upload unter Geschäftsstelle -> Vereinsdokumente
   (`handleVereinsdokumentUpload()` in `includes/functions.php`) akzeptiert

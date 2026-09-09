@@ -537,6 +537,21 @@ function parseKontoauszugCamt053(string $inhalt): array
         return ($indKnoten && trim($indKnoten->textContent) === 'DBIT') ? -$betrag : $betrag;
     };
 
+    // Gesetzliche Auszugsnummer (LglSeqNb) - bei deutschen Banken die fortlaufende
+    // Nummer, die auch auf dem Papier-/PDF-Auszug steht (lueckenloser Nachweis).
+    // ElctrncSeqNb ist nur ein technischer Datei-Zaehler und dient als Rueckfall,
+    // falls eine Bank LglSeqNb nicht befuellt.
+    $auszugsnummer = null;
+    $stmtKnoten = $dom->getElementsByTagName('Stmt')->item(0);
+    if ($stmtKnoten !== null) {
+        $lglSeqNb = $stmtKnoten->getElementsByTagName('LglSeqNb')->item(0);
+        $elctrncSeqNb = $stmtKnoten->getElementsByTagName('ElctrncSeqNb')->item(0);
+        $seqNbKnoten = $lglSeqNb ?? $elctrncSeqNb;
+        if ($seqNbKnoten !== null && preg_match('/\d+/', $seqNbKnoten->textContent, $seqNbTreffer)) {
+            $auszugsnummer = (int) $seqNbTreffer[0];
+        }
+    }
+
     $anfangssaldo = null;
     $endsaldo = null;
     foreach ($dom->getElementsByTagName('Bal') as $bal) {
@@ -596,7 +611,7 @@ function parseKontoauszugCamt053(string $inhalt): array
         ];
     }
 
-    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen];
+    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen, 'auszugsnummer' => $auszugsnummer];
 }
 
 /**
@@ -610,6 +625,7 @@ function parseKontoauszugMt940(string $inhalt): array
     $zeilen = preg_split('/\r\n|\r|\n/', $inhalt) ?: [];
     $anfangssaldo = null;
     $endsaldo = null;
+    $auszugsnummer = null;
     $buchungen = [];
     $aktuelleBuchung = null;
 
@@ -624,6 +640,10 @@ function parseKontoauszugMt940(string $inhalt): array
     foreach ($zeilen as $zeile) {
         if (preg_match('/^:60[FM]:(.+)$/', $zeile, $treffer)) {
             $anfangssaldo = $parseSaldoZeile(trim($treffer[1]));
+        } elseif (preg_match('/^:28C?:(\d+)/', $zeile, $treffer)) {
+            // Auszugs-/Sequenznummer (Statement number[/Sequence number]) -
+            // die fortlaufende Nummer, die auch auf dem Papier-/PDF-Auszug steht.
+            $auszugsnummer = (int) $treffer[1];
         } elseif (preg_match('/^:62[FM]:(.+)$/', $zeile, $treffer)) {
             $endsaldo = $parseSaldoZeile(trim($treffer[1]));
         } elseif (preg_match('/^:61:(\d{6})(?:\d{4})?([CD]|R[CD])[A-Z]?([\d,]+)/', $zeile, $treffer)) {
@@ -649,7 +669,42 @@ function parseKontoauszugMt940(string $inhalt): array
         $buchungen[] = $aktuelleBuchung;
     }
 
-    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen];
+    return ['anfangssaldo' => $anfangssaldo, 'endsaldo' => $endsaldo, 'buchungen' => $buchungen, 'auszugsnummer' => $auszugsnummer];
+}
+
+/**
+ * Prueft die Kontoauszuege je Jahr auf Luecken in der (aus der Datei
+ * automatisch ausgelesenen) fortlaufenden Auszugsnummer - liefert je Jahr
+ * mit mindestens einer erkannten Nummer die fehlenden Nummern zwischen 1 und
+ * der hoechsten vorhandenen, sowie die Anzahl Auszuege ohne erkennbare
+ * Nummer (z.B. weil das Dateiformat der Bank abweicht).
+ */
+function holeKontoauszugLuecken(PDO $pdo): array
+{
+    $rows = $pdo->query(
+        'SELECT jahr, auszugsnummer FROM kontoauszuege WHERE auszugsnummer IS NOT NULL ORDER BY jahr, auszugsnummer'
+    )->fetchAll();
+
+    $vorhandenNachJahr = [];
+    foreach ($rows as $row) {
+        $vorhandenNachJahr[(int) $row['jahr']][] = (int) $row['auszugsnummer'];
+    }
+
+    $luecken = [];
+    foreach ($vorhandenNachJahr as $jahr => $nummern) {
+        $nummern = array_values(array_unique($nummern));
+        sort($nummern);
+        $hoechste = end($nummern);
+        $fehlend = array_values(array_diff(range(1, $hoechste), $nummern));
+        if (!empty($fehlend)) {
+            sort($fehlend);
+            $luecken[$jahr] = $fehlend;
+        }
+    }
+
+    $ohneNummerAnzahl = (int) $pdo->query('SELECT COUNT(*) FROM kontoauszuege WHERE auszugsnummer IS NULL')->fetchColumn();
+
+    return ['luecken' => $luecken, 'ohneNummerAnzahl' => $ohneNummerAnzahl];
 }
 
 /**

@@ -230,6 +230,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 1px solid #b9e6c9;
 }
 
+.alert-warning {
+    background: #fdf3e1;
+    color: #a06a11;
+    border: 1px solid #f2d9a6;
+}
+
 .honeypot {
     position: absolute;
     left: -9999px;

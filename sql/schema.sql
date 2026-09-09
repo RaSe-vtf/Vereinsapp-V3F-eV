@@ -124,11 +124,13 @@ CREATE TABLE IF NOT EXISTS kontoauszuege (
     format ENUM('camt053', 'mt940') NOT NULL,
     jahr SMALLINT UNSIGNED NOT NULL,
     monat TINYINT UNSIGNED NOT NULL,
+    auszugsnummer SMALLINT UNSIGNED NULL,
     anfangssaldo DECIMAL(10,2) NULL,
     endsaldo DECIMAL(10,2) NULL,
     hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    KEY idx_jahr_monat (jahr, monat)
+    KEY idx_jahr_monat (jahr, monat),
+    UNIQUE KEY uniq_jahr_auszugsnummer (jahr, auszugsnummer)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Kassenbericht: feste Kategorienliste fuer Einnahmen/Ausgaben, damit sich
@@ -259,3 +261,5 @@ CREATE TABLE IF NOT EXISTS finanz_loeschprotokoll (
     KEY idx_geloescht_am (geloescht_am),
     CONSTRAINT fk_finanz_loeschprotokoll_mitglied FOREIGN KEY (mitglied_id) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE kontoauszuege ADD COLUMN IF NOT EXISTS auszugsnummer SMALLINT UNSIGNED NULL AFTER monat;
+ALTER TABLE kontoauszuege ADD UNIQUE INDEX IF NOT EXISTS uniq_jahr_auszugsnummer (jahr, auszugsnummer);

@@ -29,14 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->beginTransaction();
             $stmt = $pdo->prepare(
-                'INSERT INTO kontoauszuege (dateiname, format, jahr, monat, anfangssaldo, endsaldo)
-                 VALUES (:dateiname, :format, :jahr, :monat, :anfangssaldo, :endsaldo)'
+                'INSERT INTO kontoauszuege (dateiname, format, jahr, monat, auszugsnummer, anfangssaldo, endsaldo)
+                 VALUES (:dateiname, :format, :jahr, :monat, :auszugsnummer, :anfangssaldo, :endsaldo)'
             );
             $stmt->execute([
                 'dateiname' => $geparst['dateiname'],
                 'format' => $geparst['format'],
                 'jahr' => $jahr,
                 'monat' => $monat,
+                'auszugsnummer' => $geparst['auszugsnummer'],
                 'anfangssaldo' => $geparst['anfangssaldo'],
                 'endsaldo' => $geparst['endsaldo'],
             ]);
@@ -59,7 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
             $pdo->commit();
-            setFlash('success', count($buchungen) . ' Buchung(en) aus dem Kontoauszug übernommen.');
+            $nummerHinweis = $geparst['auszugsnummer'] !== null ? ' (Auszug Nr. ' . $geparst['auszugsnummer'] . ')' : ' (Auszugsnummer nicht erkannt)';
+            setFlash('success', count($buchungen) . ' Buchung(en) aus dem Kontoauszug übernommen.' . $nummerHinweis);
+        } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($e->getCode() === '23000') {
+                setFlash('error', 'Für Jahr ' . $jahr . ' wurde Auszug Nr. ' . $geparst['auszugsnummer'] . ' bereits hochgeladen. Dieselbe Nummer kann nicht zweimal vergeben werden.');
+            } else {
+                setFlash('error', 'Der Kontoauszug konnte nicht gespeichert werden.');
+            }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -138,6 +149,8 @@ $auszuegeMonat = $stmtAuszuegeMonat->fetchAll();
 
 $monatsNamen = [1 => 'Januar', 2 => 'Februar', 3 => 'März', 4 => 'April', 5 => 'Mai', 6 => 'Juni', 7 => 'Juli', 8 => 'August', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Dezember'];
 
+$luecken = holeKontoauszugLuecken($pdo);
+
 $flash = takeFlash();
 $tiefe = '../../../';
 $aktivReiter = 'geschaeftsstelle';
@@ -174,6 +187,20 @@ $zurueck = 'index.php';
             <a href="vereinskonto.php" class="active">Vereinskonto</a>
             <a href="barkasse.php">Barkasse</a>
         </nav>
+
+        <?php if (!empty($luecken['luecken'])): ?>
+            <div class="alert alert-warning">
+                <strong>Lücke in der Auszugsnummerierung:</strong>
+                <ul style="margin:6px 0 0; padding-left:20px;">
+                    <?php foreach ($luecken['luecken'] as $jahrMitLuecke => $fehlendeNummern): ?>
+                        <li>Für <?= (int) $jahrMitLuecke ?> fehlt Auszug Nr. <?= e(implode(', ', $fehlendeNummern)) ?> &ndash; bitte bei der Bank nachfordern.</li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+        <?php if ($luecken['ohneNummerAnzahl'] > 0): ?>
+            <div class="alert alert-warning"><?= (int) $luecken['ohneNummerAnzahl'] ?> hochgeladene(r) Kontoauszug/Kontoauszüge ohne automatisch erkannte Auszugsnummer &ndash; für diese kann keine Lückenprüfung erfolgen.</div>
+        <?php endif; ?>
 
         <?php if ($flash): ?>
             <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
@@ -277,6 +304,7 @@ $zurueck = 'index.php';
                         <tr>
                             <th>Hochgeladen am</th>
                             <th>Format</th>
+                            <th>Auszug Nr.</th>
                             <th>Anfangssaldo</th>
                             <th>Endsaldo</th>
                             <th>Aktionen</th>
@@ -287,6 +315,7 @@ $zurueck = 'index.php';
                             <tr>
                                 <td data-label="Hochgeladen am"><?= e((new DateTime($a['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
                                 <td data-label="Format"><?= $a['format'] === 'camt053' ? 'CAMT.053' : 'MT940' ?></td>
+                                <td data-label="Auszug Nr."><?= $a['auszugsnummer'] !== null ? (int) $a['auszugsnummer'] : '<span class="text-muted">nicht erkannt</span>' ?></td>
                                 <td data-label="Anfangssaldo"><?= $a['anfangssaldo'] !== null ? number_format((float) $a['anfangssaldo'], 2, ',', '.') . ' €' : '–' ?></td>
                                 <td data-label="Endsaldo"><?= $a['endsaldo'] !== null ? number_format((float) $a['endsaldo'], 2, ',', '.') . ' €' : '–' ?></td>
                                 <td>
