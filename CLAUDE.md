@@ -19,6 +19,23 @@ haben Vorrang vor allgemeinen Standardverhalten.
    dieser gleiche Name erneut verwendet (überschreibt die vorherige
    gleichnamige Datei beim Nutzer).
 
+## Design-Checkpoints
+
+Feste Rücksprungpunkte im Code-Stand, damit frühere Design-Versionen
+jederzeit exakt wiederherstellbar bleiben. Ein Git-Tag ließ sich mit den
+Zugangsdaten dieser Session nicht auf GitHub pushen (HTTP 403, nur die
+eine Branch `claude/test-o3nz93` ist für Pushes freigeschaltet) –
+stattdessen wird der exakte Commit-Hash hier festgehalten. Ein Commit,
+der einmal gepusht wurde, bleibt unveränderlich abrufbar, solange die
+Historie nicht per Force-Push überschrieben wird (das passiert in
+diesem Projekt nicht – es werden ausschließlich neue Commits erzeugt).
+
+- **`design-v1-original`** – Commit `c98553b` auf `claude/test-o3nz93`.
+  Letzter Stand vor Beginn des Race-Konzept-Redesigns (siehe
+  Master-Prompt weiter unten). Wiederherstellen:
+  `git checkout c98553b` (bzw. für ein Zip:
+  `git archive --format=zip -o vereinsapp.zip c98553b`).
+
 ## Merkliste / Offene Punkte
 
 Diese Liste ist der feste Ablageort für Punkte, die später noch final
