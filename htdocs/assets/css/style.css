@@ -1,6 +1,6 @@
 :root {
-    --farbe-primary: #1f7a8c;
-    --farbe-primary-dark: #145a68;
+    --farbe-primary: #5b9bd5;
+    --farbe-primary-dark: #5b9bd5;
     --farbe-text: #1e2a30;
     --farbe-text-soft: #52646b;
     --farbe-bg: #f6f9fa;
@@ -53,6 +53,39 @@ a {
     font-weight: 700;
     font-size: 1.15rem;
     color: var(--farbe-primary-dark);
+}
+
+/* Race-Konzept (Version 2, bisher nur Check-in/Login und Startseite):
+   eigener Header ohne den Verlauf-Rahmen, stattdessen faengt die
+   Race-Line-Grafik darunter den Farbakzent ein. Siehe Master-Prompt
+   in CLAUDE.md. */
+.top-header--race {
+    background: var(--farbe-card);
+    padding: 0;
+    border-bottom: 1px solid var(--farbe-border);
+}
+
+.race-line-strip {
+    display: block;
+    width: 100%;
+    height: 44px;
+    object-fit: cover;
+}
+
+.kicker {
+    display: block;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-size: 0.72rem;
+    color: var(--farbe-primary);
+    margin-bottom: 6px;
+}
+
+.bereich-grafik {
+    width: 100%;
+    max-width: 168px;
+    height: auto;
 }
 
 .container {

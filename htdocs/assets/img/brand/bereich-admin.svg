@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300"><defs>
+<style>.thin{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}</style>
+</defs>
+<g transform="translate(165 42)" color="#5b9bd5">
+<circle class="thin" cx="195" cy="108" r="72"/>
+<circle class="thin" cx="195" cy="108" r="25"/>
+<path class="thin" d="M195 16v28M195 172v28M103 108h28M259 108h28M130 43l20 20M240 153l20 20M260 43l-20 20M150 153l-20 20"/>
+<path class="thin" d="M330 55v106M330 62h62l-12 20 12 20h-62"/>
+<path d="M42 216h150" stroke="#ff3399" stroke-width="8"/><path d="M192 216h58" stroke="#fadd06" stroke-width="8"/><path d="M250 216h105" stroke="#5b9bd5" stroke-width="8"/>
+</g></svg>

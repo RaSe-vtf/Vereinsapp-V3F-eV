@@ -26,29 +26,56 @@ $zurueck = null;
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <?php require __DIR__ . '/../../includes/kopf.php'; ?>
+    <!-- Race-Konzept (Version 2): eigener Header statt includes/kopf.php,
+         damit alle anderen Seiten unveraendert bleiben. Menue-Funktion
+         1:1 aus kopf.php uebernommen. Siehe Master-Prompt in CLAUDE.md. -->
+    <header class="top-header top-header--race">
+        <div class="top-header__inner">
+            <a href="home.php" class="top-header__logo-link" aria-label="Startseite">
+                <img class="top-header__logo" src="../assets/img/brand/logo-wing-v-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
+            </a>
+            <div class="top-header__title"><?= e(APP_NAME) ?></div>
+            <div class="menu-wrapper">
+                <button type="button" class="menu-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="hauptmenue">&#9776;</button>
+                <nav class="menu-dropdown" id="hauptmenue" hidden>
+                    <a href="index.php">Meine Daten</a>
+                    <a href="sportlerprofile.php">Sportlerprofile</a>
+                    <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
+                        <a href="vorstand/index.php">Geschäftsstelle</a>
+                    <?php endif; ?>
+                    <?php if (!empty($mitglied['ist_admin'])): ?>
+                        <a href="admin/index.php">Admin</a>
+                    <?php endif; ?>
+                    <hr>
+                    <a href="../logout.php" class="menu-logout">Abmelden</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <img class="race-line-strip" src="../assets/img/brand/race-line-bg-transition.svg" alt="" aria-hidden="true">
 
     <main class="container">
+        <span class="kicker">02 My Transition</span>
         <h2 style="margin-top:0;">Willkommen, <?= e($mitglied['vorname']) ?></h2>
 
         <div class="kachel-grid">
             <a href="index.php" class="kachel">
-                <span class="kachel-icon">👤</span>
+                <img class="bereich-grafik" src="../assets/img/brand/bereich-meine-daten.svg" alt="">
                 <span>Meine Daten</span>
             </a>
             <a href="sportlerprofile.php" class="kachel">
-                <span class="kachel-icon">🏊</span>
+                <img class="bereich-grafik" src="../assets/img/brand/bereich-sportlerprofile.svg" alt="">
                 <span>Sportlerprofile</span>
             </a>
             <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
                 <a href="vorstand/index.php" class="kachel">
-                    <span class="kachel-icon">🏢</span>
+                    <img class="bereich-grafik" src="../assets/img/brand/bereich-geschaeftsstelle.svg" alt="">
                     <span>Geschäftsstelle</span>
                 </a>
             <?php endif; ?>
             <?php if (!empty($mitglied['ist_admin'])): ?>
                 <a href="admin/index.php" class="kachel">
-                    <span class="kachel-icon">⚙️</span>
+                    <img class="bereich-grafik" src="../assets/img/brand/bereich-admin.svg" alt="">
                     <span>Admin</span>
                 </a>
             <?php endif; ?>

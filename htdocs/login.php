@@ -51,16 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#1f7a8c">
 </head>
 <body>
-    <header class="top-header">
+    <header class="top-header top-header--race">
         <div class="top-header__inner">
-            <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+            <img class="top-header__logo" src="assets/img/brand/logo-wing-v-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div class="top-header__title"><?= e(APP_NAME) ?></div>
         </div>
     </header>
+    <img class="race-line-strip" src="assets/img/brand/race-line-bg-checkin.svg" alt="" aria-hidden="true">
 
     <main class="container">
         <div class="card" style="max-width:360px; margin:0 auto;">
-            <h2>Mitglieder-Login</h2>
+            <span class="kicker">01 Check-in</span>
+            <h2 style="margin-top:0;">Mitglieder-Login</h2>
 
             <?php if ($fehler !== ''): ?>
                 <div class="alert alert-error"><?= e($fehler) ?></div>

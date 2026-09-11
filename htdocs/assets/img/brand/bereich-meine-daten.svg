@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300"><defs>
+<style>.thin{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}</style>
+</defs>
+<g opacity=".10" color="#5b9bd5"><path class="thin" stroke-width="18" d="M-30 230C90 230 95 92 220 92S340 210 475 210 585 92 750 92"/></g>
+<g transform="translate(190 55)" color="#5b9bd5">
+<path class="thin" d="M0 180h340M65 180V42M275 180V42M45 42h250"/>
+<rect x="116" y="62" width="108" height="82" rx="8" fill="#fff" class="thin"/>
+<circle cx="132" cy="78" r="4" fill="currentColor"/><circle cx="208" cy="78" r="4" fill="currentColor"/>
+<text x="170" y="126" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="42" fill="currentColor">102</text>
+<path d="M126 138h42" stroke="#ff3399" stroke-width="5"/><path d="M168 138h18" stroke="#fadd06" stroke-width="5"/><path d="M186 138h28" stroke="#5b9bd5" stroke-width="5"/>
+</g></svg>

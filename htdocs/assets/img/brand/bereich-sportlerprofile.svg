@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300"><defs>
+<style>.thin{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}</style>
+</defs>
+<g transform="translate(150 48)">
+<path d="M55 190C120 60 305 38 430 125" fill="none" stroke="#ff3399" stroke-width="12" stroke-linecap="round" opacity=".14"/>
+<g color="#5b9bd5">
+<circle class="thin" cx="145" cy="92" r="29"/><path class="thin" d="M88 192c8-48 27-70 57-70s49 22 57 70"/>
+<circle class="thin" cx="275" cy="72" r="34"/><path class="thin" d="M207 192c9-58 32-84 68-84s59 26 68 84"/>
+<circle class="thin" cx="400" cy="100" r="26"/><path class="thin" d="M350 192c7-42 24-62 50-62s43 20 50 62"/>
+</g>
+<path d="M105 218h165" stroke="#ff3399" stroke-width="8"/><path d="M270 218h62" stroke="#fadd06" stroke-width="8"/><path d="M332 218h105" stroke="#5b9bd5" stroke-width="8"/>
+</g></svg>
