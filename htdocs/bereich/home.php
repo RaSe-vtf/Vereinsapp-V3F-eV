@@ -59,22 +59,22 @@ $zurueck = null;
         <h2 style="margin-top:0;">Willkommen, <?= e($mitglied['vorname']) ?></h2>
 
         <div class="kachel-grid">
-            <a href="index.php" class="kachel kachel--race">
+            <a href="index.php" class="kachel">
                 <img class="bereich-grafik" src="../assets/img/brand/bereich-meine-daten.svg" alt="">
                 <span>Meine Daten</span>
             </a>
-            <a href="sportlerprofile.php" class="kachel kachel--race">
+            <a href="sportlerprofile.php" class="kachel">
                 <img class="bereich-grafik" src="../assets/img/brand/bereich-sportlerprofile.svg" alt="">
                 <span>Sportlerprofile</span>
             </a>
             <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
-                <a href="vorstand/index.php" class="kachel kachel--race">
+                <a href="vorstand/index.php" class="kachel">
                     <img class="bereich-grafik" src="../assets/img/brand/bereich-geschaeftsstelle.svg" alt="">
                     <span>Geschäftsstelle</span>
                 </a>
             <?php endif; ?>
             <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="admin/index.php" class="kachel kachel--race">
+                <a href="admin/index.php" class="kachel">
                     <img class="bereich-grafik" src="../assets/img/brand/bereich-admin.svg" alt="">
                     <span>Admin</span>
                 </a>
