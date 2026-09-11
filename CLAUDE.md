@@ -455,9 +455,12 @@ Pink — #ff3399
 Gelb — #fadd06
 Blau — #5b9bd5
 
-Ergänzend wird das vorhandene Türkis des V-Logos als ruhige
-Primärfarbe für Branding, Typografie und funktionale UI-Elemente
-verwendet.
+Kein Türkis mehr als vierte Farbe: Das bisher in der App verwendete
+Türkis (`--farbe-primary`/`--farbe-primary-dark` in `style.css`) fällt
+komplett weg. Blau (`#5b9bd5`) übernimmt zusätzlich zu seiner Rolle in
+Race Line und Farbpalette die Funktion als ruhige Primärfarbe für
+Branding, Typografie und funktionale UI-Elemente (Überschriften,
+Links, Button-Rahmen, Icon-Farbe im Alltag).
 
 Die Farben sollen nicht einfach drei gleichberechtigte bunte Flächen
 bilden. Sie sollen Bewegung erzeugen und wie die grafischen Linien
@@ -874,8 +877,12 @@ Pink — #ff3399
 Yellow — #fadd06
 Blue — #5b9bd5
 
-In addition, the V-logo's existing teal is used as a calm primary color
-for branding, typography, and functional UI elements.
+No teal as a fourth color: the teal previously used in the app
+(`--farbe-primary`/`--farbe-primary-dark` in `style.css`) is dropped
+entirely. Blue (`#5b9bd5`), in addition to its role in the Race Line
+and palette, now also serves as the calm primary color for branding,
+typography, and functional UI elements (headings, links, button
+outlines, everyday icon color).
 
 The colors should not simply form three equal, flat color blocks. They
 should generate motion and be deployed the way the graphic lines of a
