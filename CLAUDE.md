@@ -355,6 +355,41 @@ und wiederverwenden lässt.
 
 ⸻
 
+**MODULARES GRAFIKSYSTEM**
+
+Die visuelle Identität soll aus wenigen wiederverwendbaren
+Grundbausteinen bestehen, die ausschließlich mit HTML, CSS und
+handgebautem SVG umgesetzt werden können.
+
+Das System besteht im Kern aus: Race Line, Speedlines,
+Start-/Streckennummern, Course Markern, reduzierten Line-Icons und
+Typografie.
+
+Diese Elemente werden nicht für jeden Screen neu illustriert.
+Stattdessen werden dieselben Bausteine je nach App-Bereich anders
+kombiniert, skaliert, beschnitten und eingefärbt.
+
+Ziel ist ein kleines visuelles Baukastensystem, mit dem auch
+zukünftige Funktionen gestaltet werden können, ohne neue
+Illustrationen oder Assets produzieren zu müssen.
+
+Die Wiedererkennbarkeit entsteht nicht durch viele unterschiedliche
+Grafiken, sondern durch die konsequente Wiederholung weniger
+charakteristischer Elemente.
+
+Diese sechs Bausteine bilden für die erste Umsetzung ein bewusst
+geschlossenes Starter-Kit. Erweiterungen erfolgen nur gezielt und
+bewusst, nicht beiläufig für einen einzelnen neuen Screen.
+
+Technisch wird der Baukasten als eine zentrale SVG-Sprite-Datei
+umgesetzt (`<symbol>`-Definitionen, einmal eingebunden, z.B. über
+`includes/kopf.php`), deren Formen per `<use>` referenziert und über
+`currentColor` bzw. CSS-Variablen eingefärbt werden – dasselbe
+Wiederverwendungsprinzip, das im Code bereits für `includes/kopf.php`
+und `vereinNameNowrap()` gilt.
+
+⸻
+
 **VISUELLE STILRICHTUNG**
 
 Orientiere die Gestaltung an der Atmosphäre eines hochwertigen
@@ -379,6 +414,36 @@ Die eigentliche Benutzeroberfläche bleibt ruhig, klar und funktional.
 
 Die Triathlon-Welt bildet die emotionale Ebene hinter dem Interface –
 sie ist nicht das Interface selbst.
+
+⸻
+
+**FUNKTIONALE KLARHEIT VOR METAPHER**
+
+Die funktionale UI folgt bewusst konventionellen und leicht
+verständlichen Bedienmustern. Formulare bleiben Formulare, Listen
+bleiben Listen, Navigation bleibt Navigation. Die Triathlon-Metapher
+darf Orientierung und Identität schaffen, aber niemals die
+Verständlichkeit einer Funktion verschlechtern.
+
+Funktionale Bezeichnungen wie „Meine Daten", „Mitglieder",
+„Dokumente" oder „Aufnahmeanträge" werden nicht zwanghaft durch
+Triathlon-Begriffe ersetzt. Begriffe wie CHECK-IN, MY TRANSITION oder
+RACE CONTROL bilden eine zusätzliche visuelle und emotionale Ebene.
+
+Branding darf überraschen. Bedienung nicht.
+
+Damit diese Absicht beim Umsetzen eindeutig bleibt, gilt konkret:
+
+Die Renn-Sprache darf erscheinen: als Kicker/Overline über der
+eigentlichen Überschrift (z.B. klein „CHECK-IN" über groß
+„Anmelden"), als Bereichstitel auf Übersichtsseiten, in
+Bildunterschriften sowie in atmosphärischen Elementen wie der Race
+Line oder Hintergrundgrafik.
+
+Die Renn-Sprache darf niemals ersetzen: Button-Beschriftungen,
+Formularfeld-Labels, Fehlermeldungen, Tabellen-Spaltenköpfe, Menü- und
+Navigationseinträge sowie `aria-label`- bzw. Screenreader-Texte. Dort
+gilt immer der funktionale, deutsche Begriff.
 
 ⸻
 
@@ -465,6 +530,11 @@ Keine großflächigen grellen Farbflächen.
 Keine dominante fotorealistische Sportwerbung.
 Keine aufwendige Bild- oder Asset-Pipeline, die über handgebautes
 SVG/CSS hinausgeht.
+Keine Ersetzung funktionaler Beschriftungen (Buttons, Formularfelder,
+Navigation, Fehlermeldungen) durch Renn-Jargon.
+Keine neuen Illustrationen/Assets außerhalb des sechsteiligen
+Grafik-Baukastens (Race Line, Speedlines, Start-/Streckennummern,
+Course Marker, Line-Icons, Typografie).
 
 Die Markenfarben und die Race-Grafik sollen gezielt, hochwertig und
 kontrolliert eingesetzt werden.
@@ -709,6 +779,39 @@ one shared definition, many contextual variations.
 
 ⸻
 
+**MODULAR GRAPHIC SYSTEM**
+
+The visual identity should be built from a small set of reusable base
+components, implementable exclusively with HTML, CSS, and
+hand-authored SVG.
+
+The system consists at its core of: the Race Line, speed lines,
+bib/course numerals, course markers, reduced line icons, and
+typography.
+
+These elements are not re-illustrated for every screen. Instead, the
+same components are recombined, scaled, cropped and recolored
+differently depending on the app area.
+
+The goal is a small visual toolkit that can also be used to design
+future features without producing new illustrations or assets.
+
+Recognizability comes not from many different graphics, but from the
+consistent repetition of a few characteristic elements.
+
+For the first implementation, these six components form a
+deliberately closed starter kit. Extensions happen only deliberately
+and with intent, never casually for a single new screen.
+
+Technically, the toolkit is implemented as one central SVG sprite file
+(`<symbol>` definitions, included once, e.g. via `includes/kopf.php`),
+whose shapes are referenced via `<use>` and recolored via
+`currentColor` or CSS custom properties – the same reuse principle
+already applied in the codebase for `includes/kopf.php` and
+`vereinNameNowrap()`.
+
+⸻
+
 **VISUAL DIRECTION**
 
 Base the design on the atmosphere of a premium international triathlon
@@ -731,6 +834,35 @@ The interface itself stays calm, clear and functional.
 
 The triathlon world forms the emotional layer behind the interface –
 it is not the interface itself.
+
+⸻
+
+**FUNCTIONAL CLARITY BEFORE METAPHOR**
+
+The functional UI deliberately follows conventional, easily
+understood interaction patterns. Forms stay forms, lists stay lists,
+navigation stays navigation. The triathlon metaphor may create
+orientation and identity, but must never degrade the clarity of a
+function.
+
+Functional labels such as "My Data," "Members," "Documents," or
+"Membership Applications" are not forcibly replaced with triathlon
+terminology. Terms like CHECK-IN, MY TRANSITION, or RACE CONTROL form
+an additional visual and emotional layer.
+
+Branding may surprise. Operation may not.
+
+To keep this intent unambiguous during implementation, specifically:
+
+Race-day language may appear: as a kicker/overline above the actual
+heading (e.g., small "CHECK-IN" above a large "Log In"), as a section
+title on overview pages, in image captions, and in atmospheric
+elements such as the Race Line or background graphics.
+
+Race-day language must never replace: button labels, form field
+labels, error messages, table column headers, menu and navigation
+entries, or `aria-label`/screen-reader text. These always use the
+plain, functional German term.
 
 ⸻
 
@@ -814,6 +946,11 @@ No permanent full-bleed rainbow gradients.
 No large, garish flat color fields.
 No dominant photorealistic sports advertising.
 No elaborate image or asset pipeline beyond hand-authored SVG/CSS.
+No replacing functional labels (buttons, form fields, navigation,
+error messages) with race-day jargon.
+No new illustrations/assets outside the six-part graphic toolkit
+(Race Line, speed lines, bib/course numerals, course markers, line
+icons, typography).
 
 Brand colors and race graphics should be deployed deliberately, with
 precision and restraint.
