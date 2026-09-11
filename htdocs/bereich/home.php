@@ -32,7 +32,7 @@ $zurueck = null;
     <header class="top-header top-header--race">
         <div class="top-header__inner">
             <a href="home.php" class="top-header__logo-link" aria-label="Startseite">
-                <img class="top-header__logo" src="../assets/img/brand/logo-wing-v-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <img class="top-header__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             </a>
             <div class="top-header__title"><?= e(APP_NAME) ?></div>
             <div class="menu-wrapper">
@@ -59,22 +59,22 @@ $zurueck = null;
         <h2 style="margin-top:0;">Willkommen, <?= e($mitglied['vorname']) ?></h2>
 
         <div class="kachel-grid">
-            <a href="index.php" class="kachel">
+            <a href="index.php" class="kachel kachel--race">
                 <img class="bereich-grafik" src="../assets/img/brand/bereich-meine-daten.svg" alt="">
                 <span>Meine Daten</span>
             </a>
-            <a href="sportlerprofile.php" class="kachel">
+            <a href="sportlerprofile.php" class="kachel kachel--race">
                 <img class="bereich-grafik" src="../assets/img/brand/bereich-sportlerprofile.svg" alt="">
                 <span>Sportlerprofile</span>
             </a>
             <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
-                <a href="vorstand/index.php" class="kachel">
+                <a href="vorstand/index.php" class="kachel kachel--race">
                     <img class="bereich-grafik" src="../assets/img/brand/bereich-geschaeftsstelle.svg" alt="">
                     <span>Geschäftsstelle</span>
                 </a>
             <?php endif; ?>
             <?php if (!empty($mitglied['ist_admin'])): ?>
-                <a href="admin/index.php" class="kachel">
+                <a href="admin/index.php" class="kachel kachel--race">
                     <img class="bereich-grafik" src="../assets/img/brand/bereich-admin.svg" alt="">
                     <span>Admin</span>
                 </a>

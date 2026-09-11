@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <header class="top-header top-header--race">
         <div class="top-header__inner">
-            <img class="top-header__logo" src="assets/img/brand/logo-wing-v-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
+            <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div class="top-header__title"><?= e(APP_NAME) ?></div>
         </div>
     </header>

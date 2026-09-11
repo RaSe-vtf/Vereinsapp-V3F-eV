@@ -84,8 +84,16 @@ a {
 
 .bereich-grafik {
     width: 100%;
-    max-width: 168px;
+    max-width: 108px;
     height: auto;
+}
+
+/* Kompaktere Kachel-Variante fuer die Bereichsgrafiken (Version 2) -
+   die Basis-.kachel-Regel bleibt fuer die anderen, noch unveraenderten
+   Kachel-Seiten unangetastet. */
+.kachel--race {
+    padding: 18px 14px;
+    gap: 6px;
 }
 
 .container {
