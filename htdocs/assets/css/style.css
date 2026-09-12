@@ -103,12 +103,12 @@ a {
 }
 
 .login-hero__card {
-    max-width: 230px;
+    max-width: 178px;
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 12px;
-    padding: 14px 14px;
+    padding: 12px 12px;
     box-shadow: 0 4px 16px rgba(20, 60, 70, 0.12);
 }
 
@@ -127,14 +127,6 @@ a {
     background: var(--farbe-primary);
     font-size: 0.85rem;
     padding: 9px 13px;
-}
-
-.login-hero__headline {
-    margin: 0 0 10px;
-    font-weight: 800;
-    font-size: 1.1rem;
-    line-height: 1.15;
-    color: var(--farbe-text);
 }
 
 .login-hero__brand {

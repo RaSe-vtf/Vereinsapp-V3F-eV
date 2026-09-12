@@ -57,8 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          Siehe Master-Prompt in CLAUDE.md. -->
     <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg');">
         <div class="login-hero__card">
-            <span class="kicker">01 Check-in</span>
-            <h1 class="login-hero__headline">Mitglieder-Login</h1>
+            <h1 class="kicker" style="margin-bottom:10px;">Check-in</h1>
             <div class="login-hero__brand">
                 <img src="assets/img/brand/logo-wing-v-full-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
                 <div>
