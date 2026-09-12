@@ -103,53 +103,70 @@ a {
 }
 
 .login-hero__card {
-    max-width: 300px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border-radius: var(--radius);
-    padding: 20px 18px;
-    box-shadow: 0 8px 24px rgba(20, 60, 70, 0.18);
+    max-width: 230px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 14px 14px;
+    box-shadow: 0 4px 16px rgba(20, 60, 70, 0.12);
+}
+
+.login-hero__card label {
+    margin: 10px 0 4px;
+    font-size: 0.82rem;
+}
+
+.login-hero__card input[type="email"],
+.login-hero__card input[type="password"] {
+    padding: 7px 9px;
+    font-size: 0.88rem;
+}
+
+.login-hero__card .btn {
+    background: var(--farbe-primary);
+    font-size: 0.85rem;
+    padding: 9px 13px;
 }
 
 .login-hero__headline {
-    margin: 0 0 14px;
+    margin: 0 0 10px;
     font-weight: 800;
-    font-size: 1.4rem;
-    line-height: 1.1;
+    font-size: 1.1rem;
+    line-height: 1.15;
     color: var(--farbe-text);
 }
 
 .login-hero__brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 18px;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .login-hero__brand img {
-    height: 46px;
+    height: 32px;
     width: auto;
     flex-shrink: 0;
 }
 
 .login-hero__vereinsname {
     font-weight: 700;
-    font-size: 0.92rem;
+    font-size: 0.78rem;
     color: var(--farbe-text);
 }
 
 .login-hero__claim {
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     color: var(--farbe-text-soft);
 }
 
 .login-hero__links {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 16px;
-    font-size: 0.85rem;
+    gap: 5px;
+    margin-top: 10px;
+    font-size: 0.75rem;
 }
 
 .container {
