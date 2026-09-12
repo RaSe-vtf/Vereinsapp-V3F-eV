@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="swoosh-a" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5b9bd5"/>
+      <stop offset="50%" stop-color="#ff3399"/>
+      <stop offset="100%" stop-color="#fadd06"/>
+    </linearGradient>
+    <linearGradient id="swoosh-b" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff3399"/>
+      <stop offset="100%" stop-color="#fadd06"/>
+    </linearGradient>
+  </defs>
+  <path d="M -20 240 C 200 240, 340 110, 820 70" fill="none" stroke="url(#swoosh-a)" stroke-width="34" stroke-linecap="round" opacity="0.9"/>
+  <path d="M -20 265 C 220 265, 360 150, 820 115" fill="none" stroke="url(#swoosh-b)" stroke-width="16" stroke-linecap="round" opacity="0.85"/>
+</svg>

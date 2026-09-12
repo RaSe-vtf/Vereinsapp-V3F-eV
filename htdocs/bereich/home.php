@@ -60,6 +60,7 @@ $zurueck = null;
             <div class="home-hero__accent">
                 <span style="background:#5b9bd5;"></span>
                 <span style="background:#ff3399;"></span>
+                <span style="background:#8e44ad;"></span>
                 <span style="background:#fadd06;"></span>
             </div>
         </div>
@@ -99,6 +100,11 @@ $zurueck = null;
                     <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
                 </a>
             <?php endif; ?>
+        </div>
+
+        <div class="home-footer">
+            <p class="home-footer__tagline">Swim<br>Bike<br>Run<br>Together</p>
+            <img class="home-footer__swoosh" src="../assets/img/brand/swoosh-bottom.svg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../assets/js/menue.js" defer></script>
