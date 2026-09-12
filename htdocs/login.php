@@ -57,14 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          Siehe Master-Prompt in CLAUDE.md. -->
     <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg');">
         <div class="login-hero__card">
-            <h1 class="kicker" style="margin-bottom:10px;">Check-in</h1>
             <div class="login-hero__brand">
                 <img src="assets/img/brand/logo-wing-v-full-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
-                <div>
-                    <div class="login-hero__vereinsname"><?= e(vereinNameNowrap()) ?></div>
-                    <div class="login-hero__claim">Gemeinsam ins Ziel.</div>
-                </div>
+                <h1 class="kicker">Check-in</h1>
             </div>
+            <div class="login-hero__vereinsname"><?= e(vereinNameNowrap()) ?></div>
+            <div class="login-hero__claim">Gemeinsam ins Ziel.</div>
 
             <?php if ($fehler !== ''): ?>
                 <div class="alert alert-error"><?= e($fehler) ?></div>

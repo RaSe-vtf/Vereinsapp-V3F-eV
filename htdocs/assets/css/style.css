@@ -133,13 +133,17 @@ a {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .login-hero__brand img {
-    height: 32px;
+    height: 28px;
     width: auto;
     flex-shrink: 0;
+}
+
+.login-hero__brand .kicker {
+    margin-bottom: 0;
 }
 
 .login-hero__vereinsname {
@@ -151,6 +155,7 @@ a {
 .login-hero__claim {
     font-size: 0.68rem;
     color: var(--farbe-text-soft);
+    margin-bottom: 12px;
 }
 
 .login-hero__links {
