@@ -48,22 +48,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1f7a8c">
+    <meta name="theme-color" content="#5b9bd5">
 </head>
 <body>
-    <header class="top-header top-header--race">
-        <div class="top-header__inner">
-            <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
-            <div class="top-header__title"><?= e(APP_NAME) ?></div>
+    <!-- Race-Konzept, Station 01 Check-in: Foto-Hero statt kleinem Banner.
+         Kicker/Ueberschrift/Logo liegen direkt auf dem ruhigen Himmel-Bereich
+         oben links im Foto, das eigentliche Formular bleibt darunter auf
+         normalem weissen Grund. Siehe Master-Prompt in CLAUDE.md. -->
+    <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg');">
+        <div class="login-hero__overlay">
+            <span class="kicker">01 Check-in</span>
+            <h1 class="login-hero__headline">Mitglieder-Login</h1>
+            <div class="login-hero__brand">
+                <img src="assets/img/brand/logo-wing-v-full-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <div>
+                    <div class="login-hero__vereinsname"><?= e(vereinNameNowrap()) ?></div>
+                    <div class="login-hero__claim">Gemeinsam ins Ziel.</div>
+                </div>
+            </div>
         </div>
-    </header>
-    <img class="race-line-strip" src="assets/img/brand/race-line-bg-checkin.svg" alt="" aria-hidden="true">
+    </div>
 
     <main class="container">
         <div class="card" style="max-width:360px; margin:0 auto;">
-            <span class="kicker">01 Check-in</span>
-            <h2 style="margin-top:0;">Mitglieder-Login</h2>
-
             <?php if ($fehler !== ''): ?>
                 <div class="alert alert-error"><?= e($fehler) ?></div>
             <?php endif; ?>
@@ -75,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="required" for="passwort">Passwort</label>
                 <input type="password" id="passwort" name="passwort" required>
                 <div style="margin-top:18px;">
-                    <button type="submit" class="btn">Anmelden</button>
+                    <button type="submit" class="btn" style="width:100%; padding:12px;">Anmelden</button>
                 </div>
             </form>
         </div>

@@ -88,6 +88,57 @@ a {
     height: auto;
 }
 
+/* Login-Seite (Station 01 Check-in): Foto-Hero mit Kicker/Ueberschrift/Logo
+   im ruhigen Himmel-Bereich links oben, das Formular bleibt darunter auf
+   normalem weissen Grund (Funktionale Klarheit vor Metapher). */
+.login-hero {
+    width: 100%;
+    height: clamp(420px, 140vw, 620px);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+.login-hero__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 26px 22px;
+}
+
+.login-hero__headline {
+    margin: 0 0 16px;
+    font-weight: 800;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    color: var(--farbe-text);
+}
+
+.login-hero__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.login-hero__brand img {
+    height: 60px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+.login-hero__vereinsname {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--farbe-text);
+}
+
+.login-hero__claim {
+    font-size: 0.85rem;
+    color: var(--farbe-text-soft);
+}
+
 .container {
     max-width: 720px;
     margin: 0 auto;
