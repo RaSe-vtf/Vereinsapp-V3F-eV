@@ -88,30 +88,34 @@ a {
     height: auto;
 }
 
-/* Login-Seite (Station 01 Check-in): Foto-Hero mit Kicker/Ueberschrift/Logo
-   im ruhigen Himmel-Bereich links oben, das Formular bleibt darunter auf
-   normalem weissen Grund (Funktionale Klarheit vor Metapher). */
+/* Login-Seite (Station 01 Check-in): die Foto-Szene bleibt vollflaechig und
+   unverdeckt sichtbar. Nur eine kompakte, halbtransparente Karte liegt oben
+   links in der ruhigen Bildecke - Formular inklusive, damit die Szene nicht
+   von einer grossen weissen Flaeche ueberdeckt wird. */
 .login-hero {
-    width: 100%;
-    height: clamp(420px, 140vw, 620px);
+    min-height: 100vh;
+    min-height: 100dvh;
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    position: relative;
+    padding: 28px 20px;
+    box-sizing: border-box;
 }
 
-.login-hero__overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 26px 22px;
+.login-hero__card {
+    max-width: 300px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    box-shadow: 0 8px 24px rgba(20, 60, 70, 0.18);
 }
 
 .login-hero__headline {
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     font-weight: 800;
-    font-size: 1.7rem;
+    font-size: 1.4rem;
     line-height: 1.1;
     color: var(--farbe-text);
 }
@@ -119,24 +123,33 @@ a {
 .login-hero__brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    margin-bottom: 18px;
 }
 
 .login-hero__brand img {
-    height: 60px;
+    height: 46px;
     width: auto;
     flex-shrink: 0;
 }
 
 .login-hero__vereinsname {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: var(--farbe-text);
 }
 
 .login-hero__claim {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: var(--farbe-text-soft);
+}
+
+.login-hero__links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+    font-size: 0.85rem;
 }
 
 .container {

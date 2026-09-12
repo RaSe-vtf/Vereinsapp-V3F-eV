@@ -51,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#5b9bd5">
 </head>
 <body>
-    <!-- Race-Konzept, Station 01 Check-in: Foto-Hero statt kleinem Banner.
-         Kicker/Ueberschrift/Logo liegen direkt auf dem ruhigen Himmel-Bereich
-         oben links im Foto, das eigentliche Formular bleibt darunter auf
-         normalem weissen Grund. Siehe Master-Prompt in CLAUDE.md. -->
+    <!-- Race-Konzept, Station 01 Check-in: die Foto-Szene bleibt vollstaendig
+         sichtbar, nur eine kompakte, halbtransparente Karte liegt oben links
+         in der ruhigen Bildecke - sie deckt bewusst nicht die ganze Szene ab.
+         Siehe Master-Prompt in CLAUDE.md. -->
     <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg');">
-        <div class="login-hero__overlay">
+        <div class="login-hero__card">
             <span class="kicker">01 Check-in</span>
             <h1 class="login-hero__headline">Mitglieder-Login</h1>
             <div class="login-hero__brand">
@@ -66,11 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="login-hero__claim">Gemeinsam ins Ziel.</div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <main class="container">
-        <div class="card" style="max-width:360px; margin:0 auto;">
             <?php if ($fehler !== ''): ?>
                 <div class="alert alert-error"><?= e($fehler) ?></div>
             <?php endif; ?>
@@ -85,12 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" class="btn" style="width:100%; padding:12px;">Anmelden</button>
                 </div>
             </form>
-        </div>
-    </main>
 
-    <footer>
-        <a href="index.php">Zur Startseite</a>
-        <a href="antrag.php">Aufnahmeantrag stellen</a>
-    </footer>
+            <div class="login-hero__links">
+                <a href="index.php">Zur Startseite</a>
+                <a href="antrag.php">Aufnahmeantrag stellen</a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
