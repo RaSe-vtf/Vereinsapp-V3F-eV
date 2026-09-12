@@ -80,8 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <div class="login-hero__links">
-                <a href="index.php">Zur Startseite</a>
                 <a href="antrag.php">Aufnahmeantrag stellen</a>
+                <a href="impressum.php">Impressum</a>
+                <a href="datenschutz.php">Datenschutz</a>
             </div>
         </div>
     </div>
