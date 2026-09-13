@@ -116,8 +116,6 @@ $zurueck = 'index.php';
         </div>
 
         <div class="card">
-            <p class="text-muted">Satzung und Ordnungen. Die jeweils neueste Fassung je Datei wird im öffentlichen Aufnahmeantrag verlinkt, ältere Fassungen bleiben hier als Historie erhalten. Mehrere unterschiedliche Dateien dürfen dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen") - nur ein erneuter Upload mit demselben Dateinamen gilt als neue Fassung derselben Datei.</p>
-
             <?php if (empty($alleDokumente)): ?>
                 <p>Noch keine Dokumente hochgeladen.</p>
             <?php else: ?>
@@ -170,7 +168,6 @@ $zurueck = 'index.php';
             <?php endif; ?>
 
             <h3>Neue Datei hochladen</h3>
-            <p class="text-muted">Lädst du erneut eine Datei mit demselben Dateinamen wie eine bereits vorhandene hoch, wird sie als deren aktuelle Fassung geführt (die vorherige bleibt als Historie erhalten). Ein anderer Dateiname unter derselben Bezeichnung gilt dagegen als eigenständiges, zusätzliches Dokument. Es gibt keine Formatbeschränkung: PDF bleibt PDF, Bilder (JPG/PNG/WebP) werden automatisch in eine PDF-Seite gewandelt, andere Formate (z.B. Word) werden im Originalformat gespeichert.</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
                 <input type="hidden" name="aktion" value="hochladen">
