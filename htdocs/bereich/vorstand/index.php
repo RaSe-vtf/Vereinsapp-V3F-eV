@@ -111,6 +111,10 @@ $zurueck = '../home.php';
                 <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
             </a>
         </div>
+
+        <div class="home-footer">
+            <img class="home-footer__image" src="../../assets/img/brand/footer-gemeinsam-mehr-bewegen.jpg" alt="" aria-hidden="true">
+        </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>
 </body>
