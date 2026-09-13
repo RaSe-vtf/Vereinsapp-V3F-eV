@@ -40,33 +40,47 @@ $zurueck = '../index.php';
         </div>
 
         <div class="kachel-grid">
-            <a href="bankverbindungen.php" class="kachel">
-                <span class="kachel-icon">🏦</span>
-                <span>Bankverbindungen</span>
+            <a href="bankverbindungen.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-bankverbindungen.png" alt="">
+                <span class="kachel__title">Bankverbindungen</span>
+                <span class="kachel__subtitle">Konten und IBANs verwalten</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="beitraege.php" class="kachel">
-                <span class="kachel-icon">🧾</span>
-                <span>Beiträge</span>
+            <a href="beitraege.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-beitraege.png" alt="">
+                <span class="kachel__title">Beiträge</span>
+                <span class="kachel__subtitle">Mitgliedsbeiträge verwalten</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="export.php" class="kachel">
-                <span class="kachel-icon">📤</span>
-                <span>SEPA-Export</span>
+            <a href="export.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-sepa-export.png" alt="">
+                <span class="kachel__title">SEPA-Export</span>
+                <span class="kachel__subtitle">Lastschriften vorbereiten</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="kassenbuecher/index.php" class="kachel">
-                <span class="kachel-icon">📚</span>
-                <span>Kassenbücher</span>
+            <a href="kassenbuecher/index.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-kassenbuecher.png" alt="">
+                <span class="kachel__title">Kassenbücher</span>
+                <span class="kachel__subtitle">Ein- und Ausgaben erfassen</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="kassenbericht.php" class="kachel">
-                <span class="kachel-icon">📊</span>
-                <span>Kassenbericht</span>
+            <a href="kassenbericht.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-kassenbericht.png" alt="">
+                <span class="kachel__title">Kassenbericht</span>
+                <span class="kachel__subtitle">Übersicht und Auswertung</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="beitragsrechner.php" class="kachel">
-                <span class="kachel-icon">🧮</span>
-                <span>Beitragsrechner</span>
+            <a href="beitragsrechner.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-beitragsrechner.png" alt="">
+                <span class="kachel__title">Beitragsrechner</span>
+                <span class="kachel__subtitle">Beiträge automatisch berechnen</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
-            <a href="loeschprotokoll.php" class="kachel">
-                <span class="kachel-icon">🗂️</span>
-                <span>Löschprotokoll</span>
+            <a href="loeschprotokoll.php" class="kachel kachel--rich">
+                <img class="bereich-grafik" src="../../../assets/img/brand/icon-kw-loeschprotokoll.png" alt="">
+                <span class="kachel__title">Löschprotokoll</span>
+                <span class="kachel__subtitle">Daten sicher löschen</span>
+                <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
             </a>
         </div>
 

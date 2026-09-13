@@ -1123,6 +1123,22 @@ body.seite-mit-hintergrundfoto main {
     border-radius: 999px;
 }
 
+/* Durchgehender dreifarbiger Akzentbalken (Segmente ohne Zwischenraum,
+   nur an den Aussenkanten abgerundet) - fuer die Kassenwart-Unterkacheln,
+   im Unterschied zur gepunkteten .kachel__accent-Variante anderswo. */
+.kachel__akzent-dreifarbig {
+    display: flex;
+    width: 70px;
+    height: 5px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.kachel__akzent-dreifarbig span {
+    flex: 1;
+}
+
 .disziplin-icons {
     display: flex;
     gap: 8px;
