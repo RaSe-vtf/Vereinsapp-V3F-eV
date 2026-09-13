@@ -104,10 +104,9 @@ $zurueck = '../home.php';
                 <span class="kachel__subtitle">Sitzungsprotokolle und Beschlüsse.</span>
                 <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
             </a>
-            <a href="notizen.php" class="kachel kachel--rich" style="grid-column:1 / -1;">
+            <a href="notizen.php" class="kachel kachel--rich kachel--quer" style="grid-column:1 / -1;">
                 <img class="bereich-grafik" src="../../assets/img/brand/icon-notizen.svg" alt="">
                 <span class="kachel__title">Notizen</span>
-                <span class="kachel__subtitle">Ideen, Aufgaben und To-dos.</span>
                 <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
             </a>
         </div>

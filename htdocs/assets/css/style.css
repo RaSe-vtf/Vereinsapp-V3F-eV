@@ -963,6 +963,29 @@ th {
     font-weight: 700;
 }
 
+/* Querformat-Variante: Icon links, Text daneben, in einer Zeile -
+   fuer Kacheln, die sich ueber die volle Grid-Breite ziehen (z.B.
+   Notizen auf der Geschaeftsstelle-Seite), statt weiterhin die hohe,
+   zentrierte .kachel--rich-Form beizubehalten. */
+.kachel--quer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 16px;
+    padding: 16px 20px;
+}
+
+.kachel--quer .bereich-grafik {
+    max-width: 44px;
+    flex-shrink: 0;
+}
+
+.kachel--quer .kachel__chevron {
+    position: static;
+    margin-left: auto;
+}
+
 .kachel-icon {
     font-size: 2.2rem;
 }
