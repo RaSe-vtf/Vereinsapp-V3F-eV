@@ -198,7 +198,7 @@ a {
 .home-hero__logo {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: 12px;
     object-fit: cover;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(20, 60, 70, 0.25);
@@ -246,37 +246,17 @@ a {
     border-radius: 999px;
 }
 
-/* Abschluss-Bereich unter den Kacheln: Handschrift-Zeile + Farbschwung,
-   greift die Race-Line/Speedline-Bildsprache am Seitenende auf. */
+/* Abschluss-Bereich unter den Kacheln: fertige Grafik (Handschrift-Zeile
+   + Farbschwung), greift die Race-Line/Speedline-Bildsprache am
+   Seitenende auf. */
 .home-footer {
-    position: relative;
     margin-top: 12px;
-    padding: 18px 20px 8px;
-    overflow: hidden;
-    min-height: 240px;
 }
 
-.home-footer__tagline {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-    font-family: "Segoe Script", "Bradley Hand", cursive;
-    font-style: italic;
-    font-weight: 700;
-    font-size: 1.5rem;
-    line-height: 1.15;
-    color: var(--farbe-primary);
-    opacity: 0.85;
-}
-
-.home-footer__swoosh {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+.home-footer__image {
+    display: block;
     width: 100%;
     height: auto;
-    z-index: 0;
 }
 
 .container {

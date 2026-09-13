@@ -103,8 +103,7 @@ $zurueck = null;
         </div>
 
         <div class="home-footer">
-            <p class="home-footer__tagline">Swim<br>Bike<br>Run<br>Together</p>
-            <img class="home-footer__swoosh" src="../assets/img/brand/swoosh-bottom.svg" alt="" aria-hidden="true">
+            <img class="home-footer__image" src="../assets/img/brand/footer-swim-bike-run.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../assets/js/menue.js" defer></script>
