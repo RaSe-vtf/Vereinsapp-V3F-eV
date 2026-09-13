@@ -60,9 +60,9 @@ $zurueck = 'home.php';
                         <?php endif; ?>
                         <span class="name"><?= e($m['vorname']) ?><br><?= e($m['nachname']) ?></span>
                         <div class="disziplin-icons">
-                            <img src="../assets/img/brand/icon-schwimmen<?= $m['lieblingsdisziplin'] === 'schwimmen' ? '' : '-grau' ?>.svg" alt="Schwimmen">
-                            <img src="../assets/img/brand/icon-radfahren<?= $m['lieblingsdisziplin'] === 'radfahren' ? '' : '-grau' ?>.svg" alt="Radfahren">
-                            <img src="../assets/img/brand/icon-laufen<?= $m['lieblingsdisziplin'] === 'laufen' ? '' : '-grau' ?>.svg" alt="Laufen">
+                            <img class="<?= $m['lieblingsdisziplin'] === 'schwimmen' ? 'ist-aktiv' : '' ?>" src="../assets/img/brand/icon-schwimmen.png" alt="Schwimmen">
+                            <img class="<?= $m['lieblingsdisziplin'] === 'radfahren' ? 'ist-aktiv' : '' ?>" src="../assets/img/brand/icon-radfahren.png" alt="Radfahren">
+                            <img class="<?= $m['lieblingsdisziplin'] === 'laufen' ? 'ist-aktiv' : '' ?>" src="../assets/img/brand/icon-laufen.png" alt="Laufen">
                         </div>
                         <?php if ($m['ort']): ?>
                             <span class="ort">

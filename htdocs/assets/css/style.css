@@ -1028,8 +1028,15 @@ th {
 }
 
 .disziplin-icons img {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    filter: grayscale(100%);
+    opacity: 0.35;
+}
+
+.disziplin-icons img.ist-aktiv {
+    filter: none;
+    opacity: 1;
 }
 
 .sportler-kachel .ort {
