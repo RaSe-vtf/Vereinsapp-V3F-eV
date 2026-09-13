@@ -25,11 +25,48 @@ $zurueck = '../home.php';
     <meta name="theme-color" content="#5b9bd5">
 </head>
 <body>
-    <?php require __DIR__ . '/../../../includes/kopf.php'; ?>
+    <!-- Race-Konzept (Version 2): eigener Header statt includes/kopf.php,
+         damit alle anderen Seiten unveraendert bleiben. Menue-Funktion
+         1:1 aus kopf.php uebernommen. Foto-Hero analog zu den anderen
+         umgestellten Seiten. Siehe Master-Prompt in CLAUDE.md. -->
+    <div class="home-hero" style="background-image:url('../../assets/img/brand/geschaeftsstelle-hero.jpg');">
+        <div class="home-hero__topbar">
+            <a href="../home.php" class="home-hero__brand" aria-label="Startseite">
+                <img class="home-hero__logo" src="../../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <span class="home-hero__title"><?= e(APP_NAME) ?></span>
+            </a>
+            <a class="home-hero__back" href="../home.php" aria-label="Zurück" title="Zurück">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
+            </a>
+            <div class="menu-wrapper" style="margin-left:8px;">
+                <button type="button" class="menu-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="hauptmenue">&#9776;</button>
+                <nav class="menu-dropdown" id="hauptmenue" hidden>
+                    <a href="../index.php">Meine Daten</a>
+                    <a href="../sportlerprofile.php">Sportlerprofile</a>
+                    <a href="index.php" class="active">Geschäftsstelle</a>
+                    <?php if (!empty($mitglied['ist_admin'])): ?>
+                        <a href="../admin/index.php">Admin</a>
+                    <?php endif; ?>
+                    <hr>
+                    <a href="../../logout.php" class="menu-logout">Abmelden</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="home-hero__content">
+            <span class="kicker">Race Control</span>
+            <h2>Geschäftsstelle</h2>
+            <p class="home-hero__claim">Alles, was den Verein organisiert.</p>
+            <div class="home-hero__accent">
+                <span style="background:#5b9bd5;"></span>
+                <span style="background:#ff3399;"></span>
+                <span style="background:#8e44ad;"></span>
+                <span style="background:#fadd06;"></span>
+            </div>
+        </div>
+    </div>
 
     <main class="container" style="max-width:1040px;">
-        <h2 style="margin-top:0;">Geschäftsstelle</h2>
-
         <div class="kachel-grid">
             <a href="antraege.php" class="kachel kachel--rich">
                 <img class="bereich-grafik" src="../../assets/img/brand/icon-aufnahmeantraege.svg" alt="">
