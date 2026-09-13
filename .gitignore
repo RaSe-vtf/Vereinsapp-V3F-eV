@@ -3,3 +3,5 @@
 !/private/uploads/fotos/.gitkeep
 .DS_Store
 Thumbs.db
+/vereinsapp.zip
+/vereinsapp.sql
