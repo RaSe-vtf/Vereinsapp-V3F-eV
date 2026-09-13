@@ -1015,12 +1015,12 @@ body.seite-mit-hintergrundfoto main {
     align-items: center;
     justify-content: flex-start;
     text-align: left;
-    gap: 14px;
-    padding: 20px 18px;
+    gap: 10px;
+    padding: 16px 14px;
 }
 
 .kachel--horizontal .bereich-grafik {
-    max-width: 56px;
+    max-width: 40px;
     flex-shrink: 0;
 }
 
@@ -1028,6 +1028,23 @@ body.seite-mit-hintergrundfoto main {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    /* Ohne min-width:0 wuerde dieses Flex-Item nicht unter seine
+       Inhaltsbreite schrumpfen und lange Titel liefen bei zwei
+       nebeneinander stehenden Kacheln ueber den Kartenrand hinaus. */
+    min-width: 0;
+}
+
+.kachel--horizontal .kachel__title {
+    font-size: 0.86rem;
+    line-height: 1.2;
+    hyphens: auto;
+    overflow-wrap: break-word;
+}
+
+.kachel--horizontal .kachel__subtitle {
+    font-size: 0.68rem;
+    hyphens: auto;
+    overflow-wrap: break-word;
 }
 
 .kachel__accent {
