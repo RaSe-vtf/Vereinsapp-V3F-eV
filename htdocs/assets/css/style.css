@@ -211,6 +211,21 @@ a {
     text-decoration: none;
 }
 
+.home-hero__back {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid var(--farbe-border);
+    color: var(--farbe-text);
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
 .home-hero__content {
     margin-top: 28px;
     max-width: 220px;

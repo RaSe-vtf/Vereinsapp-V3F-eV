@@ -36,7 +36,10 @@ $mitglied = requireMemberLogin('../login.php');
                 <img class="home-hero__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
                 <span class="home-hero__title"><?= e(APP_NAME) ?></span>
             </a>
-            <div class="menu-wrapper">
+            <a class="home-hero__back" href="home.php" aria-label="Zurück" title="Zurück">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
+            </a>
+            <div class="menu-wrapper" style="margin-left:8px;">
                 <button type="button" class="menu-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="hauptmenue">&#9776;</button>
                 <nav class="menu-dropdown" id="hauptmenue" hidden>
                     <a href="index.php" class="active">Meine Daten</a>
@@ -64,12 +67,6 @@ $mitglied = requireMemberLogin('../login.php');
                 <span style="background:#fadd06;"></span>
             </div>
         </div>
-    </div>
-
-    <div class="container zurueck-zeile">
-        <a class="zurueck-link" href="home.php" aria-label="Zurück" title="Zurück">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
-        </a>
     </div>
 
     <main class="container">
