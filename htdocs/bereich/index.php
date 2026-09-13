@@ -173,20 +173,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'passw
     <link rel="icon" type="image/png" sizes="16x16" href="../assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
     <link rel="manifest" href="../manifest.json">
-    <meta name="theme-color" content="#1f7a8c">
+    <meta name="theme-color" content="#5b9bd5">
 </head>
 <body>
-    <?php
-    $tiefe = '';
-    $seitenUntertitel = rollenLabel($mitglied['rolle']);
-    $aktivReiter = 'meine-daten';
-    $zurueck = 'home.php';
-    require __DIR__ . '/../../includes/kopf.php';
-    ?>
+    <!-- Race-Konzept (Version 2): eigener Header statt includes/kopf.php,
+         damit alle anderen Seiten unveraendert bleiben. Menue-Funktion
+         1:1 aus kopf.php uebernommen. Foto-Hero analog zu login.php und
+         home.php. Siehe Master-Prompt in CLAUDE.md. -->
+    <div class="home-hero" style="background-image:url('../assets/img/brand/meine-daten-hero.jpg');">
+        <div class="home-hero__topbar">
+            <a href="home.php" class="home-hero__brand" aria-label="Startseite">
+                <img class="home-hero__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <span class="home-hero__title"><?= e(APP_NAME) ?></span>
+            </a>
+            <div class="menu-wrapper">
+                <button type="button" class="menu-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="hauptmenue">&#9776;</button>
+                <nav class="menu-dropdown" id="hauptmenue" hidden>
+                    <a href="index.php" class="active">Meine Daten</a>
+                    <a href="sportlerprofile.php">Sportlerprofile</a>
+                    <?php if (!empty($mitglied['vorstandsamt']) || !empty($mitglied['ist_admin'])): ?>
+                        <a href="vorstand/index.php">Geschäftsstelle</a>
+                    <?php endif; ?>
+                    <?php if (!empty($mitglied['ist_admin'])): ?>
+                        <a href="admin/index.php">Admin</a>
+                    <?php endif; ?>
+                    <hr>
+                    <a href="../logout.php" class="menu-logout">Abmelden</a>
+                </nav>
+            </div>
+        </div>
+
+        <div class="home-hero__content">
+            <span class="kicker">My Transition</span>
+            <h2>Meine Daten</h2>
+            <p class="home-hero__claim">Persönliche Daten und Mitgliedschaft.</p>
+            <div class="home-hero__accent">
+                <span style="background:#5b9bd5;"></span>
+                <span style="background:#ff3399;"></span>
+                <span style="background:#8e44ad;"></span>
+                <span style="background:#fadd06;"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container zurueck-zeile">
+        <a class="zurueck-link" href="home.php" aria-label="Zurück" title="Zurück">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
+        </a>
+    </div>
 
     <main class="container">
         <div class="card">
-            <h2>Meine Daten</h2>
             <p class="text-muted">Rolle, Status und Passwort verwaltet der Vorstand bzw. das Formular weiter unten. Alle anderen Angaben kannst du hier selbst ändern.</p>
 
             <?php if (!empty($datenFehler)): ?>
