@@ -66,7 +66,7 @@ $flash = takeFlash();
     <link rel="manifest" href="../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
 </head>
-<body>
+<body class="seite-mit-hintergrundfoto">
     <?php
     $tiefe = '../';
     $seitenUntertitel = 'Geschäftsstelle';
@@ -160,9 +160,7 @@ $flash = takeFlash();
             </form>
         </div>
 
-        <div class="seiten-footer-foto">
-            <img src="../../assets/img/brand/footer-verteiler.jpg" alt="" aria-hidden="true">
-        </div>
+        <div class="seiten-footer-foto" style="background-image:url('../../assets/img/brand/footer-verteiler.jpg');" aria-hidden="true"></div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>
     <script>

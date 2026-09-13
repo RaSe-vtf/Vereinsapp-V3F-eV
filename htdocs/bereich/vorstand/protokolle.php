@@ -25,7 +25,7 @@ $zurueckKicker = 'Race Control';
     <link rel="manifest" href="../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
 </head>
-<body>
+<body class="seite-mit-hintergrundfoto">
     <?php require __DIR__ . '/../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
@@ -43,9 +43,7 @@ $zurueckKicker = 'Race Control';
             <p class="text-muted">Hier werden künftig Sitzungsprotokolle und Vorstandsentscheidungen abgelegt. Diese Seite ist aktuell noch leer.</p>
         </div>
 
-        <div class="seiten-footer-foto">
-            <img src="../../assets/img/brand/footer-protokolle.jpg" alt="" aria-hidden="true">
-        </div>
+        <div class="seiten-footer-foto" style="background-image:url('../../assets/img/brand/footer-protokolle.jpg');" aria-hidden="true"></div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>
 </body>

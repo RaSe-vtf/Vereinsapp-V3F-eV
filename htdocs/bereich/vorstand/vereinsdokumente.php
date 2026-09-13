@@ -97,7 +97,7 @@ $zurueckKicker = 'Race Control';
         .vd-tabelle .badge { padding: 2px 7px; font-size: 0.7rem; }
     </style>
 </head>
-<body>
+<body class="seite-mit-hintergrundfoto">
     <?php require __DIR__ . '/../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
@@ -192,9 +192,7 @@ $zurueckKicker = 'Race Control';
             </form>
         </div>
 
-        <div class="seiten-footer-foto">
-            <img src="../../assets/img/brand/footer-vereinsdokumente.jpg" alt="" aria-hidden="true">
-        </div>
+        <div class="seiten-footer-foto" style="background-image:url('../../assets/img/brand/footer-vereinsdokumente.jpg');" aria-hidden="true"></div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>
 </body>

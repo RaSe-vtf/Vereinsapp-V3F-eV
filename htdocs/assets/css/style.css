@@ -919,17 +919,43 @@ th {
     margin-top: 12px;
 }
 
-/* Gedaempftes Foto am Seitenende der Geschaeftsstelle-Unterseiten - randabfallend,
-   reduzierte Deckkraft fuer den atmosphaerischen "Race Control"-Hintergrund. */
-.seiten-footer-foto {
-    margin: 36px calc(-1 * var(--container-padding-x, 20px)) -64px;
-    overflow: hidden;
+/* Gedaempftes Foto als echter Seiten-Hintergrund der Geschaeftsstelle-
+   Unterseiten (nicht nur ein Bildblock): body/main als Flex-Spalte, damit
+   die Foto-Flaeche den kompletten restlichen Platz bis zum unteren
+   Bildschirmrand ausfuellt statt darunter Leerraum zu lassen. Nur auf den
+   7 Seiten mit dieser Body-Klasse aktiv, alle anderen Seiten unveraendert. */
+body.seite-mit-hintergrundfoto {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.seiten-footer-foto img {
-    display: block;
+body.seite-mit-hintergrundfoto > * {
     width: 100%;
-    height: auto;
+}
+
+/* .container hat eigentlich "margin:0 auto" zum Zentrieren - als Flex-Item
+   wuerde dieser Auto-Rand aber Vorrang vor align-items:stretch bekommen und
+   main auf seine Inhaltsbreite zusammenschrumpfen lassen. Deshalb hier auf
+   0 setzen; zentriert wird main stattdessen ueber align-items:center oben. */
+body.seite-mit-hintergrundfoto main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.seiten-footer-foto {
+    flex: 1;
+    min-height: 220px;
+    /* -64px unten gleicht das eigene padding-bottom von .container aus,
+       damit das Foto wirklich bis zum unteren Bildschirmrand reicht. */
+    margin: 36px calc(-1 * var(--container-padding-x, 20px)) -64px;
+    background-size: cover;
+    background-position: center 30%;
+    background-repeat: no-repeat;
     opacity: 0.55;
 }
 

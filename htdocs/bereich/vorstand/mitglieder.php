@@ -119,7 +119,7 @@ $flash = takeFlash();
         .mv-tabelle .role-select { font-size: 0.72rem; padding: 3px 5px; }
     </style>
 </head>
-<body>
+<body class="seite-mit-hintergrundfoto">
     <?php
     $tiefe = '../';
     $seitenUntertitel = 'Geschäftsstelle';
@@ -280,9 +280,7 @@ $flash = takeFlash();
             <?php endif; ?>
         </div>
 
-        <div class="seiten-footer-foto">
-            <img src="../../assets/img/brand/footer-mitglieder.jpg" alt="" aria-hidden="true">
-        </div>
+        <div class="seiten-footer-foto" style="background-image:url('../../assets/img/brand/footer-mitglieder.jpg');" aria-hidden="true"></div>
     </main>
     <script src="../../assets/js/lightbox.js" defer></script>
     <script src="../../assets/js/menue.js" defer></script>
