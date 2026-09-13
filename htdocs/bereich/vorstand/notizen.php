@@ -19,6 +19,7 @@ $flash = takeFlash();
 $tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
 $zurueck = 'index.php';
+$zurueckKicker = 'Race Control';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -42,8 +43,16 @@ $zurueck = 'index.php';
             <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
         <?php endif; ?>
 
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-notizen.svg" alt="">
+            <div>
+                <h1 class="seiten-titel-block__titel">Notizen</h1>
+                <p class="seiten-titel-block__untertitel">Ideen, Aufgaben und To-dos.</p>
+                <span class="seiten-titel-block__akzent" style="background:#ff3399;"></span>
+            </div>
+        </div>
+
         <div class="card">
-            <h2 style="margin-top:0;">Notizbuch</h2>
             <p class="text-muted">Freie Notizseiten der Geschäftsstelle - jede Seite hat eine Überschrift und Freitext, den man eintippen oder eindiktieren kann.</p>
 
             <a href="notiz.php" class="btn">+ Neue Seite anlegen</a>
@@ -68,6 +77,10 @@ $zurueck = 'index.php';
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <div class="seiten-footer-foto">
+            <img src="../../assets/img/brand/footer-notizen.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>

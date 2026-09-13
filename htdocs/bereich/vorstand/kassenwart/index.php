@@ -10,6 +10,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $tiefe = '../../';
 $aktivReiter = 'geschaeftsstelle';
 $zurueck = '../index.php';
+$zurueckKicker = 'Race Control';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -29,7 +30,14 @@ $zurueck = '../index.php';
 
     <main class="container" style="max-width:1040px;">
 
-        <h2 style="margin-top:0;">Kassenwart</h2>
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../../assets/img/brand/icon-kassenwart.svg" alt="">
+            <div>
+                <h1 class="seiten-titel-block__titel">Kassenwart</h1>
+                <p class="seiten-titel-block__untertitel">Finanzen und SEPA.</p>
+                <span class="seiten-titel-block__akzent" style="background:#ff3399;"></span>
+            </div>
+        </div>
 
         <div class="kachel-grid">
             <a href="bankverbindungen.php" class="kachel">
@@ -60,6 +68,10 @@ $zurueck = '../index.php';
                 <span class="kachel-icon">🗂️</span>
                 <span>Löschprotokoll</span>
             </a>
+        </div>
+
+        <div class="seiten-footer-foto">
+            <img src="../../../assets/img/brand/footer-kassenwart.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../../../assets/js/menue.js" defer></script>

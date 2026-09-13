@@ -131,13 +131,22 @@ $flash = takeFlash();
     $seitenUntertitel = 'Geschäftsstelle';
     $aktivReiter = 'geschaeftsstelle';
     $zurueck = 'index.php';
+    $zurueckKicker = 'Race Control';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 
     <main class="container" style="max-width:960px;">
 
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-aufnahmeantraege.svg" alt="">
+            <div>
+                <h1 class="seiten-titel-block__titel">Aufnahmeanträge</h1>
+                <p class="seiten-titel-block__untertitel">Neue Mitgliedsanträge prüfen und verwalten.</p>
+                <span class="seiten-titel-block__akzent" style="background:#ff3399;"></span>
+            </div>
+        </div>
+
         <div class="card">
-            <h2 style="margin-top:0;">Aufnahmeanträge</h2>
 
             <?php if ($flash): ?>
                 <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
@@ -177,6 +186,10 @@ $flash = takeFlash();
                 </table>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <div class="seiten-footer-foto">
+            <img src="../../assets/img/brand/footer-aufnahmeantraege.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>

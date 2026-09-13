@@ -870,6 +870,69 @@ th {
     box-shadow: 0 6px 16px rgba(20, 60, 70, 0.16);
 }
 
+/* Variante der Zurueck-Zeile mit Kicker-Text daneben (z.B. "RACE CONTROL"),
+   fuer die Geschaeftsstelle-Unterseiten. Ohne $zurueckKicker in kopf.php
+   bleibt die Zeile fuer alle anderen Seiten unveraendert rechtsbuendig. */
+.zurueck-zeile--kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.zurueck-zeile--kicker .kicker {
+    margin-bottom: 0;
+}
+
+/* Seiten-Titel-Block: Icon links, Ueberschrift+Untertitel+Akzentstrich rechts -
+   fuer die Geschaeftsstelle-Unterseiten, ersetzt dort das schlichte <h2>. */
+.seiten-titel-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin: 10px 0 26px;
+}
+
+.seiten-titel-block__icon {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+}
+
+.seiten-titel-block__titel {
+    margin: 0 0 4px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--farbe-primary-dark);
+}
+
+.seiten-titel-block__untertitel {
+    margin: 0;
+    color: var(--farbe-text-soft);
+}
+
+.seiten-titel-block__akzent {
+    display: block;
+    width: 64px;
+    height: 4px;
+    border-radius: 999px;
+    margin-top: 12px;
+}
+
+/* Gedaempftes Foto am Seitenende der Geschaeftsstelle-Unterseiten - randabfallend,
+   reduzierte Deckkraft fuer den atmosphaerischen "Race Control"-Hintergrund. */
+.seiten-footer-foto {
+    margin: 36px calc(-1 * var(--container-padding-x, 20px)) -64px;
+    overflow: hidden;
+}
+
+.seiten-footer-foto img {
+    display: block;
+    width: 100%;
+    height: auto;
+    opacity: 0.55;
+}
+
 .filter-pill {
     display: inline-block;
     padding: 5px 14px;

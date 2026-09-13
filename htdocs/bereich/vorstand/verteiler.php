@@ -72,13 +72,22 @@ $flash = takeFlash();
     $seitenUntertitel = 'Geschäftsstelle';
     $aktivReiter = 'geschaeftsstelle';
     $zurueck = 'index.php';
+    $zurueckKicker = 'Race Control';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 
     <main class="container">
 
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-email-verteiler.svg" alt="">
+            <div>
+                <h1 class="seiten-titel-block__titel">E-Mail-Verteiler</h1>
+                <p class="seiten-titel-block__untertitel">Newsletter und Verteiler verwalten.</p>
+                <span class="seiten-titel-block__akzent" style="background:#fadd06;"></span>
+            </div>
+        </div>
+
         <div class="card">
-            <h2 style="margin-top:0;">E-Mail-Verteiler</h2>
             <p class="text-muted">Verschickt eine Rundmail per Bcc, sodass Mitglieder die E-Mail-Adressen der anderen Empfänger nicht sehen. Häkchen setzen, wer die Mail bekommen soll &ndash; über das Filter-Symbol bei "Mitgliedsart" lässt sich die Liste zum schnelleren Auswählen eingrenzen.</p>
 
             <?php if ($flash): ?>
@@ -149,6 +158,10 @@ $flash = takeFlash();
                     <button type="submit" class="btn" onclick="return confirm('Rundmail jetzt an die ausgewählten Mitglieder verschicken?');">Rundmail senden</button>
                 </div>
             </form>
+        </div>
+
+        <div class="seiten-footer-foto">
+            <img src="../../assets/img/brand/footer-verteiler.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>

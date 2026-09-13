@@ -70,6 +70,7 @@ $flash = takeFlash();
 $tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
 $zurueck = 'index.php';
+$zurueckKicker = 'Race Control';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -105,8 +106,16 @@ $zurueck = 'index.php';
             <div class="alert alert-<?= e($flash['typ']) ?>"><?= e($flash['text']) ?></div>
         <?php endif; ?>
 
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-vereinsdokumente.svg" alt="">
+            <div>
+                <h1 class="seiten-titel-block__titel">Vereinsdokumente</h1>
+                <p class="seiten-titel-block__untertitel">Satzung, Ordnungen und wichtige Unterlagen.</p>
+                <span class="seiten-titel-block__akzent" style="background:#5b9bd5;"></span>
+            </div>
+        </div>
+
         <div class="card">
-            <h2 style="margin-top:0;">Vereinsdokumente</h2>
             <p class="text-muted">Satzung und Ordnungen. Die jeweils neueste Fassung je Datei wird im öffentlichen Aufnahmeantrag verlinkt, ältere Fassungen bleiben hier als Historie erhalten. Mehrere unterschiedliche Dateien dürfen dieselbe Bezeichnung tragen (z.B. "Vereinsordnungen") - nur ein erneuter Upload mit demselben Dateinamen gilt als neue Fassung derselben Datei.</p>
 
             <?php if (empty($alleDokumente)): ?>
@@ -181,6 +190,10 @@ $zurueck = 'index.php';
                     <button type="submit" class="btn">Hochladen</button>
                 </div>
             </form>
+        </div>
+
+        <div class="seiten-footer-foto">
+            <img src="../../assets/img/brand/footer-vereinsdokumente.jpg" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../../assets/js/menue.js" defer></script>

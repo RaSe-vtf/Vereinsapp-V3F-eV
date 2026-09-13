@@ -9,6 +9,8 @@
  *   $tiefe       string, '' innerhalb von bereich/, '../' innerhalb von bereich/vorstand/ bzw. bereich/admin/
  *   $aktivReiter string|null, 'meine-daten'|'geschaeftsstelle'|'admin'|null
  *   $zurueck     string|null, relativer Link fuer den Zurück-Pfeil, null = kein Pfeil
+ *   $zurueckKicker string, optional, kleiner Kicker-Text neben dem Pfeil
+ *                (z.B. "RACE CONTROL") - nicht gesetzt = Zeile bleibt wie bisher
  */
 ?>
 <header class="top-header">
@@ -35,9 +37,12 @@
     </div>
 </header>
 <?php if ($zurueck !== null): ?>
-    <div class="container zurueck-zeile">
+    <div class="container zurueck-zeile<?= isset($zurueckKicker) ? ' zurueck-zeile--kicker' : '' ?>">
         <a class="zurueck-link" href="<?= e($zurueck) ?>" aria-label="Zurück" title="Zurück">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg>
         </a>
+        <?php if (isset($zurueckKicker)): ?>
+            <span class="kicker">· <?= e($zurueckKicker) ?></span>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
