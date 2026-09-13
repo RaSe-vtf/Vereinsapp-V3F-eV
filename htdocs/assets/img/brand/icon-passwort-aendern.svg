@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 140" role="img" aria-label="Passwort ändern">
+
+<style>
+  .main{fill:none;stroke:#173f68;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+  .thin{fill:none;stroke:#173f68;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+  .pink{fill:none;stroke:#ff3399;stroke-width:5;stroke-linecap:round}
+  .yellow{fill:none;stroke:#fadd06;stroke-width:5;stroke-linecap:round}
+  .blue{fill:none;stroke:#5b9bd5;stroke-width:5;stroke-linecap:round}
+  .fill-navy{fill:#173f68}
+</style>
+
+<rect x="72" y="48" width="58" height="52" rx="10" class="main"/>
+<path d="M84 48V38c0-14 9-24 17-24s17 10 17 24v10" class="main"/>
+<circle cx="101" cy="70" r="5" class="fill-navy"/>
+<path d="M101 75v11" class="thin"/>
+<circle cx="48" cy="74" r="17" class="main"/>
+<path d="M61 84l28 28M78 101l8-8M85 108l8-8" class="main"/>
+<path d="M36 116h24" class="yellow"/>
+<path d="M67 116h26" class="blue"/>
+</svg>

@@ -72,23 +72,20 @@ $mitglied = requireMemberLogin('../login.php');
     <main class="container">
         <div class="kachel-grid">
             <a href="persoenliche-daten.php" class="kachel kachel--rich">
-                <img class="bereich-grafik" src="../assets/img/brand/bereich-meine-daten.svg" alt="">
-                <span class="kachel__accent"><span style="background:#5b9bd5;"></span><span style="background:#ff3399;"></span></span>
+                <img class="bereich-grafik" src="../assets/img/brand/icon-persoenliche-daten.svg" alt="">
                 <span class="kachel__title">Persönliche Daten</span>
                 <span class="kachel__subtitle">Adresse, Kontakt, Foto und Porträt</span>
                 <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
             </a>
             <a href="passwort.php" class="kachel kachel--rich">
-                <img class="bereich-grafik" src="../assets/img/brand/bereich-admin.svg" alt="">
-                <span class="kachel__accent"><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
+                <img class="bereich-grafik" src="../assets/img/brand/icon-passwort-aendern.svg" alt="">
                 <span class="kachel__title">Passwort ändern</span>
                 <span class="kachel__subtitle">Zugangsdaten für dein Konto</span>
                 <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
             </a>
             <?php if ($mitglied['sepa_erteilt_am'] !== null): ?>
                 <a href="bankverbindung.php" class="kachel kachel--rich">
-                    <img class="bereich-grafik" src="../assets/img/brand/bereich-geschaeftsstelle.svg" alt="">
-                    <span class="kachel__accent"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span></span>
+                    <img class="bereich-grafik" src="../assets/img/brand/icon-bankverbindung.svg" alt="">
                     <span class="kachel__title">Bankverbindung</span>
                     <span class="kachel__subtitle">SEPA-Mandat und Kontodaten</span>
                     <span class="kachel__chevron" aria-hidden="true">&rsaquo;</span>
