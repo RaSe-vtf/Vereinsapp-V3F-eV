@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     foto_dateiname VARCHAR(255) NULL,
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
+    lieblingsdisziplin ENUM('schwimmen', 'radfahren', 'laufen') NULL,
     rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
     vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL,
     ist_admin TINYINT(1) NOT NULL DEFAULT 0,
@@ -122,6 +123,7 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_g
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS shirt_groesse VARCHAR(10) NULL AFTER foto_dateiname;
 ALTER TABLE antraege ADD COLUMN IF NOT EXISTS portraet TEXT NULL AFTER shirt_groesse;
 ALTER TABLE beitragsposten ADD COLUMN IF NOT EXISTS ist_startpass TINYINT(1) NOT NULL DEFAULT 0 AFTER rolle;
+ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS lieblingsdisziplin ENUM('schwimmen', 'radfahren', 'laufen') NULL AFTER portraet;
 
 -- Kassenbücher: hochgeladene Kontoauszüge (Vereinskonto) und die daraus
 -- geparsten Einzelbuchungen. Kontostand/Einnahmen/Ausgaben ergeben sich

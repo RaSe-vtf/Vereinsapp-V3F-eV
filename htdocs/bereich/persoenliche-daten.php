@@ -22,6 +22,7 @@ $werte = [
     'instagram' => $mitglied['instagram'] ?? '',
     'shirt_groesse' => $mitglied['shirt_groesse'] ?? '',
     'portraet' => $mitglied['portraet'] ?? '',
+    'lieblingsdisziplin' => $mitglied['lieblingsdisziplin'] ?? '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'daten_aendern') {
@@ -71,6 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'daten
             $datenFehler[] = 'Bitte wähle eine gültige Shirt-Größe.';
         }
 
+        if ($werte['lieblingsdisziplin'] !== '' && !array_key_exists($werte['lieblingsdisziplin'], DISZIPLIN_LABELS)) {
+            $datenFehler[] = 'Bitte wähle eine gültige Lieblingsdisziplin.';
+        }
+
         $neuesFoto = null;
         $fotoDatei = $_FILES['foto'] ?? null;
         if ($fotoDatei !== null && ($fotoDatei['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -92,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'daten
                     vorname = :vorname, nachname = :nachname, geburtsdatum = :geburtsdatum,
                     geburtsort = :geburtsort, strasse_hausnummer = :strasse_hausnummer, plz = :plz,
                     ort = :ort, telefon = :telefon, email = :email, instagram = :instagram,
-                    shirt_groesse = :shirt_groesse, portraet = :portraet
+                    shirt_groesse = :shirt_groesse, portraet = :portraet, lieblingsdisziplin = :lieblingsdisziplin
                     ' . ($neuesFoto !== null ? ', foto_dateiname = :foto_dateiname' : '') . '
                  WHERE id = :id'
             );
@@ -109,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'daten
                 'instagram' => $werte['instagram'] !== '' ? $werte['instagram'] : null,
                 'shirt_groesse' => $werte['shirt_groesse'] !== '' ? $werte['shirt_groesse'] : null,
                 'portraet' => $werte['portraet'] !== '' ? $werte['portraet'] : null,
+                'lieblingsdisziplin' => $werte['lieblingsdisziplin'] !== '' ? $werte['lieblingsdisziplin'] : null,
                 'id' => $mitglied['id'],
             ];
             if ($neuesFoto !== null) {
@@ -235,6 +241,15 @@ if (isset($_GET['daten_gespeichert'])) {
                         <option value="<?= e($groesse) ?>" <?= $werte['shirt_groesse'] === $groesse ? 'selected' : '' ?>><?= e($groesse) ?></option>
                     <?php endforeach; ?>
                 </select>
+
+                <label for="lieblingsdisziplin">Lieblingsdisziplin (optional)</label>
+                <select id="lieblingsdisziplin" name="lieblingsdisziplin">
+                    <option value="">Keine Angabe</option>
+                    <?php foreach (DISZIPLIN_LABELS as $wert => $label): ?>
+                        <option value="<?= e($wert) ?>" <?= $werte['lieblingsdisziplin'] === $wert ? 'selected' : '' ?>><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="hint">Erscheint als hervorgehobenes Symbol auf deinem Sportlerprofil.</div>
 
                 <label for="portraet">Kurzes Porträt zur Vorstellung (optional)</label>
                 <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern kurz etwas über dich ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;"><?= e($werte['portraet']) ?></textarea>

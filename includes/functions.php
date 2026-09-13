@@ -48,6 +48,20 @@ function rollenLabel(string $rolle): string
     return ROLLEN_LABELS[$rolle] ?? $rolle;
 }
 
+const DISZIPLIN_LABELS = [
+    'schwimmen' => 'Schwimmen',
+    'radfahren' => 'Radfahren',
+    'laufen' => 'Laufen',
+];
+
+function disziplinLabel(?string $disziplin): string
+{
+    if ($disziplin === null) {
+        return '';
+    }
+    return DISZIPLIN_LABELS[$disziplin] ?? $disziplin;
+}
+
 // Vorstandsaemter nach § 11 Abs. 2/3 der Satzung - unabhaengig von der
 // Mitgliedschaftsart (rolle). Die ersten drei bilden den geschaeftsfuehrenden
 // Vorstand mit Vertretungsmacht nach § 26 BGB, "beisitzer" den erweiterten

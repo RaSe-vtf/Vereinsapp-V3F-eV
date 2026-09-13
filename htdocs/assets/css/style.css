@@ -1008,6 +1008,71 @@ th {
     font-size: 0.92rem;
 }
 
+.sportler-kachel__accent {
+    display: flex;
+    gap: 5px;
+    align-self: stretch;
+    justify-content: center;
+}
+
+.sportler-kachel__accent span {
+    display: block;
+    width: 22px;
+    height: 4px;
+    border-radius: 999px;
+}
+
+.disziplin-icons {
+    display: flex;
+    gap: 8px;
+}
+
+.disziplin-icons img {
+    width: 20px;
+    height: 20px;
+}
+
+.sportler-kachel .ort {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--farbe-text-soft);
+}
+
+.sportler-kachel .ort svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.sportler-suche {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--farbe-card);
+    border: 1px solid var(--farbe-border);
+    border-radius: 999px;
+    padding: 10px 16px;
+    margin: 12px 0 16px;
+}
+
+.sportler-suche svg {
+    width: 18px;
+    height: 18px;
+    color: var(--farbe-text-soft);
+    flex-shrink: 0;
+}
+
+.sportler-suche input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: transparent;
+}
+
 /* Sportlerprofil: Detailseite */
 .sportlerprofil-kopf {
     display: flex;
