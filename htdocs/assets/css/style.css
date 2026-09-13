@@ -1007,6 +1007,29 @@ body.seite-mit-hintergrundfoto main {
     text-align: center;
 }
 
+/* Querformat-Variante von .kachel--rich: Icon links, Titel/Untertitel/
+   Akzentbalken als Textspalte rechts daneben - fuer die Kassenwart-
+   Unterkacheln (Bankverbindungen, Beitraege, ...). */
+.kachel--horizontal {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 14px;
+    padding: 20px 18px;
+}
+
+.kachel--horizontal .bereich-grafik {
+    max-width: 56px;
+    flex-shrink: 0;
+}
+
+.kachel--horizontal .kachel__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .kachel__accent {
     display: flex;
     gap: 5px;
