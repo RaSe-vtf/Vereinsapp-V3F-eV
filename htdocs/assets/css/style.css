@@ -1030,6 +1030,7 @@ th {
 .disziplin-icons img {
     width: 22px;
     height: 22px;
+    object-fit: contain;
     filter: grayscale(100%);
     opacity: 0.35;
 }
