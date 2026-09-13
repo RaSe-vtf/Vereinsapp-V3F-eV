@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" role="img" aria-label="Kassenwart">
+<style>
+.m{fill:none;stroke:#173f68;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.t{fill:none;stroke:#173f68;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.p{fill:none;stroke:#ff3399;stroke-width:5;stroke-linecap:round}
+.y{fill:none;stroke:#fadd06;stroke-width:5;stroke-linecap:round}
+.b{fill:none;stroke:#5b9bd5;stroke-width:5;stroke-linecap:round}
+</style>
+
+<!-- ledger / account card -->
+<rect x="24" y="22" width="112" height="88" rx="12" class="m"/>
+<path d="M24 48h112" class="t"/>
+
+<!-- clear Euro symbol, large and centered -->
+<path d="M96 65
+         C91 59 84 56 76 56
+         C63 56 53 65 53 78
+         C53 91 63 100 76 100
+         C84 100 91 97 96 91" class="m"/>
+<path d="M46 72h34M46 84h31" class="m"/>
+
+<!-- subtle account lines -->
+<path d="M105 69h16M105 81h16M105 93h11" class="t"/>
+
+<!-- brand accents -->
+<path d="M38 122h22" class="y"/>
+<path d="M69 122h22" class="b"/>
+<path d="M100 122h22" class="p"/>
+</svg>
