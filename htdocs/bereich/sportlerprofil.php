@@ -58,7 +58,7 @@ $zurueck = 'sportlerprofile.php';
                         <?php endif; ?>
                     </div>
                     <?php if ($istEigenesProfil): ?>
-                        <a href="index.php" class="btn btn-secondary" style="margin-top:12px; display:inline-block;">Profil bearbeiten</a>
+                        <a href="persoenliche-daten.php" class="btn btn-secondary" style="margin-top:12px; display:inline-block;">Profil bearbeiten</a>
                     <?php endif; ?>
                 </div>
             </div>
