@@ -125,7 +125,6 @@ $flash = takeFlash();
     $seitenUntertitel = 'Geschäftsstelle';
     $aktivReiter = 'geschaeftsstelle';
     $zurueck = 'index.php';
-    $zurueckKicker = 'Race Control';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 
@@ -134,6 +133,7 @@ $flash = takeFlash();
         <div class="seiten-titel-block">
             <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-mitglieder.svg" alt="">
             <div>
+                <span class="kicker">Race Control</span>
                 <h1 class="seiten-titel-block__titel">Mitglieder</h1>
                 <p class="seiten-titel-block__untertitel">Mitgliederdaten verwalten.</p>
                 <span class="seiten-titel-block__akzent" style="background:#5b9bd5;"></span>

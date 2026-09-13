@@ -70,7 +70,6 @@ $flash = takeFlash();
 $tiefe = '../';
 $aktivReiter = 'geschaeftsstelle';
 $zurueck = 'index.php';
-$zurueckKicker = 'Race Control';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -109,6 +108,7 @@ $zurueckKicker = 'Race Control';
         <div class="seiten-titel-block">
             <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-vereinsdokumente.svg" alt="">
             <div>
+                <span class="kicker">Race Control</span>
                 <h1 class="seiten-titel-block__titel">Vereinsdokumente</h1>
                 <p class="seiten-titel-block__untertitel">Satzung, Ordnungen und wichtige Unterlagen.</p>
                 <span class="seiten-titel-block__akzent" style="background:#5b9bd5;"></span>

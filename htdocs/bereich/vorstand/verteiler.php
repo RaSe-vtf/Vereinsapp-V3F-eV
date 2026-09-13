@@ -72,7 +72,6 @@ $flash = takeFlash();
     $seitenUntertitel = 'Geschäftsstelle';
     $aktivReiter = 'geschaeftsstelle';
     $zurueck = 'index.php';
-    $zurueckKicker = 'Race Control';
     require __DIR__ . '/../../../includes/kopf.php';
     ?>
 
@@ -81,6 +80,7 @@ $flash = takeFlash();
         <div class="seiten-titel-block">
             <img class="seiten-titel-block__icon" src="../../assets/img/brand/icon-email-verteiler.svg" alt="">
             <div>
+                <span class="kicker">Race Control</span>
                 <h1 class="seiten-titel-block__titel">E-Mail-Verteiler</h1>
                 <p class="seiten-titel-block__untertitel">Newsletter und Verteiler verwalten.</p>
                 <span class="seiten-titel-block__akzent" style="background:#fadd06;"></span>
