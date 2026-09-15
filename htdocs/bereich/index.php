@@ -57,7 +57,6 @@ $mitglied = requireMemberLogin('../login.php');
         </div>
 
         <div class="home-hero__content">
-            <span class="kicker">My Transition</span>
             <h2>Meine Daten</h2>
             <p class="home-hero__claim">Persönliche Daten und Mitgliedschaft.</p>
             <div class="home-hero__accent">
