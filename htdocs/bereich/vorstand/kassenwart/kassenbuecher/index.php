@@ -24,23 +24,41 @@ $zurueck = '../index.php';
     <link rel="manifest" href="../../../../manifest.json">
     <meta name="theme-color" content="#1f7a8c">
 </head>
-<body>
+<body class="seite-mit-hintergrundfoto">
     <?php require __DIR__ . '/../../../../../includes/kopf.php'; ?>
 
     <main class="container" style="max-width:1040px;">
 
-        <h2 style="margin-top:0;">Kassenbücher</h2>
+        <div class="seiten-titel-block">
+            <img class="seiten-titel-block__icon" src="../../../../assets/img/brand/icon-kw-kassenbuecher.png" alt="">
+            <div>
+                <span class="kicker">Race Control</span>
+                <h1 class="seiten-titel-block__titel">Kassenbücher</h1>
+                <p class="seiten-titel-block__untertitel">Ein- und Ausgaben erfassen.</p>
+                <span class="seiten-titel-block__akzent" style="background:#5b9bd5;"></span>
+            </div>
+        </div>
 
         <div class="kachel-grid">
-            <a href="vereinskonto.php" class="kachel">
-                <span class="kachel-icon">🏦</span>
-                <span>Vereinskonto</span>
+            <a href="vereinskonto.php" class="kachel kachel--rich kachel--horizontal">
+                <img class="bereich-grafik" src="../../../../assets/img/brand/icon-kw-bankverbindungen.png" alt="">
+                <span class="kachel__text">
+                    <span class="kachel__title">Vereins&shy;konto</span>
+                    <span class="kachel__subtitle">Kontobewegungen buchen</span>
+                    <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
+                </span>
             </a>
-            <a href="barkasse.php" class="kachel">
-                <span class="kachel-icon">💶</span>
-                <span>Barkasse</span>
+            <a href="barkasse.php" class="kachel kachel--rich kachel--horizontal">
+                <img class="bereich-grafik" src="../../../../assets/img/brand/icon-kb-barkasse.png" alt="">
+                <span class="kachel__text">
+                    <span class="kachel__title">Barkasse</span>
+                    <span class="kachel__subtitle">Bargeld-Ein- und -Ausgaben</span>
+                    <span class="kachel__akzent-dreifarbig"><span style="background:#ff3399;"></span><span style="background:#fadd06;"></span><span style="background:#5b9bd5;"></span></span>
+                </span>
             </a>
         </div>
+
+        <div class="seiten-footer-foto" style="background-image:url('../../../../assets/img/brand/footer-kassenbuecher.jpg');" aria-hidden="true"></div>
     </main>
     <script src="../../../../assets/js/menue.js" defer></script>
 </body>
