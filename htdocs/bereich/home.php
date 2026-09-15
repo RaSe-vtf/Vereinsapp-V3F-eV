@@ -54,7 +54,6 @@ $zurueck = null;
         </div>
 
         <div class="home-hero__content">
-            <span class="kicker">My Transition</span>
             <h2>Willkommen, <?= e($mitglied['vorname']) ?></h2>
             <p class="home-hero__claim">Dein Platz im Verein.</p>
             <div class="home-hero__accent">
