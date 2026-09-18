@@ -93,12 +93,13 @@ a {
    links in der ruhigen Bildecke - Formular inklusive, damit die Szene nicht
    von einer grossen weissen Flaeche ueberdeckt wird. */
 .login-hero {
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* Exaktes Seitenverhaeltnis von checkin-hero.jpg (941x1672) statt
+       Bildschirmhoehe - dadurch immer das komplette Foto sichtbar. */
+    aspect-ratio: 941 / 1672;
     max-width: 720px;
     margin: 0 auto;
     background-size: cover;
-    background-position: center top;
+    background-position: center;
     background-repeat: no-repeat;
     padding: 28px 20px;
     box-sizing: border-box;
@@ -174,11 +175,14 @@ a {
    Bildzone. Siehe Master-Prompt in CLAUDE.md. */
 .home-hero {
     position: relative;
-    height: clamp(420px, 128vw, 560px);
+    /* Exaktes Seitenverhaeltnis der Hero-Fotos (971x1619) statt fester
+       Hoehe - dadurch immer das komplette Foto sichtbar, nie oben/unten
+       beschnitten, egal wie breit der Kasten gerade ist. */
+    aspect-ratio: 971 / 1619;
     max-width: 720px;
     margin: 0 auto;
     background-size: cover;
-    background-position: center 15%;
+    background-position: center;
     background-repeat: no-repeat;
     display: flex;
     flex-direction: column;
