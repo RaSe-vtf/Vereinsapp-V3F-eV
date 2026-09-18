@@ -935,17 +935,16 @@ body.seite-mit-hintergrundfoto main {
 }
 
 .seiten-footer-foto {
-    flex: 1;
-    min-height: 220px;
-    /* Obergrenze, damit das Foto auf kurzen Seiten (z.B. Protokolle,
-       Mitglieder mit nur wenig Tabelleninhalt) nicht übermäßig groß wirkt -
-       der restliche Platz bleibt dann schlicht als Seitenhintergrund frei. */
-    max-height: 320px;
+    /* Feste Bildbreite:Hoehe (alle Footer-Fotos sind exakt in diesem
+       Seitenverhaeltnis zugeschnitten) statt Hoehe ueber Flex/Cover zu
+       erzwingen - dadurch ist immer das komplette Foto zu sehen, nie
+       oben/unten beschnitten. */
+    aspect-ratio: 526 / 322;
     /* -64px unten gleicht das eigene padding-bottom von .container aus,
        damit das Foto wirklich bis zum unteren Bildschirmrand reicht. */
     margin: 36px calc(-1 * var(--container-padding-x, 20px)) -64px;
     background-size: cover;
-    background-position: center 30%;
+    background-position: center;
     background-repeat: no-repeat;
     opacity: 0.55;
 }
