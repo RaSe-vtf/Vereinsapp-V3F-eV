@@ -182,6 +182,15 @@ a {
     padding: 16px 20px 28px;
 }
 
+/* Die mobile Hoehe (bis 560px) wirkt auf breiten Desktop-/Laptop-Fenstern
+   unverhaeltnismaessig hoch, weil 128vw dort laengst am oberen Clamp-Limit
+   haengt - ab Tablet-Breite deutlich kompakter. */
+@media (min-width: 700px) {
+    .home-hero {
+        height: 320px;
+    }
+}
+
 .home-hero__topbar {
     display: flex;
     align-items: center;
