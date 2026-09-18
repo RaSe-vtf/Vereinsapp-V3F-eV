@@ -16,18 +16,8 @@
     box-sizing: border-box;
 }
 
-html {
-    background: var(--farbe-bg);
-}
-
-/* Die App bleibt bewusst eine reine Handy-Ansicht, auch auf breiten
-   Laptop-/Desktop-Fenstern - kein eigenes Desktop-Layout. Statt sich auf
-   die volle Fensterbreite zu strecken, bleibt alles (Foto-Hero, Kacheln,
-   Tabellen) auf Telefonbreite begrenzt und steht mittig auf dem
-   Bildschirm, drumherum die App-Hintergrundfarbe. */
 body {
-    margin: 0 auto;
-    max-width: 480px;
+    margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--farbe-bg);
     color: var(--farbe-text);
@@ -183,6 +173,8 @@ a {
 .home-hero {
     position: relative;
     height: clamp(420px, 128vw, 560px);
+    max-width: 720px;
+    margin: 0 auto;
     background-size: cover;
     background-position: center 15%;
     background-repeat: no-repeat;
