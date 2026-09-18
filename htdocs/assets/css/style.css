@@ -16,8 +16,18 @@
     box-sizing: border-box;
 }
 
+html {
+    background: var(--farbe-bg);
+}
+
+/* Die App bleibt bewusst eine reine Handy-Ansicht, auch auf breiten
+   Laptop-/Desktop-Fenstern - kein eigenes Desktop-Layout. Statt sich auf
+   die volle Fensterbreite zu strecken, bleibt alles (Foto-Hero, Kacheln,
+   Tabellen) auf Telefonbreite begrenzt und steht mittig auf dem
+   Bildschirm, drumherum die App-Hintergrundfarbe. */
 body {
-    margin: 0;
+    margin: 0 auto;
+    max-width: 480px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--farbe-bg);
     color: var(--farbe-text);
@@ -180,15 +190,6 @@ a {
     flex-direction: column;
     box-sizing: border-box;
     padding: 16px 20px 28px;
-}
-
-/* Die mobile Hoehe (bis 560px) wirkt auf breiten Desktop-/Laptop-Fenstern
-   unverhaeltnismaessig hoch, weil 128vw dort laengst am oberen Clamp-Limit
-   haengt - ab Tablet-Breite deutlich kompakter. */
-@media (min-width: 700px) {
-    .home-hero {
-        height: 320px;
-    }
 }
 
 .home-hero__topbar {
