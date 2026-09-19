@@ -78,6 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Bitte wähle die gewünschte Mitgliedschaftsart aus.';
     }
 
+    // Instagram, Telefonnummer und Porträttext sind bei der Kindermitgliedschaft
+    // optional, da ein 0-14-jaehriges Kind ueblicherweise weder ein eigenes
+    // Instagram-Profil noch eine eigene Telefonnummer hat.
+    $istKindermitglied = $werte['gewuenschte_rolle'] === 'kindermitglied';
+
     $einVertreter = isset($_POST['ein_vertreter']) ? 1 : 0;
     if ($istMinderjaehrig) {
         if ($werte['vertreter_name'] === '') {
@@ -96,14 +101,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($werte['strasse_hausnummer'] === '') $fehler[] = 'Bitte gib deine Straße und Hausnummer an.';
     if ($werte['plz'] === '' || !preg_match('/^\d{4,5}$/', $werte['plz'])) $fehler[] = 'Bitte gib eine gültige Postleitzahl an.';
     if ($werte['ort'] === '') $fehler[] = 'Bitte gib deinen Wohnort an.';
-    if ($werte['telefon'] === '') $fehler[] = 'Bitte gib deine Telefonnummer an.';
+    if ($werte['telefon'] === '' && !$istKindermitglied) $fehler[] = 'Bitte gib deine Telefonnummer an.';
 
     if ($werte['email'] === '' || !filter_var($werte['email'], FILTER_VALIDATE_EMAIL)) {
         $fehler[] = 'Bitte gib eine gültige E-Mail-Adresse an.';
     }
 
     if ($werte['instagram'] === '') {
-        $fehler[] = 'Bitte gib deinen Instagram-Benutzernamen an.';
+        if (!$istKindermitglied) {
+            $fehler[] = 'Bitte gib deinen Instagram-Benutzernamen an.';
+        }
     } else {
         $werte['instagram'] = ltrim($werte['instagram'], '@');
         if (!preg_match('/^[A-Za-z0-9._]{1,60}$/', $werte['instagram'])) {
@@ -115,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fehler[] = 'Bitte wähle deine Shirt-Größe aus.';
     }
 
-    if ($werte['portraet'] === '') {
+    if ($werte['portraet'] === '' && !$istKindermitglied) {
         $fehler[] = 'Bitte gib ein kurzes Porträt zur Vorstellung an.';
     }
 
@@ -231,6 +238,20 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
                     <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
                 </div>
 
+                <fieldset>
+                    <legend>Gewünschte Mitgliedschaftsart</legend>
+                    <p class="text-muted" style="margin-top:0;">Über die Aufnahme als Vollmitglied entscheidet der Vorstand mit einfacher Mehrheit, über die Aufnahme als Trainings-, Förder- oder Kindermitglied nach freiem Ermessen. Ein Aufnahmeanspruch besteht nicht.</p>
+
+                    <?php foreach (ANTRAG_ROLLEN as $rolleOption): ?>
+                        <label class="inline">
+                            <input type="radio" name="gewuenschte_rolle" value="<?= e($rolleOption) ?>" <?= $werte['gewuenschte_rolle'] === $rolleOption ? 'checked' : '' ?> required>
+                            <span><?= e(rollenLabel($rolleOption)) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </fieldset>
+
+                <hr style="border:none; border-top:2px solid var(--farbe-border); margin:28px 0;">
+
                 <h3 style="margin-bottom:2px;">Für alle Mitglieder sichtbar</h3>
                 <p class="text-muted" style="margin-top:0;">Diese Angaben erscheinen auf deinem Sportlerprofil, das alle Mitglieder von <?= e(vereinNameNowrap()) ?> sehen können.</p>
 
@@ -259,11 +280,11 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
                         </div>
                     </div>
 
-                    <label for="telefon">Telefonnummer</label>
+                    <label for="telefon">Telefonnummer <span class="text-muted" id="telefonOptionalHinweis" hidden>(optional bei Kindermitgliedschaft)</span></label>
                     <input type="tel" id="telefon" name="telefon" value="<?= e($werte['telefon']) ?>" required>
                     <div class="hint">Auf dem Sportlerprofil erscheinen nur die letzten 4 Ziffern (zur WhatsApp-Zuordnung), die vollständige Nummer sieht nur der Vorstand.</div>
 
-                    <label for="instagram">Instagram</label>
+                    <label for="instagram">Instagram <span class="text-muted" id="instagramOptionalHinweis" hidden>(optional bei Kindermitgliedschaft)</span></label>
                     <input type="text" id="instagram" name="instagram" placeholder="dein_benutzername" value="<?= e($werte['instagram']) ?>" required>
 
                     <label for="shirt_groesse">Shirt-Größe</label>
@@ -274,7 +295,7 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
                         <?php endforeach; ?>
                     </select>
 
-                    <label for="portraet">Kurzes Porträt zur Vorstellung</label>
+                    <label for="portraet">Kurzes Porträt zur Vorstellung <span class="text-muted" id="portraetOptionalHinweis" hidden>(optional bei Kindermitgliedschaft)</span></label>
                     <textarea id="portraet" name="portraet" rows="5" placeholder="Erzähl den anderen Mitgliedern etwas über deine sportlichen Vorlieben und Interessen ..." style="width:100%; padding:10px 12px; border:1px solid var(--farbe-border); border-radius:8px; font-family:inherit; font-size:1rem;" required><?= e($werte['portraet']) ?></textarea>
 
                     <label for="foto" style="margin-top:14px;">Foto von dir</label>
@@ -301,18 +322,6 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
 
                     <label for="email">E-Mail-Adresse</label>
                     <input type="email" id="email" name="email" value="<?= e($werte['email']) ?>" required>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Gewünschte Mitgliedschaftsart</legend>
-                    <p class="text-muted" style="margin-top:0;">Über die Aufnahme als Vollmitglied entscheidet der Vorstand mit einfacher Mehrheit, über die Aufnahme als Trainings- oder Fördermitglied nach freiem Ermessen. Ein Aufnahmeanspruch besteht nicht.</p>
-
-                    <?php foreach (ANTRAG_ROLLEN as $rolleOption): ?>
-                        <label class="inline">
-                            <input type="radio" name="gewuenschte_rolle" value="<?= e($rolleOption) ?>" <?= $werte['gewuenschte_rolle'] === $rolleOption ? 'checked' : '' ?> required>
-                            <span><?= e(rollenLabel($rolleOption)) ?></span>
-                        </label>
-                    <?php endforeach; ?>
                 </fieldset>
 
                 <fieldset id="vertreter-fieldset" <?= $vertreterAnzeigen ? '' : 'hidden' ?>>
@@ -393,6 +402,15 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
         (function () {
             var geburtsdatumFeld = document.getElementById('geburtsdatum');
             var vertreterFieldset = document.getElementById('vertreter-fieldset');
+            var rolleRadios = document.querySelectorAll('input[name="gewuenschte_rolle"]');
+            var telefonFeld = document.getElementById('telefon');
+            var instagramFeld = document.getElementById('instagram');
+            var portraetFeld = document.getElementById('portraet');
+            var optionaleFelder = [
+                { feld: telefonFeld, hinweis: document.getElementById('telefonOptionalHinweis') },
+                { feld: instagramFeld, hinweis: document.getElementById('instagramOptionalHinweis') },
+                { feld: portraetFeld, hinweis: document.getElementById('portraetOptionalHinweis') }
+            ];
 
             function istMinderjaehrig(wert) {
                 var geburt = new Date(wert);
@@ -409,11 +427,28 @@ $vertreterAnzeigen = $werte['geburtsdatum'] !== '' && istMinderjaehrig($werte['g
                 return alter < 18;
             }
 
+            function istKindermitglied() {
+                var gewaehlt = document.querySelector('input[name="gewuenschte_rolle"]:checked');
+                return !!gewaehlt && gewaehlt.value === 'kindermitglied';
+            }
+
+            function aktualisiereOptionaleFelder() {
+                var kind = istKindermitglied();
+                optionaleFelder.forEach(function (eintrag) {
+                    eintrag.feld.required = !kind;
+                    eintrag.hinweis.hidden = !kind;
+                });
+            }
+
             function aktualisieren() {
                 vertreterFieldset.hidden = !istMinderjaehrig(geburtsdatumFeld.value);
+                aktualisiereOptionaleFelder();
             }
 
             geburtsdatumFeld.addEventListener('change', aktualisieren);
+            rolleRadios.forEach(function (radio) {
+                radio.addEventListener('change', aktualisieren);
+            });
             aktualisieren();
         })();
     </script>

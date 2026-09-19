@@ -96,6 +96,17 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
     nur einmal vergebbar, das setzt die App durch. Das Impressum zieht die
     Vertretungsberechtigung (§ 26 BGB) jetzt automatisch aus der/dem
     hinterlegten Vorsitzenden.
+  - [x] Kindermitgliedschaft (0–14 Jahre) – erledigt: eigene
+    Mitgliedschaftsart mit 1 €/Monat Beitrag (Beitragsordnung, nicht in
+    der Satzung fixiert – so bleibt eine spätere Anpassung ohne
+    notarielle Satzungsänderung möglich), im Aufnahmeantrag ganz oben
+    auswählbar, Instagram/Telefon/Porträttext dabei optional statt
+    Pflicht. Wechselt taggenau mit 15 automatisch zu Trainingsmitglied
+    (opportunistisch + Cronjob `htdocs/cron/kindermitglieder.php`, siehe
+    `verarbeiteFaelligeKindermitgliedWechsel()` in
+    `includes/functions.php`). Offen beim Nutzer: auch diesen zweiten
+    Cronjob im all-inkl-KAS-Panel einrichten (nutzt denselben
+    `CRON_SECRET` wie `htdocs/cron/austritte.php`).
   - [x] Mitgliederversammlung/Jahreshauptversammlung – bewusst kein
     eigenes Feature in der App (Aufwand/Nutzen), stattdessen vier
     Word-Vorlagen (Einladung, Tagesordnung, Anwesenheitsliste,

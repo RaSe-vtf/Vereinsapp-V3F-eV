@@ -12,12 +12,15 @@ $pdo = getPdo();
 // Startpasskosten. Alles andere (z.B. frueher frei angelegte Posten) wird
 // deaktiviert, damit nur noch diese Positionen im SEPA-Export erscheinen
 // koennen.
+// Kindermitgliedschaft startet lt. Beitragsordnung mit 1 €/Monat statt 0 -
+// alle anderen Rollen weiterhin mit 0 zum manuellen Eintragen.
+$startbetraege = ['kindermitglied' => 1];
 foreach (array_keys(ROLLEN_LABELS) as $rolle) {
     $stmt = $pdo->prepare('SELECT id FROM beitragsposten WHERE rolle = :rolle AND ist_startpass = 0');
     $stmt->execute(['rolle' => $rolle]);
     if (!$stmt->fetch()) {
-        $pdo->prepare('INSERT INTO beitragsposten (bezeichnung, betrag, rolle, ist_startpass) VALUES (:bezeichnung, 0, :rolle, 0)')
-            ->execute(['bezeichnung' => 'Mitgliedsbeitrag ' . ROLLEN_LABELS[$rolle], 'rolle' => $rolle]);
+        $pdo->prepare('INSERT INTO beitragsposten (bezeichnung, betrag, rolle, ist_startpass) VALUES (:bezeichnung, :betrag, :rolle, 0)')
+            ->execute(['bezeichnung' => 'Mitgliedsbeitrag ' . ROLLEN_LABELS[$rolle], 'betrag' => $startbetraege[$rolle] ?? 0, 'rolle' => $rolle]);
     }
 }
 $stmtStartpass = $pdo->query('SELECT id FROM beitragsposten WHERE ist_startpass = 1');
@@ -26,7 +29,7 @@ if (!$stmtStartpass->fetch()) {
 }
 $pdo->exec(
     "UPDATE beitragsposten SET aktiv = 0
-     WHERE (ist_startpass = 0 AND (rolle IS NULL OR rolle NOT IN ('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied')))
+     WHERE (ist_startpass = 0 AND (rolle IS NULL OR rolle NOT IN ('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied')))
         OR (ist_startpass = 1 AND rolle IS NOT NULL)"
 );
 

@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS mitglieder (
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
     lieblingsdisziplin ENUM('schwimmen', 'radfahren', 'laufen') NULL,
-    rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied',
     vorstandsamt ENUM('vorsitz', 'stellv_vorsitz', 'kassenwart', 'beisitzer') NULL,
     ist_admin TINYINT(1) NOT NULL DEFAULT 0,
     passwort_hash VARCHAR(255) NULL,
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS antraege (
     shirt_groesse VARCHAR(10) NULL,
     portraet TEXT NULL,
     passwort_hash VARCHAR(255) NULL,
-    gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied',
+    gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied',
     vertreter_name VARCHAR(200) NULL,
     vertreter_anschrift VARCHAR(300) NULL,
     einverstaendnis_vertreter TINYINT(1) NOT NULL DEFAULT 0,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS beitragsposten (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     bezeichnung VARCHAR(150) NOT NULL,
     betrag DECIMAL(10,2) NOT NULL,
-    rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied') NULL,
+    rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NULL,
     ist_startpass TINYINT(1) NOT NULL DEFAULT 0,
     aktiv TINYINT(1) NOT NULL DEFAULT 1,
     erstellt_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -340,3 +340,11 @@ ALTER TABLE mitglieder ADD COLUMN IF NOT EXISTS vorstandsamt ENUM('vorsitz', 'st
 UPDATE mitglieder SET vorstandsamt = 'beisitzer' WHERE rolle = 'vorstandsmitglied' AND vorstandsamt IS NULL;
 UPDATE mitglieder SET rolle = 'vollmitglied' WHERE rolle = 'vorstandsmitglied';
 ALTER TABLE mitglieder MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied') NOT NULL DEFAULT 'vollmitglied';
+
+-- Kindermitgliedschaft (0-14 Jahre, 1 €/Monat): neue Mitgliedschaftsart.
+-- Wechselt taggenau zum 15. Geburtstag automatisch zu Trainingsmitglied
+-- (siehe verarbeiteFaelligeKindermitgliedWechsel() in includes/functions.php
+-- bzw. den Cronjob htdocs/cron/kindermitglieder.php).
+ALTER TABLE mitglieder MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied';
+ALTER TABLE antraege MODIFY COLUMN gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied';
+ALTER TABLE beitragsposten MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NULL;

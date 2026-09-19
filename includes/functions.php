@@ -41,6 +41,7 @@ const ROLLEN_LABELS = [
     'trainingsmitglied' => 'Trainingsmitglied',
     'ehrenmitglied' => 'Ehrenmitglied',
     'foerdermitglied' => 'Fördermitglied',
+    'kindermitglied' => 'Kindermitglied (0–14 Jahre)',
 ];
 
 function rollenLabel(string $rolle): string
@@ -101,7 +102,7 @@ function holeAktuelleVorsitzende(PDO $pdo): ?string
 // Mitgliedschaftsarten, die im Aufnahmeantrag zur Auswahl stehen -
 // Ehren- und Vorstandsmitglied werden nicht beantragt, sondern vom Verein
 // separat vergeben.
-const ANTRAG_ROLLEN = ['vollmitglied', 'trainingsmitglied', 'foerdermitglied'];
+const ANTRAG_ROLLEN = ['vollmitglied', 'trainingsmitglied', 'foerdermitglied', 'kindermitglied'];
 
 /**
  * Prueft, ob eine Person anhand ihres Geburtsdatums zum Stichtag (Default:
@@ -158,6 +159,26 @@ function verarbeiteFaelligeAustritte(PDO $pdo): int
         "UPDATE mitglieder
          SET aktiv = 0, ausgetreten_am = NOW()
          WHERE aktiv = 1 AND austrittsdatum IS NOT NULL AND austrittsdatum <= CURDATE()"
+    );
+    $stmt->execute();
+    return $stmt->rowCount();
+}
+
+/**
+ * Wechselt Kindermitglieder (0-14 Jahre) taggenau am 15. Geburtstag
+ * automatisch zu Trainingsmitglied. Wird wie verarbeiteFaelligeAustritte()
+ * sowohl opportunistisch (bei Aufruf der Mitgliederverwaltung/des
+ * Bankbereichs) als auch vom Cronjob aufgerufen - nicht-destruktiv und
+ * beliebig oft wiederholbar. Gibt die Anzahl der gewechselten Mitglieder
+ * zurueck.
+ */
+function verarbeiteFaelligeKindermitgliedWechsel(PDO $pdo): int
+{
+    $stmt = $pdo->prepare(
+        "UPDATE mitglieder
+         SET rolle = 'trainingsmitglied'
+         WHERE aktiv = 1 AND rolle = 'kindermitglied'
+           AND geburtsdatum <= DATE_SUB(CURDATE(), INTERVAL 15 YEAR)"
     );
     $stmt->execute();
     return $stmt->rowCount();

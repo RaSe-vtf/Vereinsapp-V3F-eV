@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion'], $_POST['id'
 }
 
 verarbeiteFaelligeAustritte($pdo);
+verarbeiteFaelligeKindermitgliedWechsel($pdo);
 
 $mitgliederListe = $pdo->query(
     'SELECT m.*, a.einverstaendnis_bildnutzung

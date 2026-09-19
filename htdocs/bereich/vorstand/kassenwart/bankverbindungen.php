@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../../../includes/auth.php';
 $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $pdo = getPdo();
 verarbeiteFaelligeAustritte($pdo);
+verarbeiteFaelligeKindermitgliedWechsel($pdo);
 
 $mitgliederListe = $pdo->query(
     "SELECT vorname, nachname, rolle, vorstandsamt, ist_admin, sepa_kontoinhaber, sepa_iban, sepa_bic, sepa_mandatsreferenz, sepa_erteilt_am

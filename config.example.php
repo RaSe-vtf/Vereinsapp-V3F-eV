@@ -43,9 +43,12 @@ define('SEPA_GLAEUBIGER_ID', 'DE00ZZZ00000000000');
 define('VEREIN_IBAN', 'DE00000000000000000000');
 define('VEREIN_BIC', '');
 
-// --- Cronjob: automatische Verarbeitung fälliger Mitglieder-Austritte ---
-// Frei gewähltes Geheimwort, das den Cronjob-Aufruf (htdocs/cron/austritte.php)
-// vor externem Missbrauch schützt. Hier durch ein eigenes, langes Zufallswort
-// ersetzen und dasselbe Wort in der Cronjob-URL im all-inkl KAS-Panel
-// verwenden, z.B.: https://vonsystrifamilyev.de/cron/austritte.php?token=DEIN_GEHEIMWORT
+// --- Cronjobs: automatische Verarbeitung fälliger Mitglieder-Austritte und
+// des Rollenwechsels von Kindermitgliedern ---
+// Frei gewähltes Geheimwort, das die Cronjob-Aufrufe (htdocs/cron/austritte.php
+// und htdocs/cron/kindermitglieder.php) vor externem Missbrauch schützt. Hier
+// durch ein eigenes, langes Zufallswort ersetzen und dasselbe Wort in beiden
+// Cronjob-URLs im all-inkl KAS-Panel verwenden, z.B.:
+// https://vonsystrifamilyev.de/cron/austritte.php?token=DEIN_GEHEIMWORT
+// https://vonsystrifamilyev.de/cron/kindermitglieder.php?token=DEIN_GEHEIMWORT
 define('CRON_SECRET', 'HIER_EIGENES_GEHEIMWORT_EINTRAGEN');

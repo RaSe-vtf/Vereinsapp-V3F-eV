@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../../../includes/auth.php';
 $mitglied = requireVorstand('../../../login.php', '../../index.php');
 $pdo = getPdo();
 verarbeiteFaelligeAustritte($pdo);
+verarbeiteFaelligeKindermitgliedWechsel($pdo);
 
 $fehler = [];
 $ausgewaehlteIds = [];
