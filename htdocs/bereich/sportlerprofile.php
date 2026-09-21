@@ -31,10 +31,13 @@ $mitgliederListe = $pdo->query(
          1:1 aus kopf.php uebernommen. Foto-Hero analog zu login.php,
          home.php und der Meine-Daten-Seite. Siehe Master-Prompt in
          CLAUDE.md. -->
-    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1339
+    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1079
          statt 971x1619) - die anderen Seiten mit .home-hero behalten das
-         Standard-Seitenverhaeltnis aus style.css unveraendert. -->
-    <div class="home-hero" style="background-image:url('../assets/img/brand/sportlerprofile-hero.jpg?v=<?= cacheV('assets/img/brand/sportlerprofile-hero.jpg') ?>'); aspect-ratio: 971 / 1339;">
+         Standard-Seitenverhaeltnis aus style.css unveraendert. Unten
+         zusaetzlich gekuerzt (nicht nur oben wie bei den anderen Fotos),
+         da dort nur noch unauffaellige Neopren-Flaeche ohne Bildinformation
+         war. -->
+    <div class="home-hero" style="background-image:url('../assets/img/brand/sportlerprofile-hero.jpg?v=<?= cacheV('assets/img/brand/sportlerprofile-hero.jpg') ?>'); aspect-ratio: 971 / 1079;">
         <div class="home-hero__topbar">
             <a href="home.php" class="home-hero__brand" aria-label="Startseite">
                 <img class="home-hero__logo" src="../assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
