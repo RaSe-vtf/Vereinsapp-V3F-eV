@@ -30,7 +30,10 @@ $zurueck = null;
          damit alle anderen Seiten unveraendert bleiben. Menue-Funktion
          1:1 aus kopf.php uebernommen. Foto-Hero statt flacher Kopfzeile,
          analog zu login.php. Siehe Master-Prompt in CLAUDE.md. -->
-    <div class="home-hero" style="background-image:url('../assets/img/brand/transition-hero.jpg');">
+    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1320
+         statt 971x1619) - die anderen drei Seiten mit .home-hero behalten
+         das Standard-Seitenverhaeltnis aus style.css unveraendert. -->
+    <div class="home-hero" style="background-image:url('../assets/img/brand/transition-hero.jpg'); aspect-ratio: 971 / 1320;">
         <div class="home-hero__topbar">
             <a href="home.php" class="home-hero__brand" aria-label="Startseite">
                 <img class="home-hero__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
