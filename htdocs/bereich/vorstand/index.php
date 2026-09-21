@@ -29,10 +29,13 @@ $zurueck = '../home.php';
          damit alle anderen Seiten unveraendert bleiben. Menue-Funktion
          1:1 aus kopf.php uebernommen. Foto-Hero analog zu den anderen
          umgestellten Seiten. Siehe Master-Prompt in CLAUDE.md. -->
-    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1500
-         statt 971x1620) - die anderen Seiten mit .home-hero behalten das
-         Standard-Seitenverhaeltnis aus style.css unveraendert. -->
-    <div class="home-hero" style="background-image:url('../../assets/img/brand/geschaeftsstelle-hero.jpg?v=<?= cacheV('assets/img/brand/geschaeftsstelle-hero.jpg') ?>'); aspect-ratio: 971 / 1440;">
+    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1250
+         statt 971x1620) - oben wegen hoher Kopfposition nur moderat, unten
+         zusaetzlich auf Screenshot-Vorgabe gekuerzt (das "RACE CONTROL"-
+         Schild auf dem Tisch faellt weg, da inhaltlich redundant zum
+         eigenen Seitentitel). Die anderen Seiten mit .home-hero behalten
+         das Standard-Seitenverhaeltnis aus style.css unveraendert. -->
+    <div class="home-hero" style="background-image:url('../../assets/img/brand/geschaeftsstelle-hero.jpg?v=<?= cacheV('assets/img/brand/geschaeftsstelle-hero.jpg') ?>'); aspect-ratio: 971 / 1250;">
         <div class="home-hero__topbar">
             <a href="../home.php" class="home-hero__brand" aria-label="Startseite">
                 <img class="home-hero__logo" src="../../assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
@@ -59,7 +62,7 @@ $zurueck = '../home.php';
         <div class="home-hero__content">
             <span class="kicker">Race Control</span>
             <h2>Geschäftsstelle</h2>
-            <p class="home-hero__claim">Alles, was den Verein organisiert.</p>
+            <p class="home-hero__claim" style="max-width:none; white-space:nowrap;">Alles, was den Verein organisiert.</p>
             <div class="home-hero__accent">
                 <span style="background:#5b9bd5;"></span>
                 <span style="background:#ff3399;"></span>
