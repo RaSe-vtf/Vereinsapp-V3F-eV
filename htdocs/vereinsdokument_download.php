@@ -28,7 +28,7 @@ $format = strtoupper(pathinfo($dokument['dateiname'], PATHINFO_EXTENSION));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Download &ndash; <?= e(APP_NAME) ?></title>
-    <link rel="stylesheet" href="assets/css/style.css?v=10">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= cacheV('assets/css/style.css') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
@@ -38,7 +38,7 @@ $format = strtoupper(pathinfo($dokument['dateiname'], PATHINFO_EXTENSION));
 <body>
     <header class="top-header">
         <div class="top-header__inner">
-            <img class="top-header__logo" src="assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+            <img class="top-header__logo" src="assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
             <div class="top-header__title"><?= e(APP_NAME) ?></div>
         </div>
     </header>

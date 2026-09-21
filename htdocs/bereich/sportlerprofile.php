@@ -18,7 +18,7 @@ $mitgliederListe = $pdo->query(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sportlerprofile &ndash; <?= e(APP_NAME) ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css?v=10">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= cacheV('assets/css/style.css') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
@@ -31,10 +31,10 @@ $mitgliederListe = $pdo->query(
          1:1 aus kopf.php uebernommen. Foto-Hero analog zu login.php,
          home.php und der Meine-Daten-Seite. Siehe Master-Prompt in
          CLAUDE.md. -->
-    <div class="home-hero" style="background-image:url('../assets/img/brand/sportlerprofile-hero.jpg');">
+    <div class="home-hero" style="background-image:url('../assets/img/brand/sportlerprofile-hero.jpg?v=<?= cacheV('assets/img/brand/sportlerprofile-hero.jpg') ?>');">
         <div class="home-hero__topbar">
             <a href="home.php" class="home-hero__brand" aria-label="Startseite">
-                <img class="home-hero__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <img class="home-hero__logo" src="../assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
                 <span class="home-hero__title"><?= e(APP_NAME) ?></span>
             </a>
             <a class="home-hero__back" href="home.php" aria-label="Zurück" title="Zurück">

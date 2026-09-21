@@ -18,7 +18,7 @@ $zurueck = null;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Start &ndash; <?= e(APP_NAME) ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css?v=10">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= cacheV('assets/css/style.css') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
@@ -33,10 +33,10 @@ $zurueck = null;
     <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1320
          statt 971x1619) - die anderen drei Seiten mit .home-hero behalten
          das Standard-Seitenverhaeltnis aus style.css unveraendert. -->
-    <div class="home-hero" style="background-image:url('../assets/img/brand/transition-hero.jpg'); aspect-ratio: 971 / 1320;">
+    <div class="home-hero" style="background-image:url('../assets/img/brand/transition-hero.jpg?v=<?= cacheV('assets/img/brand/transition-hero.jpg') ?>'); aspect-ratio: 971 / 1320;">
         <div class="home-hero__topbar">
             <a href="home.php" class="home-hero__brand" aria-label="Startseite">
-                <img class="home-hero__logo" src="../assets/img/logo.jpg" alt="Logo <?= e(VEREIN_NAME) ?>">
+                <img class="home-hero__logo" src="../assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
                 <span class="home-hero__title"><?= e(APP_NAME) ?></span>
             </a>
             <div class="menu-wrapper">
@@ -105,7 +105,7 @@ $zurueck = null;
         </div>
 
         <div class="home-footer">
-            <img class="home-footer__image" src="../assets/img/brand/footer-swim-bike-run.jpg" alt="" aria-hidden="true">
+            <img class="home-footer__image" src="../assets/img/brand/footer-swim-bike-run.jpg?v=<?= cacheV('assets/img/brand/footer-swim-bike-run.jpg') ?>" alt="" aria-hidden="true">
         </div>
     </main>
     <script src="../assets/js/menue.js" defer></script>

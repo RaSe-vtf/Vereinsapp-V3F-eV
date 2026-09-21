@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mitglieder-Login &ndash; <?= e(APP_NAME) ?></title>
-    <link rel="stylesheet" href="assets/css/style.css?v=10">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= cacheV('assets/css/style.css') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16.png">
     <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          sichtbar, nur eine kompakte, halbtransparente Karte liegt oben links
          in der ruhigen Bildecke - sie deckt bewusst nicht die ganze Szene ab.
          Siehe Master-Prompt in CLAUDE.md. -->
-    <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg');">
+    <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg?v=<?= cacheV('assets/img/brand/checkin-hero.jpg') ?>');">
         <div class="login-hero__card">
             <div class="login-hero__brand">
                 <img src="assets/img/brand/logo-wing-v-full-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">

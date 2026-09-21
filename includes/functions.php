@@ -7,6 +7,21 @@ function e(string $value): string
 }
 
 /**
+ * Cache-Buster fuer statische Dateien (CSS, Bilder): haengt automatisch das
+ * Aenderungsdatum der Datei auf dem Server als ?v=... an, damit Browser nach
+ * dem Austauschen einer Datei garantiert neu laden - ohne dass irgendwo von
+ * Hand eine Versionsnummer hochgezaehlt werden muss (das wurde frueher schon
+ * mal vergessen). $pfadAbHtdocs ist der Pfad ab htdocs/, z.B.
+ * "assets/css/style.css" oder "assets/img/brand/transition-hero.jpg".
+ */
+function cacheV(string $pfadAbHtdocs): int
+{
+    $absolut = __DIR__ . '/../htdocs/' . $pfadAbHtdocs;
+    $zeit = @filemtime($absolut);
+    return $zeit !== false ? $zeit : time();
+}
+
+/**
  * Vereinsname mit geschuetzten Leerzeichen, damit er auf Bildschirmtext
  * nie umbricht und immer als ein zusammenhaengendes "Wort" erscheint.
  */
