@@ -55,7 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          sichtbar, nur eine kompakte, halbtransparente Karte liegt oben links
          in der ruhigen Bildecke - sie deckt bewusst nicht die ganze Szene ab.
          Siehe Master-Prompt in CLAUDE.md. -->
-    <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg?v=<?= cacheV('assets/img/brand/checkin-hero.jpg') ?>');">
+    <!-- Eigenes, kuerzeres Seitenverhaeltnis fuer dieses Foto (941x1322
+         statt 941x1672) - .login-hero wird ausschliesslich auf dieser
+         Seite verwendet, daher kein Konflikt mit anderen Seiten. -->
+    <div class="login-hero" style="background-image:url('assets/img/brand/checkin-hero.jpg?v=<?= cacheV('assets/img/brand/checkin-hero.jpg') ?>'); aspect-ratio: 941 / 1322;">
         <div class="login-hero__card">
             <div class="login-hero__brand">
                 <img src="assets/img/brand/logo-wing-v-full-blue.svg" alt="Logo <?= e(VEREIN_NAME) ?>">
