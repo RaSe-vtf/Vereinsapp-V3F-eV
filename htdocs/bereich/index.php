@@ -30,10 +30,11 @@ $mitglied = requireMemberLogin('../login.php');
          Unterseiten (persoenliche-daten.php, passwort.php,
          bankverbindung.php) - vorher war das eine einzige, sehr lange
          Seite mit allen drei Formularen untereinander. -->
-    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1370
-         statt 971x1619) - die anderen Seiten mit .home-hero behalten das
-         Standard-Seitenverhaeltnis aus style.css unveraendert. -->
-    <div class="home-hero" style="background-image:url('../assets/img/brand/meine-daten-hero.jpg?v=<?= cacheV('assets/img/brand/meine-daten-hero.jpg') ?>'); aspect-ratio: 971 / 1370;">
+    <!-- Eigenes, kuerzeres Seitenverhaeltnis nur fuer dieses Foto (971x1176
+         statt 971x1619) - oben wegen des leeren Himmels gekuerzt, unten
+         zusaetzlich auf Screenshot-Vorgabe (rote Markierung), da dort nur
+         noch bildinformationsarme Flaeche stand. -->
+    <div class="home-hero" style="background-image:url('../assets/img/brand/meine-daten-hero.jpg?v=<?= cacheV('assets/img/brand/meine-daten-hero.jpg') ?>'); aspect-ratio: 971 / 1176;">
         <div class="home-hero__topbar">
             <a href="home.php" class="home-hero__brand" aria-label="Startseite">
                 <img class="home-hero__logo" src="../assets/img/logo.jpg?v=<?= cacheV('assets/img/logo.jpg') ?>" alt="Logo <?= e(VEREIN_NAME) ?>">
