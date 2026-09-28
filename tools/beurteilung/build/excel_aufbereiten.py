@@ -195,6 +195,7 @@ def berichtige_notenblatt(ws, protokoll):
         kopfzelle.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         ws.cell(kopf + 1, col, "x = erstellen").font = HINWEIS
         ws.column_dimensions[get_column_letter(col)].width = 7
+        sp["pdf"] = col
         dv = DataValidation(type="list", formula1='"x"', allow_blank=True)
         dv.add(f"{get_column_letter(col)}{erste}:{get_column_letter(col)}{LETZTE_ZEILE}")
         ws.add_data_validation(dv)
@@ -202,6 +203,14 @@ def berichtige_notenblatt(ws, protokoll):
             if ws.cell(r, sp["name"]).value:
                 ws.cell(r, col).alignment = Alignment(horizontal="center")
         protokoll.append(f"{ws.title}: Spalte „PDF“ ({get_column_letter(col)}) zum Markieren einzelner Mitarbeiter ergaenzt")
+    # Auf vielen Blaettern sind die Spalten rechts von "Teilzeit" ausgeblendet –
+    # die PDF-Spalte muss trotzdem sichtbar sein.
+    for k, c in sp.items():
+        if k.startswith("pdf"):
+            dim = ws.column_dimensions[get_column_letter(c)]
+            if dim.hidden:
+                dim.hidden = False
+                protokoll.append(f"{ws.title}: Spalte „PDF“ war ausgeblendet – eingeblendet")
 
 
 def berichtige_kopierfehler(wb, ist_gd, protokoll):
