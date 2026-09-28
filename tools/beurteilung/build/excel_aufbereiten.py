@@ -364,7 +364,8 @@ def sortiere_tabelle(ws, kopf, protokoll):
     reihenfolge = [s for s, _ in ZIELREIHENFOLGE if s in alt]
     zuordnung = {alt[s]: i + 1 for i, s in enumerate(reihenfolge)}
     if all(a == n for a, n in zuordnung.items()):
-        return  # schon sortiert
+        gestalte_tabelle(ws, kopf, alt, max(zuordnung))  # schon sortiert – nur Darstellung
+        return
     breite = max(zuordnung)
     if sorted(zuordnung) != list(range(1, breite + 1)):
         sys.exit(f"{ws.title}: Tabellenspalten nicht lückenlos – Umsortieren abgebrochen")
@@ -462,9 +463,23 @@ def sortiere_tabelle(ws, kopf, protokoll):
             if b > a:
                 ws.merge_cells(start_row=erste_zeile, start_column=a, end_row=erste_zeile, end_column=b)
 
-    # 7) Tabelle einheitlich durchzeichnen: duenn innen, kraeftig aussen und an Gruppengrenzen
-    grenzen = {neu[s] for s in ("name", "funktion", "n11", "summe", "alb", "teilzeit", "pdf") if s in neu}
-    ende = letzte_tabellenzeile(ws, kopf, {"name": neu["name"]})
+    # 7) Darstellung: Linien, Umbruch, Zeilenhoehen
+    gestalte_tabelle(ws, kopf, neu, breite)
+
+    protokoll.append(f"{ws.title}: Spalten nach Reihenfolge der Beurteilung sortiert: "
+                     + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, breite + 1)))
+
+
+LINKSBUENDIG = ("name", "vorname", "funktion", "koop", "bemerkungen")
+ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
+
+
+def gestalte_tabelle(ws, kopf, pos, breite):
+    """Linien (duenn innen, kraeftig aussen/an Gruppengrenzen), Zeilenumbruch in allen
+    Zellen und an den Inhalt angepasste Zeilenhoehen – nichts ragt in Nachbarzellen."""
+    grenzen = {pos[s] for s in ("name", "funktion", "n11", "summe", "alb", "teilzeit", "pdf") if s in pos}
+    ende = letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
+    links_spalten = {pos[s] for s in LINKSBUENDIG if s in pos}
     for r in range(kopf, ende + 1):
         for c in range(1, breite + 1):
             z = ws.cell(r, c)
@@ -473,11 +488,28 @@ def sortiere_tabelle(ws, kopf, protokoll):
             oben = Side(style="medium") if r == kopf else DUENN_SCHWARZ
             unten = Side(style="medium") if r in (kopf, ende) else DUENN_SCHWARZ
             z.border = Border(left=links, right=rechts, top=oben, bottom=unten)
+            if r >= kopf + 2:
+                al = copy(z.alignment)
+                horizontal = "left" if c in links_spalten else al.horizontal
+                z.alignment = Alignment(horizontal=horizontal, vertical="center", wrap_text=True,
+                                        text_rotation=al.text_rotation, indent=al.indent)
+    # Zeilenhoehe aus dem laengsten Text der Zeile schaetzen (Excel passt bei
+    # gespeicherten Hoehen nicht selbst an)
+    breiten = {c: (ws.column_dimensions[get_column_letter(c)].width or 8.43) for c in range(1, breite + 1)}
+    for r in range(kopf + 2, ende + 1):
+        zeilen = 1
+        for c in range(1, breite + 1):
+            v = ws.cell(r, c).value
+            if isinstance(v, str) and not v.startswith("="):
+                pro_zeile = max(1, int(breiten[c] * 1.3))
+                zeilen = max(zeilen, sum(max(1, -(-len(t) // pro_zeile)) for t in v.split("\n")))
+        d = ws.row_dimensions[r]
+        if zeilen > 1:
+            d.height = round(zeilen * ZEILE_PT + 2, 1)
+        else:
+            d.height = None
     if ws.auto_filter.ref:
         ws.auto_filter.ref = f"A{kopf + 1}:{get_column_letter(breite)}{ende}"
-
-    protokoll.append(f"{ws.title}: Spalten nach Reihenfolge der Beurteilung sortiert: "
-                     + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, breite + 1)))
 
 
 def letzte_tabellenzeile(ws, kopf, sp):
