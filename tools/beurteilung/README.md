@@ -71,6 +71,12 @@ BPOL 4 00 069: `f.funktion.1`, `f.funktion.2`, `f.taetigkeit.1`) und schreibt si
 Blatt „Funktionen“ (gleichnamige ersetzt, neue angehängt, sortiert nach Wertigkeit).
 Die Profile selbst liegen nicht im Repository.
 
+Die Notenblätter werden dabei in die Reihenfolge des Vordrucks sortiert
+(Personalangaben, Zug, Funktion, Beteiligung, Schwerbehinderung, Teilnoten,
+Gesamtnote; danach Subsidiärmerkmale, frühere Beurteilungen, Teilzeit, „PDF“
+zuletzt). Alle Formelbezüge, Auswahllisten, Breiten und Gruppenüberschriften
+werden mit umgesetzt; die Punktetabelle (A1 = 6 … C = 1) liegt ausgeblendet rechts.
+
 `excel_aufbereiten.py` ist wiederholbar: über eine schon aufbereitete Datei
 laufen gelassen, bleiben Startseite, Beurteiler und Einstellungen erhalten.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst

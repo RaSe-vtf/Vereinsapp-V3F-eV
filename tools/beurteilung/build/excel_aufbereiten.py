@@ -21,7 +21,9 @@ from copy import copy
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Side
-from openpyxl.utils import get_column_letter
+from openpyxl.formula.tokenizer import Token, Tokenizer
+from openpyxl.utils import column_index_from_string, get_column_letter
+from openpyxl.worksheet.cell_range import MultiCellRange
 from openpyxl.worksheet.datavalidation import DataValidation
 
 START = "Beurteilungen erstellen"
@@ -190,6 +192,9 @@ def berichtige_notenblatt(ws, protokoll):
     # vorkommen, "PDF" (Markierung) immer als letzte Spalte.
     ordne_tool_spalten(ws, kopf, sp, erste, protokoll)
 
+    # Gesamte Tabelle in die Reihenfolge des Vordrucks bringen
+    sortiere_tabelle(ws, kopf, protokoll)
+
 
 TOOL_SPALTEN = [
     # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
@@ -209,6 +214,10 @@ def ordne_tool_spalten(ws, kopf, sp, erste, protokoll):
         for tn in titel_norm:
             if k == tn or (tn == "pdf" and k.startswith("pdf")):
                 vorhanden[tn] = c
+    if len(vorhanden) == len(TOOL_SPALTEN):
+        for c in vorhanden.values():
+            einblenden(ws, c)
+        return  # schon angelegt – Position regelt sortiere_tabelle()
     ende = max(ws.max_row, LETZTE_ZEILE)
     # Werte sichern (Zeile unter der Kopfzeile ist die Hinweiszeile)
     werte = {tn: {r: ws.cell(r, c).value for r in range(erste, ende + 1)} for tn, c in vorhanden.items()}
@@ -266,6 +275,209 @@ def ordne_tool_spalten(ws, kopf, sp, erste, protokoll):
     if [vorhanden.get(norm(t[0])) for t in TOOL_SPALTEN] != ziel:
         protokoll.append(f"{ws.title}: Spalten {get_column_letter(ziel[0])}–{get_column_letter(ziel[-1])}: "
                          + ", ".join(t[0] for t in TOOL_SPALTEN) + " (Reihenfolge wie im Vordruck, PDF zuletzt)")
+
+
+# Zielreihenfolge der Notenblaetter: zuerst alles in der Reihenfolge, in der es
+# im Vordruck vorkommt, danach die nur informatorischen Spalten, "PDF" zuletzt.
+# (Schluessel, Erkennung ueber die Kopfzeile)
+ZIELREIHENFOLGE = [
+    ("lfdnr", lambda k: k == "lfd.nr."),
+    ("name", lambda k: k == "name"),
+    ("vorname", lambda k: k == "vorname"),
+    ("geb", lambda k: k.startswith("geb")),
+    ("amtsbez", lambda k: k.startswith("amtsbez")),
+    ("geschlecht", lambda k: k == "geschlecht"),
+    ("ernennung", lambda k: k.startswith("datum der ernennung")),
+    ("zug", lambda k: k == "zug"),
+    ("funktion", lambda k: k == "funktion"),
+    ("koop", lambda k: k.startswith("kooperation")),
+    ("gespraech", lambda k: k.startswith("gespräch vor")),
+    ("sbh", lambda k: k.startswith("schwerbehind")),
+    ("n11", lambda k: k.startswith("1.1")),
+    ("n2", lambda k: k.startswith("2.")),
+    ("n42", lambda k: k.startswith("4.2")),
+    ("n43", lambda k: k.startswith("4.3")),
+    ("neue_rbu", lambda k: k == "neue rbu"),
+    ("summe", lambda k: k == "summe"),
+    ("monate", lambda k: k == "monate"),
+    ("beginn", lambda k: k.startswith("beginn dienstzeit") or k.startswith("datum der verleihung")),
+    ("monate_halb", lambda k: k.startswith("monate (zur")),
+    ("ges", lambda k: k == "ges."),
+    ("bemerkungen", lambda k: k == "bemerkungen"),
+    ("alb", lambda k: k == "aktueller alb"),
+    ("alb_amt", None),            # "im Statusamt eines" rechts neben "aktueller ALB"
+    ("letzte_rbu", lambda k: k == "letzte rbu"),
+    ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
+    ("teilzeit", lambda k: k == "teilzeit"),
+    ("pdf", lambda k: k.startswith("pdf")),
+]
+GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
+    ("Subsidiärmerkmale ", "summe", "bemerkungen"),
+    ("letzte Beurteilung", "alb", "alb_amt"),
+    ("vorletzte Beurteilung", "letzte_rbu", "letzte_rbu_amt"),
+]
+_REF = re.compile(r"^(\$?)([A-Z]{1,3})(\$?)(\d+)$")
+
+
+def _bezug_umsetzen(ref, zuordnung, feste_zeilen, erste_zeile):
+    """Setzt einen Zellbezug (A1 oder A1:B2) nach der Spaltenzuordnung um."""
+    teile = ref.split(":")
+    m = [_REF.match(t) for t in teile]
+    if not all(m):
+        return ref
+    zeile0 = int(m[0].group(4))
+    if zeile0 < erste_zeile or zeile0 in feste_zeilen:
+        return ref  # Statistikbereich oben bzw. Notentabelle (A1 = 6 ...) bleiben stehen
+    spalten = [column_index_from_string(x.group(2)) for x in m]
+    neu = [zuordnung.get(c, c) for c in spalten]
+    if len(neu) == 2 and neu[1] - neu[0] != spalten[1] - spalten[0]:
+        raise ValueError(f"Bereich {ref} würde beim Umsortieren zerrissen")
+    return ":".join(f"{x.group(1)}{get_column_letter(c)}{x.group(3)}{x.group(4)}" for x, c in zip(m, neu))
+
+
+def _formel_umsetzen(formel, zuordnung, feste_zeilen, erste_zeile):
+    tok = Tokenizer(formel)
+    for t in tok.items:
+        if t.type == Token.OPERAND and t.subtype == Token.RANGE and "!" not in t.value:
+            t.value = _bezug_umsetzen(t.value, zuordnung, feste_zeilen, erste_zeile)
+    return tok.render()
+
+
+def sortiere_tabelle(ws, kopf, protokoll):
+    """Sortiert die Spalten der Tabelle nach ZIELREIHENFOLGE und schreibt alle Bezuege um."""
+    sp_liste = [(c.column, norm(c.value)) for c in ws[kopf] if c.value is not None]
+    alt = {}
+    for schluessel, erkennung in ZIELREIHENFOLGE:
+        if erkennung is None:
+            continue
+        for c, k in sp_liste:
+            if erkennung(k) and c not in alt.values():
+                alt[schluessel] = c
+                break
+    for basis in ("alb", "letzte_rbu"):
+        if basis in alt and norm(ws.cell(kopf, alt[basis] + 1).value).startswith("im status"):
+            alt[basis + "_amt"] = alt[basis] + 1
+    bekannt = set(alt.values())
+    unbekannt = [(c, k) for c, k in sp_liste if c not in bekannt and c <= max(bekannt)]
+    if unbekannt:
+        sys.exit(f"{ws.title}: unbekannte Spalte(n) {unbekannt} – Umsortieren abgebrochen")
+    reihenfolge = [s for s, _ in ZIELREIHENFOLGE if s in alt]
+    zuordnung = {alt[s]: i + 1 for i, s in enumerate(reihenfolge)}
+    if all(a == n for a, n in zuordnung.items()):
+        return  # schon sortiert
+    breite = max(zuordnung)
+    if sorted(zuordnung) != list(range(1, breite + 1)):
+        sys.exit(f"{ws.title}: Tabellenspalten nicht lückenlos – Umsortieren abgebrochen")
+
+    erste_zeile = kopf - 1  # Zeile der Gruppenueberschriften
+    feste_zeilen = {r for r in range(kopf + 1, ws.max_row + 1)
+                    if ws.cell(r, 1).value in ("A1", "A2", "B1", "B2", "B3", "C")
+                    and isinstance(ws.cell(r, 2).value, (int, float))}
+
+    # 0) Punktetabelle (A1 = 6 ... C = 1) aus den Spalten A/B in ausgeblendete
+    #    Hilfsspalten rechts verlegen – Spalte B wird sonst zur Namensspalte.
+    if feste_zeilen:
+        ziel_a = max(ws.max_column, 34) + 2
+        for r in sorted(feste_zeilen):
+            for alt_c, neu_c in ((1, ziel_a), (2, ziel_a + 1)):
+                q, z = ws.cell(r, alt_c), ws.cell(r, neu_c)
+                z.value, z._style = q.value, copy(q._style)
+                q.value = None
+        lo, hi = min(feste_zeilen), max(feste_zeilen)
+        alt_ref = re.compile(rf"\$A\${lo}:\$B\${hi}")
+        neu_ref = f"${get_column_letter(ziel_a)}${lo}:${get_column_letter(ziel_a + 1)}${hi}"
+        for row in ws.iter_rows():
+            for z in row:
+                if isinstance(z.value, str) and z.value.startswith("="):
+                    z.value = alt_ref.sub(neu_ref, z.value)
+        for c in (ziel_a, ziel_a + 1):
+            d = ws.column_dimensions[get_column_letter(c)]
+            d.min = d.max = c
+            d.hidden = True
+        ws.cell(lo - 1, ziel_a, "Notenpunkte").font = HINWEIS
+        protokoll.append(f"{ws.title}: Punktetabelle A{lo}:B{hi} nach {neu_ref.replace('$', '')} (ausgeblendet) verlegt")
+        feste_zeilen = set()
+
+    # 1) Zusammengefasste Zellen im umzusortierenden Bereich loesen
+    for m in list(ws.merged_cells.ranges):
+        if m.min_row >= erste_zeile and m.min_col <= breite:
+            ws.unmerge_cells(str(m))
+
+    # 2) Zellen (Wert, Format, Kommentar) umsetzen
+    zeilen = [r for r in range(erste_zeile, ws.max_row + 1) if r not in feste_zeilen]
+    for r in zeilen:
+        inhalt = {}
+        for c in range(1, breite + 1):
+            z = ws.cell(r, c)
+            inhalt[c] = (z.value, z._style, z.comment, z.hyperlink)
+        for c, (wert, stil, kommentar, link) in inhalt.items():
+            z = ws.cell(r, zuordnung[c])
+            z.value, z._style = wert, copy(stil)
+            z.comment = None
+            if kommentar is not None:
+                z.comment = kommentar
+            z.hyperlink = link
+
+    # 3) Formeln im ganzen Blatt umschreiben
+    for row in ws.iter_rows():
+        for z in row:
+            if isinstance(z.value, str) and z.value.startswith("="):
+                z.value = _formel_umsetzen(z.value, zuordnung, feste_zeilen, erste_zeile)
+
+    # 4) Auswahllisten und bedingte Formatierung (Bereiche)
+    for dv in ws.data_validations.dataValidation:
+        dv.sqref = MultiCellRange(" ".join(_bezug_umsetzen(str(r), zuordnung, feste_zeilen, erste_zeile)
+                                          for r in dv.sqref.ranges))
+    for cf in ws.conditional_formatting:
+        for r in cf.sqref.ranges:
+            if r.min_row >= erste_zeile:
+                sys.exit(f"{ws.title}: bedingte Formatierung in der Tabelle ({r}) – nicht vorgesehen")
+
+    # 5) Spaltenbreiten/-sichtbarkeit
+    alt_dim = {}
+    for c in range(1, breite + 1):
+        buchst = get_column_letter(c)
+        d = next((d for d in ws.column_dimensions.values() if (d.min or 0) <= c <= (d.max or 0)), None)
+        alt_dim[c] = (d.width if d else None, bool(d and d.hidden))
+    for key, d in list(ws.column_dimensions.items()):
+        if (d.min or 0) <= breite:
+            if (d.max or 0) > breite:  # Bereich ragt ueber die Tabelle hinaus: Rest behalten
+                rest = ws.column_dimensions[get_column_letter(breite + 1)]
+                rest.min, rest.max, rest.width, rest.hidden = breite + 1, d.max, d.width, d.hidden
+            del ws.column_dimensions[key]
+    for c, (w, versteckt) in alt_dim.items():
+        d = ws.column_dimensions[get_column_letter(zuordnung[c])]
+        d.min = d.max = zuordnung[c]
+        d.width, d.hidden = w, versteckt
+
+    # 6) Gruppenueberschriften neu zusammenfassen
+    neu = {s: i + 1 for i, s in enumerate(reihenfolge)}
+    for text, von, bis in GRUPPEN_UEBERSCHRIFTEN:
+        if von in neu and bis in neu:
+            a, b = neu[von], neu[bis]
+            for c in range(a, b + 1):
+                if ws.cell(erste_zeile, c).value == text:
+                    ws.cell(erste_zeile, c).value = None
+            ws.cell(erste_zeile, a).value = text
+            if b > a:
+                ws.merge_cells(start_row=erste_zeile, start_column=a, end_row=erste_zeile, end_column=b)
+
+    # 7) Tabelle einheitlich durchzeichnen: duenn innen, kraeftig aussen und an Gruppengrenzen
+    grenzen = {neu[s] for s in ("name", "funktion", "n11", "summe", "alb", "teilzeit", "pdf") if s in neu}
+    ende = letzte_tabellenzeile(ws, kopf, {"name": neu["name"]})
+    for r in range(kopf, ende + 1):
+        for c in range(1, breite + 1):
+            z = ws.cell(r, c)
+            links = Side(style="medium") if c == 1 or c in grenzen else DUENN_SCHWARZ
+            rechts = Side(style="medium") if c == breite or c + 1 in grenzen else DUENN_SCHWARZ
+            oben = Side(style="medium") if r == kopf else DUENN_SCHWARZ
+            unten = Side(style="medium") if r in (kopf, ende) else DUENN_SCHWARZ
+            z.border = Border(left=links, right=rechts, top=oben, bottom=unten)
+    if ws.auto_filter.ref:
+        ws.auto_filter.ref = f"A{kopf + 1}:{get_column_letter(breite)}{ende}"
+
+    protokoll.append(f"{ws.title}: Spalten nach Reihenfolge der Beurteilung sortiert: "
+                     + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, breite + 1)))
 
 
 def letzte_tabellenzeile(ws, kopf, sp):
