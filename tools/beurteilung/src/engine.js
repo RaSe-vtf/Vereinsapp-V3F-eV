@@ -429,14 +429,28 @@
       w.dict.set(PDFName.of('F'), PDFNumber.of(flags));
     }
   }
+  // Nur die Felder, die das Tool tatsaechlich befuellt, bekommen eine neue
+  // Darstellung. Alle anderen (v.a. die Ankreuzfelder mit den Kreuzen des
+  // Vordrucks) behalten ihre Original-Darstellung – pdf-lib wuerde sie sonst
+  // durch eigene Haken ersetzen.
+  const GEAENDERT = new WeakMap();
+  function merke(form, feld) {
+    if (!GEAENDERT.has(form)) GEAENDERT.set(form, new Set());
+    GEAENDERT.get(form).add(feld);
+  }
   function setzeText(form, name, wert) {
     if (leer(wert)) return;
-    form.getTextField(name).setText(String(wert));
+    const f = form.getTextField(name);
+    f.setText(String(wert));
+    merke(form, f);
   }
   function setzeNote(form, name, note) {
     if (leer(note)) return;
     const dd = form.getDropdown(name);
-    if (dd.getOptions().includes(note)) dd.select(note);
+    if (dd.getOptions().includes(note)) {
+      dd.select(note);
+      merke(form, dd);
+    }
   }
 
   function sichereDA(form) {
@@ -553,7 +567,7 @@
     // (DA) ins Feld. Die des Vordrucks (/Cour 10 Tf) wiederherstellen, damit
     // Acrobat beim spaeteren Weiterschreiben die Schrift des Formulars nimmt.
     const daSicherung = sichereDA(form);
-    form.updateFieldAppearances(courier);
+    for (const f of GEAENDERT.get(form) || []) f.updateAppearances(courier);
     stelleDAwieder(daSicherung);
     pdf.setTitle('Dienstliche Beurteilung ' + p.name + ', ' + p.vorname);
     return pdf.save({ updateFieldAppearances: false });
