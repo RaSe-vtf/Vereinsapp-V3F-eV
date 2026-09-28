@@ -388,8 +388,8 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
         return standard if v in (None, "") else v
 
     zelle(ws, "A1", "Beurteilungen erstellen", TITEL)
-    zelle(ws, "A2", "Gelbe Felder ausfüllen, speichern (⌘ S), unten auf „PDFs erzeugen“ klicken, dann diese Datei "
-                    "schließen (⌘ W) und im Browser auswählen. Solange sie in Excel offen ist, ist sie dort grau.", HINWEIS)
+    zelle(ws, "A2", "Gelbe Felder ausfüllen, Excel-Datei speichern und schließen (⌘ S, dann ⌘ W), dann Beurteilung.html "
+                    "öffnen und diese Datei hineinziehen.", HINWEIS)
 
     zelle(ws, "A4", "1  Beurteilung", ABSCHNITT)
     felder = [
@@ -464,12 +464,10 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
     r += 2
     zelle(ws, f"A{r}", "4  PDFs erzeugen", ABSCHNITT)
     r += 1
-    link = zelle(ws, f"A{r}", "▶  PDFs erzeugen (öffnet Beurteilung.html)",
-                 Font(bold=True, size=12, color="0563C1", underline="single"))
-    link.hyperlink = "Beurteilung.html"
-    zelle(ws, f"A{r + 1}", "Beurteilung.html muss im selben Ordner liegen wie diese Excel-Datei. "
-                           "Vorher speichern und schließen (⌘ S, dann ⌘ W) – das Tool liest den gespeicherten Stand, "
-                           "und eine in Excel geöffnete Datei ist im Browser nicht auswählbar.", HINWEIS)
+    zelle(ws, f"A{r}", "Diese Excel-Datei speichern und schließen (⌘ S, dann ⌘ W).", FETT)
+    zelle(ws, f"A{r + 1}", "Dann Beurteilung.html (im selben Ordner) per Doppelklick öffnen und diese Excel-Datei "
+                           "hineinziehen. Solange die Datei in Excel offen ist, ist sie im Browser grau und nicht auswählbar.",
+          HINWEIS)
 
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 34

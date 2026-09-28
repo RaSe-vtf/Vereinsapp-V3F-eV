@@ -10,8 +10,8 @@ Hat nichts mit der Vereinsapp zu tun und liegt nur hier im Repository.
 1. Notenübersicht öffnen, Blatt **„Beurteilungen erstellen“** ausfüllen
    (Art, Stichtag, Zeitraum, Auswahl, Beurteilende), speichern und schließen
    (eine in Excel geöffnete Datei ist im Auswahlfenster des Browsers gesperrt).
-2. Auf „PDFs erzeugen“ klicken → `Beurteilung.html` öffnet sich, Excel-Datei
-   hineinziehen → ZIP mit einer PDF pro Person im Download-Ordner.
+2. `Beurteilung.html` per Doppelklick öffnen, Excel-Datei hineinziehen → ZIP mit
+   einer PDF pro Person im Download-Ordner.
 3. Beurteilende ergänzen alles Weitere im PDF (Adobe Acrobat Reader, nicht
    „Vorschau“ am Mac).
 4. Ausgefüllte PDF in `Beurteilung.html` unter „Beurteilung fertigstellen“
