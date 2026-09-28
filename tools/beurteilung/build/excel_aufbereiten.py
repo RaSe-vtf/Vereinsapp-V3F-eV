@@ -195,6 +195,9 @@ def berichtige_notenblatt(ws, protokoll):
     # Gesamte Tabelle in die Reihenfolge des Vordrucks bringen
     sortiere_tabelle(ws, kopf, protokoll)
 
+    # Monate ohne Datum: "n.N." statt DATEDIF ab 1900 (z.B. 1533)
+    kein_datum(ws, kopf, protokoll)
+
 
 TOOL_SPALTEN = [
     # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
@@ -510,6 +513,35 @@ def gestalte_tabelle(ws, kopf, pos, breite):
             d.height = None
     if ws.auto_filter.ref:
         ws.auto_filter.ref = f"A{kopf + 1}:{get_column_letter(breite)}{ende}"
+
+
+KEIN_DATUM = "n.N."
+_DATEDIF = re.compile(r'^=DATEDIF\((\$?[A-Z]{1,3}\$?\d+),(\$?[A-Z]{1,3}\$?\d+),"M"\)(/2)?$')
+_SUMME2 = re.compile(r"^=SUM\((\$?[A-Z]{1,3}\$?\d+),(\$?[A-Z]{1,3}\$?\d+)\)$")
+
+
+def kein_datum(ws, kopf, protokoll):
+    """Monate/Monate (zur Haelfte)/ges.: ohne Datum "n.N." anzeigen statt einer Zahl ab 1900."""
+    n = 0
+    datedif_zellen = set()
+    for row in ws.iter_rows(min_row=kopf + 1):
+        for z in row:
+            m = _DATEDIF.match(str(z.value or ""))
+            if m:
+                z.value = f'=IF({m.group(1)}="","{KEIN_DATUM}",{z.value[1:]})'
+                datedif_zellen.add(z.coordinate)
+                n += 1
+            elif str(z.value or "").startswith('=IF(') and f'"{KEIN_DATUM}",DATEDIF(' in str(z.value):
+                datedif_zellen.add(z.coordinate)
+    # "ges." = Summe zweier Monatswerte: fehlt einer davon, ebenfalls "n.N."
+    for row in ws.iter_rows(min_row=kopf + 1):
+        for z in row:
+            m = _SUMME2.match(str(z.value or ""))
+            if m and {m.group(1).replace("$", ""), m.group(2).replace("$", "")} <= datedif_zellen:
+                z.value = f'=IF(COUNT({m.group(1)},{m.group(2)})<2,"{KEIN_DATUM}",SUM({m.group(1)},{m.group(2)}))'
+                n += 1
+    if n:
+        protokoll.append(f"{ws.title}: {n} Monatsformeln zeigen ohne Datum „{KEIN_DATUM}“")
 
 
 def letzte_tabellenzeile(ws, kopf, sp):
