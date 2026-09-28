@@ -60,6 +60,10 @@
             padding: 14px 16px; margin: 0 0 20px; font-size: 15px; }
   .sperre strong { display: block; margin-bottom: 4px; }
   a.nachladen { display: inline-block; margin-top: 8px; margin-left: 10px; color: var(--akzent); font-weight: 600; }
+  .status { border-radius: 8px; padding: 10px 14px; margin: 0 0 18px; font-size: 14.5px; border: 1px solid; }
+  .status.laden { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+  .status.bereit { background: var(--akzent-hell); color: var(--ok); border-color: var(--ok); }
+  .status.gestoert { background: var(--fehler-bg); color: var(--fehler); border-color: var(--fehler); }
   kbd { font: 12px ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--linie); border-radius: 4px; padding: 0 4px; }
 </style>
 </head>
@@ -68,6 +72,10 @@
   <noscript><div class="sperre"><strong>JavaScript ist in diesem Browser gesperrt.</strong>
     Das Tool braucht JavaScript (es läuft nur lokal). Bitte die Datei mit Microsoft Edge öffnen oder die IT
     bitten, JavaScript für lokale Dateien (file://) zuzulassen.</div></noscript>
+  <div id="status" class="status laden" role="status"><strong>⏳ Tool wird geladen …</strong>
+    Bleibt diese Meldung stehen, führt dieses Programm kein JavaScript aus (z.B. Vorschau in Outlook/E-Akte/Explorer,
+    Internet Explorer oder gesperrt). Dann: Datei speichern und im Explorer Rechtsklick → <b>Öffnen mit</b> →
+    <b>Microsoft Edge</b>.</div>
   <div id="sperre" class="sperre" hidden></div>
   <script>
     // Bewusst altes JavaScript (ES5), damit diese Pruefung auch in sehr alten
@@ -83,6 +91,9 @@
           'Maustaste auf <b>Beurteilung.html</b> → <b>Öffnen mit</b> → <b>Microsoft Edge</b> (oder Chrome/Firefox/Safari).';
         d.hidden = false;
         window.BEURTEILUNG_ALTER_BROWSER = true;
+        var st = document.getElementById('status');
+        st.className = 'status gestoert';
+        st.innerHTML = '<strong>✗ Tool nicht startbar</strong> – siehe Hinweis darunter.';
       }
     })();
   </script>
@@ -131,7 +142,16 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
 (function () {
   'use strict';
   const sperre = document.getElementById('sperre');
+  const status = document.getElementById('status');
+  function setzeStatus(art, text) {
+    status.className = 'status ' + art;
+    status.replaceChildren();
+    const s = document.createElement('strong');
+    s.textContent = text;
+    status.append(s);
+  }
   function zeigeSperre(titel, text) {
+    setzeStatus('gestoert', '✗ Tool gestört – siehe Hinweis darunter.');
     sperre.replaceChildren();
     const s = document.createElement('strong');
     s.textContent = titel;
@@ -345,6 +365,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
 
   ablage('ablage-excel', 'datei-excel', verarbeiteExcel);
   ablage('ablage-pdf', 'datei-pdf', verarbeitePdf);
+  if (sperre.hidden) setzeStatus('bereit', '✓ Tool bereit – Excel-Datei auswählen oder hineinziehen.');
 })();
 </script>
 </body>
