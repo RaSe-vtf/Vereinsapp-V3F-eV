@@ -44,6 +44,12 @@ AMTSBEZEICHNUNGEN = [
     ("PHKZ", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A12"),
     ("EPHK", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin", "A13"),
 ]
+# Namen, die in alten Staenden auf externe Arbeitsmappen zeigten
+# ([1]Formeln / [2]Beurteilungen) und die Meldung "Aktualisierung nicht
+# moeglich" ausloesen.
+EXTERNE_NAMEN = ("Amtsbezeichnung", "Note", "Relevant", "Status", "Statusamt")
+AMTSKUERZEL = [k for e in AMTSBEZEICHNUNGEN if not e[0].endswith("Z") for k in (e[0], e[0] + "in")]
+
 STATUSAMT_GD = {  # Kopierfehler aus den mD-Blaettern in A4/A9 der gD-Blaetter
     "PK": ("9g", "Statusamt: Polizeikommissar/-in A 9g"),
     "POK": (10, "Statusamt: Polizeioberkommissar/-in A 10"),
@@ -160,6 +166,22 @@ def berichtige_notenblatt(ws, protokoll):
         if n:
             protokoll.append(f"{ws.title}: {n} Bemerkungen von Text in Zahl umgewandelt")
 
+    # Auswahllisten, die auf externe Arbeitsmappen zeigten (siehe
+    # entferne_externe_verknuepfungen): Amtsbezeichnung -> lokale Liste ueber
+    # die ganze Spalte, Statusamt (I6/K6, leer) und Relevant (Teilzeit ist nur
+    # ein freier Hinweis fuer die Beurteilenden) entfallen.
+    alte = [dv for dv in ws.data_validations.dataValidation if dv.formula1 in EXTERNE_NAMEN]
+    for dv in alte:
+        ws.data_validations.dataValidation.remove(dv)
+    if alte and "amtsbez." in sp:
+        col = get_column_letter(sp["amtsbez."])
+        dv = DataValidation(type="list", formula1='"' + ",".join(AMTSKUERZEL) + '"', allow_blank=True,
+                            showErrorMessage=False)
+        dv.add(f"{col}{erste}:{col}{LETZTE_ZEILE}")
+        ws.add_data_validation(dv)
+    if alte:
+        protokoll.append(f"{ws.title}: {len(alte)} Auswahllisten mit externer Quelle ersetzt bzw. entfernt")
+
     # Markier-Spalte "PDF"
     if not any(k.startswith("pdf") for k in sp):
         col = max(sp.values()) + 1
@@ -202,6 +224,17 @@ def berichtige_kopierfehler(wb, ist_gd, protokoll):
                 if str(ws["A4"].value) == "9mZ" and besoldung != "9mZ":
                     protokoll.append(f"{ws.title}: A4 „9mZ“ -> „{besoldung}“")
                     ws["A4"] = besoldung
+
+
+def entferne_externe_verknuepfungen(wb, protokoll):
+    """Entfernt Verknuepfungen auf andere Arbeitsmappen samt der Namen dorthin."""
+    n = len(wb._external_links)
+    wb._external_links = []
+    for name in list(wb.defined_names.keys()):
+        if name in EXTERNE_NAMEN or "[" in str(wb.defined_names[name].attr_text):
+            del wb.defined_names[name]
+    if n:
+        protokoll.append(f"{n} Verknuepfungen auf externe Arbeitsmappen entfernt (Meldung „Aktualisierung nicht moeglich“)")
 
 
 def blattbasis(titel):
@@ -444,6 +477,7 @@ def main(quelle, ziel):
         if name in wb.sheetnames:
             del wb[name]
 
+    entferne_externe_verknuepfungen(wb, protokoll)
     notenblaetter = [ws for ws in wb.worksheets if ist_notenblatt(ws)]
     if not notenblaetter:
         sys.exit("Keine Notenblaetter (Kopfzeile mit „Lfd.Nr.“ und „Name“) gefunden.")
