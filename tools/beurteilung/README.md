@@ -82,6 +82,19 @@ laufen gelassen, bleiben Startseite, Beurteiler und Einstellungen erhalten.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst
 (Spalten werden über die Überschriften gefunden).
 
+**Testversion (Fortsetzungsseite direkt im PDF):**
+
+```sh
+python3 build/vordruck_test_vorlage.py src/vordruck_vorbereitet.pdf src/vordruck_test.pdf
+python3 build/html_bauen.py --test src/vordruck_test.pdf dist/Beurteilung_Test.html
+```
+
+Der Test-Vordruck enthält eine unsichtbare Seitenvorlage „bgfort“ und ein Skript,
+das beim Verlassen der Begründung überlaufenden Text auf per Vorlage angelegte
+Fortsetzungsseiten verschiebt (Acrobat-JavaScript `Template.spawn`). Ob das
+erlaubt ist, hängt vom PDF-Programm ab; sonst erscheint ein Hinweis auf das
+Fertigstellen. Dateinamen der Testversion beginnen mit `TEST_`.
+
 - `src/engine.js` – Kern: Excel lesen, PDF befüllen, fertigstellen
 - `src/ui.html` – Oberfläche (Platzhalter werden beim Bauen ersetzt)
 - `vendor/` – pdf-lib 1.17.1 (MIT), SheetJS 0.18.5 mini (Apache-2.0), JSZip 3.10.1 (MIT)

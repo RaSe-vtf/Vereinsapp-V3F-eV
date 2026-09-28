@@ -635,6 +635,10 @@
       throw new Error('„' + dateiname + '“ enthält keine Formularfelder mehr – vermutlich wurde es über „Drucken als PDF“ ' +
         'gespeichert. Bitte die ausgefüllte Beurteilung mit „Speichern“ bzw. „Speichern unter“ sichern.');
     }
+    if (form.getFields().some((f) => /bgfortsetzung$/.test(f.getName()) && f.getName() !== 'bgfortsetzung')) {
+      throw new Error('„' + dateiname + '“ hat bereits Fortsetzungsseiten aus dem PDF-Programm (Testversion) – ' +
+        'Fertigstellen ist hier nicht nötig.');
+    }
     let feld;
     try { feld = form.getTextField(BEGRUENDUNG); } catch (e) {
       throw new Error('„' + dateiname + '“ ist kein Beurteilungsvordruck BPOL 4 00 069.');

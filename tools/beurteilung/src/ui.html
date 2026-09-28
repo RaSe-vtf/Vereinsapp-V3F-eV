@@ -77,6 +77,7 @@
     Internet Explorer oder gesperrt). Dann: Datei speichern und im Explorer Rechtsklick → <b>Öffnen mit</b> →
     <b>Microsoft Edge</b>.</div>
   <div id="sperre" class="sperre" hidden></div>
+  /*TESTHINWEIS*/
   <script>
     // Bewusst altes JavaScript (ES5), damit diese Pruefung auch in sehr alten
     // Browsern (Internet Explorer, IE-Modus in Edge) laeuft und verstaendlich meldet.
@@ -137,6 +138,7 @@
 <script>/*ENGINE*/</script>
 <script>
 const VORDRUCK_B64 = "/*VORDRUCK*/";
+const TESTVERSION = /*TESTFLAG*/false;
 </script>
 <script>
 (function () {
@@ -193,6 +195,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
   const letzteUrls = [];
   /** Startet den Download und liefert einen sichtbaren Link, falls der Browser ihn blockiert. */
   function herunterladen(daten, name, typ) {
+    if (TESTVERSION) name = 'TEST_' + name;
     const url = URL.createObjectURL(new Blob([daten], { type: typ }));
     letzteUrls.push(url);
     while (letzteUrls.length > 6) URL.revokeObjectURL(letzteUrls.shift());
@@ -314,7 +317,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
         const namen = new Set();
         for (let i = 0; i < auftraege.length; i++) {
           knopf.textContent = 'Erzeuge ' + (i + 1) + ' von ' + auftraege.length + ' …';
-          let n = E.dateiname(auftraege[i]);
+          let n = (TESTVERSION ? 'TEST_' : '') + E.dateiname(auftraege[i]);
           while (namen.has(n)) n = n.replace(/(_\d+)?\.pdf$/, (m, z) => '_' + ((z ? +z.slice(1) : 1) + 1) + '.pdf');
           namen.add(n);
           zip.file(n, await E.erzeugePdf(vd, auftraege[i]));
