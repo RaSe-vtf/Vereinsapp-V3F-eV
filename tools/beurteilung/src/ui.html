@@ -188,11 +188,12 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
         el('td', null, a.person.name + ', ' + a.person.vorname),
         el('td', { class: 'note' }, ['n11', 'n2', 'n42', 'n43'].map((k) => a.person.noten[k] || '–').join(' ')),
         el('td', { class: 'note' }, a.person.noten.endnote || '–'),
+        el('td', null, a.funktion ? a.funktion.bezeichnung : '–'),
         el('td', null, a.erst || '–'),
         el('td', null, a.zweit || '–'),
         el('td', { class: 'hinweis' }, a.hinweise.join('; '))));
       box.append(el('div', { class: 'tabelle' }, el('table', null,
-        el('thead', null, el('tr', null, ['Blatt', 'Name', '1.1 2 4.2 4.3', 'Gesamt', 'Erstbeurteilende/r', 'Zweitbeurteilende/r', 'Hinweis']
+        el('thead', null, el('tr', null, ['Blatt', 'Name', '1.1 2 4.2 4.3', 'Gesamt', 'Funktion', 'Erstbeurteilende/r', 'Zweitbeurteilende/r', 'Hinweis']
           .map((t) => el('th', null, t)))),
         el('tbody', null, zeilen))));
     }

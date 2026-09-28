@@ -20,9 +20,14 @@ Hat nichts mit der Vereinsapp zu tun und liegt nur hier im Repository.
    Feldern werden gemeldet.
 
 Eingetragen werden: Beurteilungsart, Anlass, Stichtag, Zeitraum, Beamtin/Beamter,
-Name, Geburtsdatum, Amtsbezeichnung mit Besoldungsgruppe (z.B. „Polizeiobermeister (A8)“), letzte Ernennung,
-Dienststelle/Organisationseinheit, Erst-/Zweitbeurteilende, die vier Teilnoten
-(1.1, 2, 4.2, 4.3) und die Gesamtnote (Spalte „neue RBU“).
+Name, Geburtsdatum, Amtsbezeichnung mit Besoldungsgruppe (z.B. „Polizeiobermeister (A8)“),
+letzte Ernennung, Dienststelle/Organisationseinheit, Funktionsbezeichnung/-wertigkeit
+(Seite 1 und Nr. 4.1.2 auf Seite 2) mit den prägenden Tätigkeiten aus dem Blatt
+„Funktionen“, bis zu 6 Kooperationsgespräche (Spalte mit `;` getrennt), Gespräch
+vor Beurteilung, Schwerbehinderung ja/nein, Erst-/Zweitbeurteilende, die vier
+Teilnoten (1.1, 2, 4.2, 4.3) und die Gesamtnote (Spalte „neue RBU“) – bei Regel-
+und Anlassbeurteilung auf Seite 5 und unter „G Gesamtbewertung“ auf Seite 3, beim
+Beurteilungsbeitrag nie. Alles bleibt im PDF von den Beurteilenden änderbar.
 
 ## Statusämter (fest, vom Nutzer bestätigt)
 

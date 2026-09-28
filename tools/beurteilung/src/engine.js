@@ -15,6 +15,7 @@
   const START = 'beurteilungen erstellen';
   const BEURTEILER = 'beurteiler';
   const EINSTELLUNGEN = 'einstellungen';
+  const FUNKTIONEN = 'funktionen';
 
   const SCHRIFT_PT = 10;
   const ZEILENABSTAND = 1.15;
@@ -30,6 +31,10 @@
     n43: ['f.dd.25', 'f.dd.26'],   // 4.3 Zusammenarbeit
     endnote: ['f.dd.49', 'f.dd.50'], // IV Gesamtnote
   };
+  // Endnote zusaetzlich unter "G Gesamtbewertung" (Seite 3) – nur RBU/ALB
+  const GESAMTBEWERTUNG = ['f.dd.47', 'f.dd.48'];
+  const KOOP_FELDER = 6; // f.koorperation.1 .. .6 (Schreibweise des Vordrucks)
+  const TAETIGKEIT_PRAEFIX = '• ';
   // Felder, die der Vordruck bei "Beurteilungsbeitrag" per Skript ausblendet
   const ZWEIT_FELDER = [];
   for (let i = 2; i <= 48; i += 2) ZWEIT_FELDER.push('f.dd.' + i);
@@ -72,6 +77,12 @@
     const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (iso) return iso[3] + '.' + iso[2] + '.' + iso[1];
     return s;
+  }
+  /** "12.03.2026; 04.11.2026" (oder eine Excel-Datumszahl) -> Liste von Daten. */
+  function datumsliste(v) {
+    if (v == null || v === '') return [];
+    if (typeof v === 'number' || v instanceof Date) return [datum(v)];
+    return String(v).split(/[;\n]+/).map((t) => datum(t.trim())).filter((t) => t !== '');
   }
   function zeilenVon(ws) {
     return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
@@ -182,6 +193,23 @@
       }
     }
 
+    // Funktionen / Anforderungsprofile
+    const funktionen = {};
+    if (blatt[FUNKTIONEN]) {
+      const fz = zeilenVon(wb.Sheets[blatt[FUNKTIONEN]]);
+      const kopf = fz.findIndex((z) => z && norm(z[0]) === 'funktionsbezeichnung');
+      if (kopf >= 0) {
+        for (const z of fz.slice(kopf + 1)) {
+          if (!z || leer(z[0])) continue;
+          funktionen[norm(z[0])] = {
+            bezeichnung: text(z[0]),
+            wertigkeit: text(z[1]),
+            taetigkeiten: z.slice(2).map(text).filter((t) => t !== ''),
+          };
+        }
+      }
+    }
+
     // Notenblaetter: jedes Blatt mit Kopfzeile "Lfd.Nr." + "Name"
     const notenblaetter = [];
     for (const name of wb.SheetNames) {
@@ -202,9 +230,11 @@
         amtsbez: col('amtsbez'), name: sp['name'], vorname: col('vorname'), geschlecht: col('geschlecht'),
         geb: col('geb'), zug: col('zug'), endnote: col('neue rbu'), n11: col('1.1'), n2: col('2.'),
         n42: col('4.2'), n43: col('4.3'), ernennung: col('datum der ernennung'), pdf: col('pdf'),
+        funktion: col('funktion'), koop: col('kooperation'), gespraech: col('gespräch vor'),
+        sbh: col('schwerbehind'),
       };
       for (const [k, v] of Object.entries(c)) {
-        if (v < 0 && !['pdf', 'zug', 'geschlecht', 'amtsbez'].includes(k)) {
+        if (v < 0 && !['pdf', 'zug', 'geschlecht', 'amtsbez', 'funktion', 'koop', 'gespraech', 'sbh'].includes(k)) {
           warnungen.push('Blatt „' + name + '“: Spalte für „' + k + '“ nicht gefunden.');
         }
       }
@@ -227,6 +257,10 @@
           zug: wert('zug'),
           ernennung: datum(wert('ernennung')),
           markiert: !leer(wert('pdf')),
+          funktion: text(wert('funktion')),
+          koop: datumsliste(wert('koop')),
+          gespraech: datum(wert('gespraech')),
+          sbh: norm(wert('sbh')),
           noten: {
             n11: text(wert('n11')).toUpperCase(), n2: text(wert('n2')).toUpperCase(),
             n42: text(wert('n42')).toUpperCase(), n43: text(wert('n43')).toUpperCase(),
@@ -237,7 +271,7 @@
       notenblaetter.push({ name: name, personen: personen });
     }
     if (!notenblaetter.length) throw new Error('„' + dateiname + '“: keine Notenblätter gefunden.');
-    return { dateiname, start, beurteiler, einst, notenblaetter, warnungen };
+    return { dateiname, start, beurteiler, einst, funktionen, notenblaetter, warnungen };
   }
 
   // ------------------------------------------------------------------
@@ -297,7 +331,17 @@
         for (const [k, v] of Object.entries(p.noten)) {
           if (!leer(v) && !NOTEN.includes(v)) hinweise.push('Note „' + v + '“ (' + k + ') ist keine gültige Notenstufe');
         }
-        if (leer(p.noten.endnote)) hinweise.push('keine neue Note (Gesamtnote) eingetragen');
+        if (leer(p.noten.endnote) && st.art.kurz !== 'BB') hinweise.push('keine neue Note (Gesamtnote) eingetragen');
+        let funktion = null;
+        if (!leer(p.funktion)) {
+          funktion = mappe.funktionen[norm(p.funktion)] || null;
+          if (!funktion) hinweise.push('Funktion „' + p.funktion + '“ steht nicht im Blatt „Funktionen“');
+        }
+        if (p.koop.length > KOOP_FELDER) {
+          hinweise.push(p.koop.length + ' Kooperationsgespräche – im Vordruck ist Platz für ' + KOOP_FELDER +
+            ', die übrigen bitte im PDF ergänzen');
+        }
+        if (!leer(p.sbh) && !['ja', 'nein'].includes(p.sbh)) hinweise.push('Schwerbehinderung „' + p.sbh + '“ ist weder ja noch nein');
         liste.push({
           person: p,
           art: st.art,
@@ -308,6 +352,7 @@
           zweitNoten: st.zweitNoten,
           amtsbez: amtsbezeichnung(mappe, p, hinweise),
           dienststelle: dienststelle(mappe, p),
+          funktion: funktion,
           erst: beurteilerText(mappe, erstWahl, 'Erstbeurteilende/r', hinweise),
           zweit: beurteilerText(mappe, zweitWahl, 'Zweitbeurteilende/r', hinweise),
           hinweise: hinweise,
@@ -453,10 +498,30 @@
     setzeText(form, 'f.zweitbeurt.1', t(a.zweit));
     setzeText(form, 'h.fusszeile', t(fusszeile(a)));
 
+    if (a.funktion) {
+      setzeText(form, 'f.funktion.1', t(a.funktion.bezeichnung));
+      setzeText(form, 'f.funktion.2', t(a.funktion.wertigkeit));
+      setzeText(form, 'f.wert.1', t(a.funktion.wertigkeit)); // Seite 2, Nr. 4.1.2
+      setzeText(form, 'f.taetigkeit.1', t(a.funktion.taetigkeiten.map((x) => TAETIGKEIT_PRAEFIX + x).join('\n')));
+    }
+    p.koop.slice(0, KOOP_FELDER).forEach((d, i) => setzeText(form, 'f.koorperation.' + (i + 1), d));
+    setzeText(form, 'f.gespraech.1', p.gespraech);
+    if (p.sbh === 'ja' || p.sbh === 'nein') {
+      // wie das Skript des Vordrucks (kk_schwerbehindert): bei "nein" bleiben
+      // Einverstaendnis und Gespraech mit der Vertrauensperson gesperrt
+      setzeAnkreuz(form, 'f.kk.schwerbehindert', p.sbh === 'ja' ? 'Ja' : 'Nein');
+      const einv = form.getField('f.kk.einverstaendnis');
+      if (p.sbh === 'ja') einv.disableReadOnly(); else einv.enableReadOnly();
+    }
+
     for (const [k, [erst, zweit]] of Object.entries(NOTENFELDER)) {
       if (a.art.kurz === 'BB' && k === 'endnote') continue; // Beitrag hat keine Gesamtnote
       setzeNote(form, erst, p.noten[k]);
       if (a.zweitNoten && a.art.kurz !== 'BB') setzeNote(form, zweit, p.noten[k]);
+    }
+    if (a.art.kurz !== 'BB') {
+      setzeNote(form, GESAMTBEWERTUNG[0], p.noten.endnote);
+      if (a.zweitNoten) setzeNote(form, GESAMTBEWERTUNG[1], p.noten.endnote);
     }
 
     // pdf-lib schreibt beim Erzeugen der Darstellung eine eigene Schriftangabe

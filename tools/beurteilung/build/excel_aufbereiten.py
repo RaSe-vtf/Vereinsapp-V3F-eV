@@ -57,6 +57,9 @@ STATUSAMT_GD = {  # Kopierfehler aus den mD-Blaettern in A4/A9 der gD-Blaetter
     "PHKZ": (12, "Statusamt: Polizeihauptkommissar/-in A 12"),
 }
 
+FUNKTIONEN = "Funktionen"
+TAETIGKEITEN = 5  # Vordruck Seite 2: "in der Regel nicht mehr als fuenf je Funktion"
+
 FETT = Font(bold=True)
 TITEL = Font(bold=True, size=16, color="1F3864")
 ABSCHNITT = Font(bold=True, size=12, color="1F3864")
@@ -203,14 +206,67 @@ def berichtige_notenblatt(ws, protokoll):
             if ws.cell(r, sp["name"]).value:
                 ws.cell(r, col).alignment = Alignment(horizontal="center")
         protokoll.append(f"{ws.title}: Spalte „PDF“ ({get_column_letter(col)}) zum Markieren einzelner Mitarbeiter ergaenzt")
+    # Angaben je Person, die ins PDF uebernommen werden
+    zusatz = [
+        ("Funktion", "Auswahl aus Blatt „Funktionen“", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+        ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
+        ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
+        ("Schwerbehinderung", "ja / nein", 11, None, '"ja,nein"'),
+    ]
+    for titel, hinweis, breite, fmt, liste_formel in zusatz:
+        if norm(titel) in sp:
+            continue
+        col = freie_spalte(ws, kopf, sp, max(sp.values()) + 1)
+        kopfzelle = ws.cell(kopf, col, titel)
+        vorlage = ws.cell(kopf, sp["name"])
+        kopfzelle.font = Font(name=vorlage.font.name, size=vorlage.font.size, bold=True)
+        kopfzelle.fill = copy(vorlage.fill)
+        kopfzelle.border = copy(vorlage.border)
+        kopfzelle.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.cell(kopf + 1, col, hinweis).font = HINWEIS
+        ws.column_dimensions[get_column_letter(col)].width = breite
+        buchstabe = get_column_letter(col)
+        if fmt:
+            for r in range(erste, LETZTE_ZEILE + 1):
+                ws.cell(r, col).number_format = fmt
+        if liste_formel:
+            dv = DataValidation(type="list", formula1=liste_formel, allow_blank=True)
+            dv.add(f"{buchstabe}{erste}:{buchstabe}{LETZTE_ZEILE}")
+            ws.add_data_validation(dv)
+        sp[norm(titel)] = col
+        protokoll.append(f"{ws.title}: Spalte „{titel}“ ({buchstabe}) ergaenzt")
+
     # Auf vielen Blaettern sind die Spalten rechts von "Teilzeit" ausgeblendet –
-    # die PDF-Spalte muss trotzdem sichtbar sein.
+    # die Spalten des Tools muessen trotzdem sichtbar sein.
     for k, c in sp.items():
-        if k.startswith("pdf"):
-            dim = ws.column_dimensions[get_column_letter(c)]
-            if dim.hidden:
-                dim.hidden = False
-                protokoll.append(f"{ws.title}: Spalte „PDF“ war ausgeblendet – eingeblendet")
+        if k.startswith("pdf") or k in {norm(z[0]) for z in zusatz}:
+            if einblenden(ws, c):
+                protokoll.append(f"{ws.title}: Spalte „{ws.cell(kopf, c).value}“ war ausgeblendet – eingeblendet")
+
+
+def freie_spalte(ws, kopf, sp, ab):
+    """Erste Spalte ab `ab`, die in Kopfzeile, Hinweiszeile und allen Personenzeilen leer ist."""
+    zeilen = [kopf, kopf + 1] + list(personenzeilen(ws, kopf, sp))
+    col = ab
+    while any(ws.cell(r, col).value is not None for r in zeilen) or col in sp.values():
+        col += 1
+    return col
+
+
+def einblenden(ws, col):
+    """Blendet genau eine Spalte ein, auch wenn sie Teil eines ausgeblendeten Bereichs ist."""
+    for key, dim in list(ws.column_dimensions.items()):
+        lo, hi = dim.min or 0, dim.max or 0
+        if not (lo <= col <= hi) or not dim.hidden:
+            continue
+        breite = dim.width
+        del ws.column_dimensions[key]
+        for a, b, versteckt in ((lo, col - 1, True), (col, col, False), (col + 1, hi, True)):
+            if a <= b:
+                neu = ws.column_dimensions[get_column_letter(a)]
+                neu.min, neu.max, neu.width, neu.hidden = a, b, breite, versteckt
+        return True
+    return False
 
 
 def berichtige_kopierfehler(wb, ist_gd, protokoll):
@@ -277,6 +333,13 @@ def liste(ws, bereich, eintraege):
     ws.add_data_validation(dv)
 
 
+def alte_zeilen(wb, name, spalten):
+    if name not in wb.sheetnames:
+        return []
+    ws = wb[name]
+    return [[c.value for c in row] for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=spalten)]
+
+
 def alte_werte(wb, name):
     """Liest Spalte A/B (Beschriftung -> Wert) und Tabellen eines alten Blatts."""
     if name not in wb.sheetnames:
@@ -315,6 +378,28 @@ def baue_beurteiler(wb, alt_zeilen):
     for col, b in zip("ABCDE", (28, 18, 20, 18, 34)):
         ws.column_dimensions[col].width = b
     ws.freeze_panes = "A4"
+    return ws
+
+
+def baue_funktionen(wb, alt_zeilen):
+    ws = wb.create_sheet(FUNKTIONEN)
+    zelle(ws, "A1", "Funktionen und Anforderungsprofile", TITEL)
+    zelle(ws, "A2", "Je Funktion eine Zeile. Auf den Notenblättern in Spalte „Funktion“ auswählbar. Ins PDF kommen "
+                    "Funktionsbezeichnung und -wertigkeit (Seite 1), die Wertigkeit (Seite 2, Nr. 4.1.2) und die "
+                    "prägenden Tätigkeiten (Seite 2) – die Beurteilenden können sie im PDF noch anpassen.", HINWEIS)
+    kopf = ["Funktionsbezeichnung", "Wertigkeit"] + [f"Tätigkeit {i}" for i in range(1, TAETIGKEITEN + 1)]
+    for i, t in enumerate(kopf):
+        zelle(ws, f"{get_column_letter(i + 1)}3", t, FETT, KOPF, rahmen=True)
+    alt = [z for z in (alt_zeilen[3:] if alt_zeilen else []) if z and z[0]]
+    for r in range(4, 104):
+        werte = list(alt[r - 4]) if r - 4 < len(alt) else []
+        for i in range(len(kopf)):
+            v = werte[i] if i < len(werte) else None
+            zelle(ws, f"{get_column_letter(i + 1)}{r}", v, fill=EINGABE, rahmen=True,
+                  align=Alignment(wrap_text=True, vertical="top"))
+    for i, b in enumerate([32, 12] + [40] * TAETIGKEITEN):
+        ws.column_dimensions[get_column_letter(i + 1)].width = b
+    ws.freeze_panes = "B4"
     return ws
 
 
@@ -481,7 +566,8 @@ def main(quelle, ziel):
     alt_start, alt_start_z = alte_werte(wb, START)
     _, alt_beurt_z = alte_werte(wb, BEURTEILER)
     alt_einst, alt_einst_z = alte_werte(wb, EINSTELLUNGEN)
-    for name in (START, BEURTEILER, EINSTELLUNGEN):
+    alt_funkt_z = alte_zeilen(wb, FUNKTIONEN, 2 + TAETIGKEITEN)
+    for name in (START, BEURTEILER, EINSTELLUNGEN, FUNKTIONEN):
         if name in wb.sheetnames:
             del wb[name]
 
@@ -511,6 +597,7 @@ def main(quelle, ziel):
 
     baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z)
     baue_beurteiler(wb, alt_beurt_z)
+    baue_funktionen(wb, alt_funkt_z)
     baue_einstellungen(wb, zuege, alt_einst, alt_einst_z)
     wb.save(ziel)
     print("\n".join(protokoll))
