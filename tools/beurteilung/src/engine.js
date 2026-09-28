@@ -178,7 +178,7 @@
       einst.dienststelle = text(beschriftungen(ez)['dienststelle']);
       for (const z of tabelle(ez, 'zug', 'organisationseinheit')) einst.oe[norm(z[0])] = text(z[1]);
       for (const z of tabelle(ez, 'kürzel', 'amtsbezeichnung')) {
-        if (!leer(z[0])) einst.amt[norm(z[0])] = { m: text(z[1]), w: text(z[2]) };
+        if (!leer(z[0])) einst.amt[norm(z[0])] = { m: text(z[1]), w: text(z[2]), bg: text(z[3]) };
       }
     }
 
@@ -266,7 +266,8 @@
       hinweise.push('Amtsbezeichnung „' + kuerzel + '“ fehlt in „Einstellungen“ – Kürzel wird eingetragen.');
       return kuerzel;
     }
-    return (weiblich ? eintrag.w : eintrag.m) || eintrag.m || kuerzel;
+    const bez = (weiblich ? eintrag.w : eintrag.m) || eintrag.m || kuerzel;
+    return eintrag.bg ? bez + ' (' + eintrag.bg + ')' : bez;
   }
 
   function dienststelle(mappe, p) {

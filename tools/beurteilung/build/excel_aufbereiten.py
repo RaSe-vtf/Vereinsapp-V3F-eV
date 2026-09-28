@@ -29,21 +29,30 @@ BEURTEILER = "Beurteiler"
 EINSTELLUNGEN = "Einstellungen"
 LETZTE_ZEILE = 200  # Reichweite der korrigierten Zaehlformeln
 
+# Kuerzel, Amtsbezeichnung maennlich/weiblich, Besoldungsgruppe.
+# Ins PDF kommt z.B. "Polizeiobermeister (A8)"; das "Z" der Besoldungsgruppe
+# kennzeichnet die Amtszulage.
 AMTSBEZEICHNUNGEN = [
-    ("PM", "Polizeimeister", "Polizeimeisterin"),
-    ("POM", "Polizeiobermeister", "Polizeiobermeisterin"),
-    ("PHM", "Polizeihauptmeister", "Polizeihauptmeisterin"),
-    ("PHMZ", "Polizeihauptmeister mit Amtszulage", "Polizeihauptmeisterin mit Amtszulage"),
-    ("PK", "Polizeikommissar", "Polizeikommissarin"),
-    ("POK", "Polizeioberkommissar", "Polizeioberkommissarin"),
-    ("PHK", "Polizeihauptkommissar", "Polizeihauptkommissarin"),
-    ("PHKZ", "Polizeihauptkommissar", "Polizeihauptkommissarin"),
-    ("EPHK", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin"),
+    ("PM", "Polizeimeister", "Polizeimeisterin", "A7"),
+    ("POM", "Polizeiobermeister", "Polizeiobermeisterin", "A8"),
+    ("PHM", "Polizeihauptmeister", "Polizeihauptmeisterin", "A9m"),
+    ("PHMZ", "Polizeihauptmeister", "Polizeihauptmeisterin", "A9mZ"),
+    ("PK", "Polizeikommissar", "Polizeikommissarin", "A9g"),
+    ("POK", "Polizeioberkommissar", "Polizeioberkommissarin", "A10"),
+    ("PHK", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A11"),
+    ("PHKZ", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A12"),
+    ("EPHK", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin", "A13"),
 ]
-STATUSAMT_GD = {  # Kopierfehler "Statusamt:" in A9 der gD-Blaetter
-    "PK": "Statusamt: Polizeikommissar/-in A 9g",
-    "POK": "Statusamt: Polizeioberkommissar/-in A 10",
-    "PHK": "Statusamt: Polizeihauptkommissar/-in A 11",
+# Vorgaengerwerte der ersten Auslieferung: stehen sie unveraendert in einer
+# aufbereiteten Datei, werden sie durch die aktuellen Vorgaben ersetzt.
+ALTE_VORGABEN = {
+    ("PHMZ", "Polizeihauptmeister mit Amtszulage", "Polizeihauptmeisterin mit Amtszulage"),
+}
+STATUSAMT_GD = {  # Kopierfehler aus den mD-Blaettern in A4/A9 der gD-Blaetter
+    "PK": ("9g", "Statusamt: Polizeikommissar/-in A 9g"),
+    "POK": (10, "Statusamt: Polizeioberkommissar/-in A 10"),
+    "PHK": (11, "Statusamt: Polizeihauptkommissar/-in A 11"),
+    "PHKZ": (12, "Statusamt: Polizeihauptkommissar/-in A 12"),
 }
 
 FETT = Font(bold=True)
@@ -188,9 +197,14 @@ def berichtige_kopierfehler(wb, ist_gd, protokoll):
                 if k == "beginn dienstzeit laufbahn md":
                     ws.cell(kopf, c).value = "Beginn Dienstzeit Laufbahn gD"
                     protokoll.append(f"{ws.title}: Ueberschrift „Laufbahn mD“ -> „Laufbahn gD“")
-            if basis in STATUSAMT_GD and str(ws["A9"].value or "").startswith("Statusamt: Polizeiobermeister"):
-                ws["A9"] = STATUSAMT_GD[basis]
-                protokoll.append(f"{ws.title}: A9 „{STATUSAMT_GD[basis]}“ (war mD-Statusamt)")
+            if basis in STATUSAMT_GD:
+                besoldung, text = STATUSAMT_GD[basis]
+                if re.match(r"Statusamt: Polizei(ober|haupt)?meister", str(ws["A9"].value or "")):
+                    protokoll.append(f"{ws.title}: A9 „{ws['A9'].value}“ -> „{text}“")
+                    ws["A9"] = text
+                if str(ws["A4"].value) == "9mZ" and besoldung != "9mZ":
+                    protokoll.append(f"{ws.title}: A4 „9mZ“ -> „{besoldung}“")
+                    ws["A4"] = besoldung
 
 
 def blattbasis(titel):
@@ -296,19 +310,27 @@ def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
     r += 1
     zelle(ws, f"A{r}", "Amtsbezeichnungen (Statusamt)", ABSCHNITT)
     r += 1
-    for i, t in enumerate(["Kürzel", "Amtsbezeichnung (männlich)", "Amtsbezeichnung (weiblich)"]):
+    for i, t in enumerate(["Kürzel", "Amtsbezeichnung (männlich)", "Amtsbezeichnung (weiblich)", "Besoldungsgruppe"]):
         zelle(ws, f"{get_column_letter(i + 1)}{r}", t, FETT, KOPF, rahmen=True)
     r += 1
-    alt_amt = tabelle(alt_zeilen, "kürzel", "amtsbezeichnung")
-    eintraege = [tuple(z[:3]) for z in alt_amt] or AMTSBEZEICHNUNGEN
-    for k, m, w in list(eintraege) + [(None, None, None)] * 4:
-        zelle(ws, f"A{r}", k, fill=EINGABE, rahmen=True)
-        zelle(ws, f"B{r}", m, fill=EINGABE, rahmen=True)
-        zelle(ws, f"C{r}", w, fill=EINGABE, rahmen=True)
+    vorgaben = {norm(e[0]): e for e in AMTSBEZEICHNUNGEN}
+    eintraege = []
+    for z in tabelle(alt_zeilen, "kürzel", "amtsbezeichnung"):
+        e = tuple(z[:4])
+        vorgabe = vorgaben.get(norm(e[0]))
+        if vorgabe and tuple(e[:3]) in ALTE_VORGABEN:
+            e = vorgabe
+        elif vorgabe and e[3] in (None, ""):  # Datei vor Einfuehrung der Besoldungsgruppe
+            e = e[:3] + (vorgabe[3],)
+        eintraege.append(e)
+    for k, m, w, bg in (eintraege or AMTSBEZEICHNUNGEN) + [(None, None, None, None)] * 4:
+        for col, v in zip("ABCD", (k, m, w, bg)):
+            zelle(ws, f"{col}{r}", v, fill=EINGABE, rahmen=True)
         r += 1
-    zelle(ws, f"A{r}", "Die weibliche Form wird genommen, wenn Geschlecht = w ist oder das Kürzel auf „in“ endet (z.B. POMin). "
+    zelle(ws, f"A{r}", "Ins PDF kommt „Amtsbezeichnung (Besoldungsgruppe)“, z.B. „Polizeiobermeister (A8)“. "
+                       "Die weibliche Form wird genommen, wenn Geschlecht = w ist oder das Kürzel auf „in“ endet (z.B. POMin). "
                        "Ist die Amtsbezeichnung leer, gilt der Blattname (z.B. PM).", HINWEIS)
-    for col, b in zip("ABC", (26, 44, 44)):
+    for col, b in zip("ABCD", (26, 40, 40, 18)):
         ws.column_dimensions[col].width = b
     return ws
 

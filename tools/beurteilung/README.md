@@ -19,7 +19,7 @@ Hat nichts mit der Vereinsapp zu tun und liegt nur hier im Repository.
    Feldern werden gemeldet.
 
 Eingetragen werden: Beurteilungsart, Anlass, Stichtag, Zeitraum, Beamtin/Beamter,
-Name, Geburtsdatum, Amtsbezeichnung (männl./weibl.), letzte Ernennung,
+Name, Geburtsdatum, Amtsbezeichnung mit Besoldungsgruppe (z.B. „Polizeiobermeister (A8)“), letzte Ernennung,
 Dienststelle/Organisationseinheit, Erst-/Zweitbeurteilende, die vier Teilnoten
 (1.1, 2, 4.2, 4.3) und die Gesamtnote (Spalte „neue RBU“).
 
