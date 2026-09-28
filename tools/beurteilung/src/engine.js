@@ -477,9 +477,18 @@
     return v;
   }
 
+  function dateinamensteil(s) {
+    return String(s).normalize('NFC')
+      .replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ä/g, 'ae').replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+  }
+
   function dateiname(a) {
     const p = a.person;
-    const teil = (s) => String(s).normalize('NFC').replace(/[\/\\:*?"<>|]+/g, '').replace(/\s+/g, '_');
+    // Windows-/ZIP-sicher: keine Umlaute, keine Sonderzeichen, begrenzte Laenge
+    const teil = (s) => dateinamensteil(s);
     const tag = (a.stichtag || a.bis || '').split('.').reverse().join('-');
     return [teil(p.name), teil(p.vorname), a.art.kurz, tag].filter(Boolean).join('_') + '.pdf';
   }
@@ -593,12 +602,25 @@
   }
 
   async function fertigstellen(bytes, dateiname) {
-    const pdf = await PDFDocument.load(bytes);
+    let pdf;
+    try {
+      pdf = await PDFDocument.load(bytes);
+    } catch (e) {
+      if (/encrypt/i.test(e.message)) {
+        throw new Error('„' + dateiname + '“ ist mit einem Kennwort/Schutz gespeichert. Bitte im PDF-Programm ohne ' +
+          'Sicherheitseinstellungen speichern und erneut hineinziehen.');
+      }
+      throw new Error('„' + dateiname + '“ lässt sich nicht als PDF lesen (' + e.message + ').');
+    }
     const info = pdf.getInfoDict();
     if (info.get(PDFName.of(FERTIG_MARKE))) {
       throw new Error('„' + dateiname + '“ wurde bereits fertiggestellt. Bitte die ausgefüllte Ausgangsdatei verwenden.');
     }
     const form = pdf.getForm();
+    if (!form.getFields().length) {
+      throw new Error('„' + dateiname + '“ enthält keine Formularfelder mehr – vermutlich wurde es über „Drucken als PDF“ ' +
+        'gespeichert. Bitte die ausgefüllte Beurteilung mit „Speichern“ bzw. „Speichern unter“ sichern.');
+    }
     let feld;
     try { feld = form.getTextField(BEGRUENDUNG); } catch (e) {
       throw new Error('„' + dateiname + '“ ist kein Beurteilungsvordruck BPOL 4 00 069.');
@@ -703,5 +725,5 @@
     return FELDNAMEN[n] || n;
   }
 
-  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, datum, umbrechen };
+  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen };
 });

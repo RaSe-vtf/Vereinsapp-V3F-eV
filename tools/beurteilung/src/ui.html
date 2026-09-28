@@ -55,16 +55,45 @@
   details { margin-top: 8px; font-size: 14px; }
   summary { cursor: pointer; color: var(--leise); }
   footer { color: var(--leise); font-size: 13px; text-align: center; }
+  footer small { display: block; margin-top: 4px; opacity: .8; }
+  .sperre { background: var(--fehler-bg); color: var(--fehler); border: 1px solid var(--fehler); border-radius: 8px;
+            padding: 14px 16px; margin: 0 0 20px; font-size: 15px; }
+  .sperre strong { display: block; margin-bottom: 4px; }
+  a.nachladen { display: inline-block; margin-top: 8px; margin-left: 10px; color: var(--akzent); font-weight: 600; }
+  kbd { font: 12px ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--linie); border-radius: 4px; padding: 0 4px; }
 </style>
 </head>
 <body>
 <main>
+  <noscript><div class="sperre"><strong>JavaScript ist in diesem Browser gesperrt.</strong>
+    Das Tool braucht JavaScript (es läuft nur lokal). Bitte die Datei mit Microsoft Edge öffnen oder die IT
+    bitten, JavaScript für lokale Dateien (file://) zuzulassen.</div></noscript>
+  <div id="sperre" class="sperre" hidden></div>
+  <script>
+    // Bewusst altes JavaScript (ES5), damit diese Pruefung auch in sehr alten
+    // Browsern (Internet Explorer, IE-Modus in Edge) laeuft und verstaendlich meldet.
+    (function () {
+      var ok = typeof Promise !== 'undefined' && typeof Blob !== 'undefined' && typeof Uint8Array !== 'undefined' &&
+        typeof TextDecoder !== 'undefined' && typeof URL !== 'undefined' && !!URL.createObjectURL &&
+        ('noModule' in document.createElement('script'));
+      if (!ok) {
+        var d = document.getElementById('sperre');
+        d.innerHTML = '<strong>Dieser Browser ist zu alt für das Tool.</strong>' +
+          'Vermutlich ist die Datei im Internet Explorer oder im IE-Modus geöffnet. Bitte im Explorer mit der rechten ' +
+          'Maustaste auf <b>Beurteilung.html</b> → <b>Öffnen mit</b> → <b>Microsoft Edge</b> (oder Chrome/Firefox/Safari).';
+        d.hidden = false;
+        window.BEURTEILUNG_ALTER_BROWSER = true;
+      }
+    })();
+  </script>
   <h1>Dienstliche Beurteilungen</h1>
   <p class="unter">Vordruck BPOL 4 00 069 – automatisch aus der Notenübersicht befüllen</p>
 
   <section class="karte">
     <h2><span class="nr">1</span> PDFs erzeugen</h2>
-    <p>In Excel auf „Beurteilungen erstellen“ alles auswählen, <strong>speichern und schließen</strong> (⌘ S, dann ⌘ W – eine in Excel geöffnete Datei ist hier grau und nicht auswählbar) und die Excel-Datei hier hineinziehen.
+    <p>In Excel auf „Beurteilungen erstellen“ alles auswählen, <strong>speichern und schließen</strong>
+       (Windows: <kbd>Strg</kbd>+<kbd>S</kbd>, dann Excel-Fenster schließen · Mac: <kbd>⌘</kbd>+<kbd>S</kbd>, dann <kbd>⌘</kbd>+<kbd>W</kbd>)
+       und die Excel-Datei hier hineinziehen. Eine noch geöffnete Datei ist im Auswahlfenster gesperrt bzw. liefert den alten Stand.
        Es werden Personalangaben, Beurteilende, die vier Teilnoten und die Gesamtnote eingetragen – alles andere
        ergänzen die Beurteilenden im PDF.</p>
     <label class="ablage" id="ablage-excel">
@@ -86,7 +115,9 @@
     <div class="ergebnis" id="ergebnis-pdf"></div>
   </section>
 
-  <footer>Alles läuft nur hier in diesem Browserfenster – es werden keine Daten ins Internet übertragen.</footer>
+  <footer>Alles läuft nur hier in diesem Browserfenster – es werden keine Daten ins Internet übertragen
+    (technisch gesperrt: keine Netzverbindungen erlaubt).
+    <small>Stand /*BUILD*/ · Die fertigen Dateien landen im Download-Ordner (Edge: Download-Symbol ↓ oben rechts zeigt sie an).</small></footer>
 </main>
 
 <script>/*PDFLIB*/</script>
@@ -99,6 +130,24 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
 <script>
 (function () {
   'use strict';
+  const sperre = document.getElementById('sperre');
+  function zeigeSperre(titel, text) {
+    sperre.replaceChildren();
+    const s = document.createElement('strong');
+    s.textContent = titel;
+    sperre.append(s, document.createTextNode(text));
+    sperre.hidden = false;
+  }
+  if (window.BEURTEILUNG_ALTER_BROWSER) return;
+  if (!window.PDFLib || !window.XLSX || !window.JSZip || !window.BeurteilungEngine || VORDRUCK_B64.length < 1000) {
+    zeigeSperre('Das Tool ist unvollständig geladen.', ' Die Datei Beurteilung.html ist vermutlich beim Kopieren oder ' +
+      'per E-Mail gekürzt oder verändert worden (ca. 3 MB sind richtig). Bitte die Datei erneut aus der ZIP entpacken.');
+    return;
+  }
+  window.addEventListener('error', (e) => zeigeSperre('Unerwarteter Fehler: ', (e.message || e.error || '') +
+    ' – bitte Seite neu laden (F5). Bleibt der Fehler, diesen Text mit einem Bildschirmfoto melden.'));
+  window.addEventListener('unhandledrejection', (e) => zeigeSperre('Unerwarteter Fehler: ',
+    String((e.reason && e.reason.message) || e.reason) + ' – bitte Seite neu laden (F5).'));
   const E = window.BeurteilungEngine;
   let vordruck = null;
   function holeVordruck() {
@@ -121,13 +170,37 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
   }
   const meldung = (art, t) => el('div', { class: 'meldung ' + art }, t);
 
+  const letzteUrls = [];
+  /** Startet den Download und liefert einen sichtbaren Link, falls der Browser ihn blockiert. */
   function herunterladen(daten, name, typ) {
     const url = URL.createObjectURL(new Blob([daten], { type: typ }));
+    letzteUrls.push(url);
+    while (letzteUrls.length > 6) URL.revokeObjectURL(letzteUrls.shift());
     const a = el('a', { href: url, download: name });
     document.body.append(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return el('a', { href: url, download: name, class: 'nachladen' }, '↓ ' + name + ' erneut herunterladen');
+  }
+
+  /** Liest eine Datei; gibt verstaendliche Meldungen fuer gesperrte/falsche Dateien. */
+  async function lies(datei, endungen) {
+    if (/^~\$/.test(datei.name)) {
+      throw new Error('„' + datei.name + '“ ist nur die Sperrdatei von Excel. Bitte die eigentliche Notenübersicht wählen ' +
+        '(Name ohne „~$“) und sie vorher in Excel schließen.');
+    }
+    const endung = (datei.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+    if (!endungen.includes(endung)) {
+      const hinweis = endung === '.xls' || endung === '.csv' || endung === '.ods'
+        ? ' Bitte in Excel über „Speichern unter“ als „Excel-Arbeitsmappe (.xlsx)“ speichern.' : '';
+      throw new Error('„' + datei.name + '“: erwartet wird ' + endungen.join(' oder ') + '.' + hinweis);
+    }
+    try {
+      return new Uint8Array(await datei.arrayBuffer());
+    } catch (e) {
+      throw new Error('„' + datei.name + '“ konnte nicht gelesen werden – ist sie noch in Excel/einem PDF-Programm ' +
+        'geöffnet oder liegt sie auf einem nicht erreichbaren Laufwerk? Bitte schließen bzw. lokal speichern und erneut versuchen.');
+    }
   }
 
   function ablage(labelId, inputId, verarbeite) {
@@ -135,7 +208,14 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     input.addEventListener('change', () => { if (input.files.length) verarbeite([...input.files]); input.value = ''; });
     ['dragenter', 'dragover'].forEach((ev) => label.addEventListener(ev, (e) => { e.preventDefault(); label.classList.add('aktiv'); }));
     ['dragleave', 'drop'].forEach((ev) => label.addEventListener(ev, (e) => { e.preventDefault(); label.classList.remove('aktiv'); }));
-    label.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) verarbeite([...e.dataTransfer.files]); });
+    label.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length) verarbeite([...e.dataTransfer.files]);
+      else {
+        const ziel = label.parentNode.querySelector('.ergebnis');
+        ziel.replaceChildren(meldung('warn', 'Hier kam keine Datei an. Anhänge aus Outlook oder der E-Akte bitte zuerst ' +
+          'speichern (z.B. auf dem Desktop) und dann von dort hineinziehen oder per Klick auswählen.'));
+      }
+    });
   }
   // Datei versehentlich neben die Ablage gezogen: nicht im Browser oeffnen
   window.addEventListener('dragover', (e) => e.preventDefault());
@@ -149,7 +229,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     const inhalt = [];
     for (const d of dateien) {
       try {
-        const mappe = E.leseArbeitsmappe(new Uint8Array(await d.arrayBuffer()), d.name);
+        const mappe = E.leseArbeitsmappe(await lies(d, ['.xlsx', '.xlsm']), d.name);
         const { liste, uebersprungen } = E.auftraege(mappe);
         alle.push(...liste);
         inhalt.push(uebersicht(mappe, liste, uebersprungen));
@@ -205,9 +285,10 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     const alt = knopf.textContent;
     try {
       const vd = holeVordruck();
+      let link;
       if (auftraege.length === 1) {
         knopf.textContent = 'Erzeuge …';
-        herunterladen(await E.erzeugePdf(vd, auftraege[0]), E.dateiname(auftraege[0]), 'application/pdf');
+        link = herunterladen(await E.erzeugePdf(vd, auftraege[0]), E.dateiname(auftraege[0]), 'application/pdf');
       } else {
         const zip = new JSZip();
         const namen = new Set();
@@ -221,9 +302,11 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
         knopf.textContent = 'Packe ZIP …';
         const a = auftraege[0];
         const tag = (a.stichtag || a.bis || '').split('.').reverse().join('-');
-        herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_' + a.art.kurz + (tag ? '_' + tag : '') + '.zip', 'application/zip');
+        link = herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_' + a.art.kurz + (tag ? '_' + tag : '') + '.zip', 'application/zip');
       }
       knopf.textContent = 'Fertig – liegt im Download-Ordner';
+      const alterLink = knopf.parentNode.querySelector('a.nachladen');
+      if (alterLink) alterLink.replaceWith(link); else knopf.after(link);
     } catch (e) {
       knopf.parentNode.append(meldung('fehler', 'Fehler beim Erzeugen: ' + e.message));
       knopf.textContent = alt;
@@ -240,8 +323,8 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     const inhalt = [];
     for (const d of dateien) {
       try {
-        const r = await E.fertigstellen(new Uint8Array(await d.arrayBuffer()), d.name);
-        const name = d.name.replace(/\.pdf$/i, '') + '_fertig.pdf';
+        const r = await E.fertigstellen(await lies(d, ['.pdf']), d.name);
+        const name = E.dateinamensteil(d.name.replace(/\.pdf$/i, '')) + '_fertig.pdf';
         fertige.push({ name, bytes: r.bytes });
         inhalt.push(el('div', { class: 'eckdaten' }, el('div', null, el('span', null, 'Datei: '), d.name, '  →  ', name)));
         r.hinweise.forEach((h, i) => inhalt.push(meldung(i === 0 ? 'ok' : 'warn', h)));
@@ -250,13 +333,14 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
       }
     }
     ziel.replaceChildren(...inhalt);
-    if (fertige.length === 1) herunterladen(fertige[0].bytes, fertige[0].name, 'application/pdf');
+    let link = null;
+    if (fertige.length === 1) link = herunterladen(fertige[0].bytes, fertige[0].name, 'application/pdf');
     else if (fertige.length > 1) {
       const zip = new JSZip();
       fertige.forEach((f) => zip.file(f.name, f.bytes));
-      herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_fertig.zip', 'application/zip');
+      link = herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_fertig.zip', 'application/zip');
     }
-    if (fertige.length) ziel.append(meldung('ok', 'Fertige Datei(en) liegen im Download-Ordner.'));
+    if (fertige.length) ziel.append(meldung('ok', 'Fertige Datei(en) liegen im Download-Ordner.'), link);
   }
 
   ablage('ablage-excel', 'datei-excel', verarbeiteExcel);

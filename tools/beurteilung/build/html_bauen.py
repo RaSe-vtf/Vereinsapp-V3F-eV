@@ -6,6 +6,7 @@ vorbereiteten Vordruck (Base64) in src/ui.html ein.
 Aufruf: python3 html_bauen.py <vordruck_vorbereitet.pdf> <ziel.html>
 """
 import base64
+import datetime
 import pathlib
 import sys
 
@@ -25,6 +26,7 @@ def main(vordruck, ziel):
         "/*JSZIP*/": skript("vendor/jszip.min.js"),
         "/*ENGINE*/": skript("src/engine.js"),
         "/*VORDRUCK*/": base64.b64encode(pathlib.Path(vordruck).read_bytes()).decode("ascii"),
+        "/*BUILD*/": datetime.date.today().strftime("%d.%m.%Y"),
     }
     for marke, inhalt in teile.items():
         if html.count(marke) != 1:
