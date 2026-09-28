@@ -63,7 +63,13 @@ pip install pymupdf openpyxl
 python3 build/vordruck_vorbereiten.py <4_00_069_Vordruck_blanko.pdf> src/vordruck_vorbereitet.pdf
 python3 build/html_bauen.py src/vordruck_vorbereitet.pdf dist/Beurteilung.html
 python3 build/excel_aufbereiten.py <Notenübersicht.xlsx> <Notenübersicht_neu.xlsx>
+python3 build/funktionen_importieren.py <Anforderungsprofile/ oder .zip> <Notenübersicht_neu.xlsx> [...]
 ```
+
+`funktionen_importieren.py` liest Anforderungsprofile (teilausgefüllte Vordrucke
+BPOL 4 00 069: `f.funktion.1`, `f.funktion.2`, `f.taetigkeit.1`) und schreibt sie ins
+Blatt „Funktionen“ (gleichnamige ersetzt, neue angehängt, sortiert nach Wertigkeit).
+Die Profile selbst liegen nicht im Repository.
 
 `excel_aufbereiten.py` ist wiederholbar: über eine schon aufbereitete Datei
 laufen gelassen, bleiben Startseite, Beurteiler und Einstellungen erhalten.

@@ -34,7 +34,6 @@
   // Endnote zusaetzlich unter "G Gesamtbewertung" (Seite 3) – nur RBU/ALB
   const GESAMTBEWERTUNG = ['f.dd.47', 'f.dd.48'];
   const KOOP_FELDER = 6; // f.koorperation.1 .. .6 (Schreibweise des Vordrucks)
-  const TAETIGKEIT_PRAEFIX = '• ';
   // Felder, die der Vordruck bei "Beurteilungsbeitrag" per Skript ausblendet
   const ZWEIT_FELDER = [];
   for (let i = 2; i <= 48; i += 2) ZWEIT_FELDER.push('f.dd.' + i);
@@ -457,6 +456,20 @@
     }
   }
 
+  /**
+   * Taetigkeiten im Stil der Anforderungsprofile: "- " davor, Folgezeilen
+   * eingerueckt, Leerzeile dazwischen – fertig umbrochen auf die Feldbreite.
+   */
+  function taetigkeitenText(font, feld, taetigkeiten) {
+    const breite = feldGeometrie(feld).breite;
+    const g = schriftgroesse(feld);
+    const bloecke = taetigkeiten.map((x) => {
+      const zeilen = umbrechen(font, g, bereinige(font, x).replace(/\n/g, ' '), breite - font.widthOfTextAtSize('- ', g));
+      return zeilen.map((z, i) => (i === 0 ? '- ' : '  ') + z).join('\n');
+    });
+    return bloecke.join('\n\n');
+  }
+
   function fusszeile(a) {
     const p = a.person;
     let v = a.art.wert + ' für ' + p.name + ', ' + p.vorname + '; geb. ' + p.geb;
@@ -500,9 +513,12 @@
 
     if (a.funktion) {
       setzeText(form, 'f.funktion.1', t(a.funktion.bezeichnung));
-      setzeText(form, 'f.funktion.2', t(a.funktion.wertigkeit));
-      setzeText(form, 'f.wert.1', t(a.funktion.wertigkeit)); // Seite 2, Nr. 4.1.2
-      setzeText(form, 'f.taetigkeit.1', t(a.funktion.taetigkeiten.map((x) => TAETIGKEIT_PRAEFIX + x).join('\n')));
+      if (a.funktion.wertigkeit) {
+        setzeText(form, 'f.funktion.2', t('(' + a.funktion.wertigkeit + ')')); // Schreibweise der Profile
+        setzeText(form, 'f.wert.1', t(a.funktion.wertigkeit)); // Seite 2, Nr. 4.1.2 (schmales Feld)
+      }
+      setzeText(form, 'f.taetigkeit.1', taetigkeitenText(courier, form.getTextField('f.taetigkeit.1'),
+        a.funktion.taetigkeiten));
     }
     p.koop.slice(0, KOOP_FELDER).forEach((d, i) => setzeText(form, 'f.koorperation.' + (i + 1), d));
     setzeText(form, 'f.gespraech.1', p.gespraech);
