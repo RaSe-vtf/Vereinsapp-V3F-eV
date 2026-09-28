@@ -141,7 +141,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
   if (window.BEURTEILUNG_ALTER_BROWSER) return;
   if (!window.PDFLib || !window.XLSX || !window.JSZip || !window.BeurteilungEngine || VORDRUCK_B64.length < 1000) {
     zeigeSperre('Das Tool ist unvollständig geladen.', ' Die Datei Beurteilung.html ist vermutlich beim Kopieren oder ' +
-      'per E-Mail gekürzt oder verändert worden (ca. 3 MB sind richtig). Bitte die Datei erneut aus der ZIP entpacken.');
+      'per E-Mail gekürzt oder verändert worden (ca. 1,4 MB sind richtig). Bitte die Datei erneut aus der ZIP entpacken.');
     return;
   }
   window.addEventListener('error', (e) => zeigeSperre('Unerwarteter Fehler: ', (e.message || e.error || '') +

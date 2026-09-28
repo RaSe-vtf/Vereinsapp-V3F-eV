@@ -80,7 +80,26 @@ def main(quelle, ziel):
 
     if not begruendung:
         sys.exit(f"Feld {FELD_BEGRUENDUNG} nicht gefunden – falscher Vordruck?")
-    doc.save(ziel, encryption=pymupdf.PDF_ENCRYPT_NONE, garbage=1, deflate=True)
+
+    # Ungenutzte Formularschriften entfernen: Im Schriftvorrat des Formulars
+    # (AcroForm/DR/Font) liegen vollstaendig eingebettete Schriften (Courier New,
+    # Verdana, ...), die von keinem Feld verwendet werden – rund 1,2 MB. Die
+    # sichtbaren Texte des Vordrucks nutzen eigene Teilschriften und bleiben unberuehrt.
+    benutzt = set()
+    for x in range(1, doc.xref_length()):
+        da = schluessel(doc, x, "DA")
+        if da and da[0] == "string":
+            benutzt.update(re.findall(r"/([^\s/]+)\s+[\d.]+\s+Tf", da[1]))
+    if acro and acro[0] == "xref":
+        dr = schluessel(doc, axref, "DR/Font")
+        if dr and dr[0] == "dict":
+            eintraege = re.findall(r"/([^\s/<>\[\]()]+)\s+(\d+ 0 R)", dr[1])
+            behalten = {n: r for n, r in eintraege if n in benutzt}
+            entfernt = [n for n, _ in eintraege if n not in benutzt]
+            doc.xref_set_key(axref, "DR/Font", "<<" + "".join(f"/{n} {r}" for n, r in behalten.items()) + ">>")
+            if entfernt:
+                print("ungenutzte Formularschriften entfernt: " + ", ".join(entfernt))
+    doc.save(ziel, encryption=pymupdf.PDF_ENCRYPT_NONE, garbage=3, deflate=True)
     print(f"{geaendert} Schriftgroessen fest eingestellt, Schutz entfernt -> {ziel}")
 
 
