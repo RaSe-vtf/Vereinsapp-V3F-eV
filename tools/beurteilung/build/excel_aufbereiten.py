@@ -20,7 +20,7 @@ import sys
 from copy import copy
 
 import openpyxl
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
@@ -31,7 +31,8 @@ LETZTE_ZEILE = 200  # Reichweite der korrigierten Zaehlformeln
 
 # Kuerzel, Amtsbezeichnung maennlich/weiblich, Besoldungsgruppe.
 # Ins PDF kommt z.B. "Polizeiobermeister (A8)"; das "Z" der Besoldungsgruppe
-# kennzeichnet die Amtszulage.
+# kennzeichnet die Amtszulage. Vom Nutzer als endgueltig bestaetigt – wird bei
+# jedem Aufbereiten fest geschrieben und im Blatt "Einstellungen" gesperrt.
 AMTSBEZEICHNUNGEN = [
     ("PM", "Polizeimeister", "Polizeimeisterin", "A7"),
     ("POM", "Polizeiobermeister", "Polizeiobermeisterin", "A8"),
@@ -43,11 +44,6 @@ AMTSBEZEICHNUNGEN = [
     ("PHKZ", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A12"),
     ("EPHK", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin", "A13"),
 ]
-# Vorgaengerwerte der ersten Auslieferung: stehen sie unveraendert in einer
-# aufbereiteten Datei, werden sie durch die aktuellen Vorgaben ersetzt.
-ALTE_VORGABEN = {
-    ("PHMZ", "Polizeihauptmeister mit Amtszulage", "Polizeihauptmeisterin mit Amtszulage"),
-}
 STATUSAMT_GD = {  # Kopierfehler aus den mD-Blaettern in A4/A9 der gD-Blaetter
     "PK": ("9g", "Statusamt: Polizeikommissar/-in A 9g"),
     "POK": (10, "Statusamt: Polizeioberkommissar/-in A 10"),
@@ -61,6 +57,7 @@ ABSCHNITT = Font(bold=True, size=12, color="1F3864")
 HINWEIS = Font(italic=True, size=9, color="666666")
 EINGABE = PatternFill("solid", fgColor="FFF2CC")
 KOPF = PatternFill("solid", fgColor="D9E1F2")
+FEST = PatternFill("solid", fgColor="EDEDED")
 DUENN = Side(style="thin", color="A6A6A6")
 RAHMEN = Border(left=DUENN, right=DUENN, top=DUENN, bottom=DUENN)
 DATUM = "DD.MM.YYYY"
@@ -279,10 +276,20 @@ def baue_beurteiler(wb, alt_zeilen):
     return ws
 
 
+def sperre_ausser_eingabe(ws):
+    """Blattschutz ohne Kennwort: nur die gelben Eingabefelder bleiben frei."""
+    for row in ws.iter_rows():
+        for z in row:
+            if z.fill is not None and z.fill.fgColor is not None and z.fill.fgColor.rgb in ("00FFF2CC", "FFFFF2CC"):
+                z.protection = Protection(locked=False)
+    ws.protection.sheet = True
+    ws.protection.formatColumns = False  # Spaltenbreite bleibt anpassbar
+
+
 def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
     ws = wb.create_sheet(EINSTELLUNGEN)
     zelle(ws, "A1", "Einstellungen", TITEL)
-    zelle(ws, "A2", "Feste Angaben, die für alle Beurteilungen gelten. Gelb = Eingabefeld.", HINWEIS)
+    zelle(ws, "A2", "Feste Angaben, die für alle Beurteilungen gelten. Gelb = Eingabefeld, grau = fest (Blatt ist ohne Kennwort geschützt).", HINWEIS)
 
     zelle(ws, "A4", "Dienststelle", FETT)
     zelle(ws, "B4", alt_werte.get("dienststelle"), fill=EINGABE, rahmen=True)
@@ -313,25 +320,16 @@ def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
     for i, t in enumerate(["Kürzel", "Amtsbezeichnung (männlich)", "Amtsbezeichnung (weiblich)", "Besoldungsgruppe"]):
         zelle(ws, f"{get_column_letter(i + 1)}{r}", t, FETT, KOPF, rahmen=True)
     r += 1
-    vorgaben = {norm(e[0]): e for e in AMTSBEZEICHNUNGEN}
-    eintraege = []
-    for z in tabelle(alt_zeilen, "kürzel", "amtsbezeichnung"):
-        e = tuple(z[:4])
-        vorgabe = vorgaben.get(norm(e[0]))
-        if vorgabe and tuple(e[:3]) in ALTE_VORGABEN:
-            e = vorgabe
-        elif vorgabe and e[3] in (None, ""):  # Datei vor Einfuehrung der Besoldungsgruppe
-            e = e[:3] + (vorgabe[3],)
-        eintraege.append(e)
-    for k, m, w, bg in (eintraege or AMTSBEZEICHNUNGEN) + [(None, None, None, None)] * 4:
-        for col, v in zip("ABCD", (k, m, w, bg)):
-            zelle(ws, f"{col}{r}", v, fill=EINGABE, rahmen=True)
+    for eintrag in AMTSBEZEICHNUNGEN:
+        for col, v in zip("ABCD", eintrag):
+            zelle(ws, f"{col}{r}", v, fill=FEST, rahmen=True)
         r += 1
     zelle(ws, f"A{r}", "Ins PDF kommt „Amtsbezeichnung (Besoldungsgruppe)“, z.B. „Polizeiobermeister (A8)“. "
                        "Die weibliche Form wird genommen, wenn Geschlecht = w ist oder das Kürzel auf „in“ endet (z.B. POMin). "
-                       "Ist die Amtsbezeichnung leer, gilt der Blattname (z.B. PM).", HINWEIS)
+                       "Ist die Amtsbezeichnung leer, gilt der Blattname (z.B. PM). Die Tabelle ist fest und gesperrt.", HINWEIS)
     for col, b in zip("ABCD", (26, 40, 40, 18)):
         ws.column_dimensions[col].width = b
+    sperre_ausser_eingabe(ws)
     return ws
 
 

@@ -23,6 +23,26 @@ Name, Geburtsdatum, Amtsbezeichnung mit Besoldungsgruppe (z.B. „Polizeiobermei
 Dienststelle/Organisationseinheit, Erst-/Zweitbeurteilende, die vier Teilnoten
 (1.1, 2, 4.2, 4.3) und die Gesamtnote (Spalte „neue RBU“).
 
+## Statusämter (fest, vom Nutzer bestätigt)
+
+| Kürzel | Amtsbezeichnung | Besoldungsgruppe |
+|---|---|---|
+| PM | Polizeimeister/-in | A7 |
+| POM | Polizeiobermeister/-in | A8 |
+| PHM | Polizeihauptmeister/-in | A9m |
+| PHMZ | Polizeihauptmeister/-in | A9mZ |
+| PK | Polizeikommissar/-in | A9g |
+| POK | Polizeioberkommissar/-in | A10 |
+| PHK | Polizeihauptkommissar/-in | A11 |
+| PHKZ | Polizeihauptkommissar/-in | A12 |
+| EPHK | Erste/r Polizeihauptkommissar/-in | A13 |
+
+Form im PDF: „Polizeiobermeister (A8)“. Diese Werte sind endgültig und
+sollen nicht mehr geändert werden. Sie stehen in `AMTSBEZEICHNUNGEN`
+(`build/excel_aufbereiten.py`), werden bei jedem Aufbereiten fest geschrieben
+und sind im Blatt „Einstellungen“ grau und per Blattschutz (ohne Kennwort)
+gesperrt.
+
 ## Änderungen am Vordruck (bewusst nur diese)
 
 - Alle Text- und Auswahlfelder: feste Schriftgröße 10 pt statt „automatisch“
