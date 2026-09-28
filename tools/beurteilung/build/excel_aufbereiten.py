@@ -68,6 +68,7 @@ EINGABE = PatternFill("solid", fgColor="FFF2CC")
 KOPF = PatternFill("solid", fgColor="D9E1F2")
 FEST = PatternFill("solid", fgColor="EDEDED")
 DUENN = Side(style="thin", color="A6A6A6")
+DUENN_SCHWARZ = Side(style="thin")
 RAHMEN = Border(left=DUENN, right=DUENN, top=DUENN, bottom=DUENN)
 DATUM = "DD.MM.YYYY"
 
@@ -185,63 +186,97 @@ def berichtige_notenblatt(ws, protokoll):
     if alte:
         protokoll.append(f"{ws.title}: {len(alte)} Auswahllisten mit externer Quelle ersetzt bzw. entfernt")
 
-    # Markier-Spalte "PDF"
-    if not any(k.startswith("pdf") for k in sp):
-        col = max(sp.values()) + 1
-        while any(ws.cell(r, col).value is not None for r in range(1, ws.max_row + 1)):
-            col += 1
-        kopfzelle = ws.cell(kopf, col, "PDF")
-        vorlage = ws.cell(kopf, sp["name"])
-        kopfzelle.font = Font(name=vorlage.font.name, size=vorlage.font.size, bold=True)
-        kopfzelle.fill = copy(vorlage.fill)
-        kopfzelle.border = copy(vorlage.border)
-        kopfzelle.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        ws.cell(kopf + 1, col, "x = erstellen").font = HINWEIS
-        ws.column_dimensions[get_column_letter(col)].width = 7
-        sp["pdf"] = col
-        dv = DataValidation(type="list", formula1='"x"', allow_blank=True)
-        dv.add(f"{get_column_letter(col)}{erste}:{get_column_letter(col)}{LETZTE_ZEILE}")
-        ws.add_data_validation(dv)
-        for r in range(erste, max(ws.max_row, erste + 40) + 1):
-            if ws.cell(r, sp["name"]).value:
-                ws.cell(r, col).alignment = Alignment(horizontal="center")
-        protokoll.append(f"{ws.title}: Spalte „PDF“ ({get_column_letter(col)}) zum Markieren einzelner Mitarbeiter ergaenzt")
-    # Angaben je Person, die ins PDF uebernommen werden
-    zusatz = [
-        ("Funktion", "Auswahl aus Blatt „Funktionen“", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
-        ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
-        ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
-        ("Schwerbehinderung", "ja / nein", 11, None, '"ja,nein"'),
-    ]
-    for titel, hinweis, breite, fmt, liste_formel in zusatz:
-        if norm(titel) in sp:
-            continue
-        col = freie_spalte(ws, kopf, sp, max(sp.values()) + 1)
-        kopfzelle = ws.cell(kopf, col, titel)
-        vorlage = ws.cell(kopf, sp["name"])
-        kopfzelle.font = Font(name=vorlage.font.name, size=vorlage.font.size, bold=True)
-        kopfzelle.fill = copy(vorlage.fill)
-        kopfzelle.border = copy(vorlage.border)
-        kopfzelle.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        ws.cell(kopf + 1, col, hinweis).font = HINWEIS
-        ws.column_dimensions[get_column_letter(col)].width = breite
-        buchstabe = get_column_letter(col)
-        if fmt:
-            for r in range(erste, LETZTE_ZEILE + 1):
-                ws.cell(r, col).number_format = fmt
+    # Spalten des Tools: in der Reihenfolge, in der die Angaben im Vordruck
+    # vorkommen, "PDF" (Markierung) immer als letzte Spalte.
+    ordne_tool_spalten(ws, kopf, sp, erste, protokoll)
+
+
+TOOL_SPALTEN = [
+    # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
+    ("Funktion", "Auswahl aus Blatt „Funktionen“", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+    ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
+    ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
+    ("Schwerbehinderung", "ja / nein", 16, None, '"ja,nein"'),
+    ("PDF", "x = erstellen", 11, None, '"x"'),
+]
+
+
+def ordne_tool_spalten(ws, kopf, sp, erste, protokoll):
+    """Legt die Tool-Spalten an bzw. sortiert vorhandene um (Werte bleiben erhalten)."""
+    titel_norm = [norm(t[0]) for t in TOOL_SPALTEN]
+    vorhanden = {}
+    for k, c in sp.items():
+        for tn in titel_norm:
+            if k == tn or (tn == "pdf" and k.startswith("pdf")):
+                vorhanden[tn] = c
+    ende = max(ws.max_row, LETZTE_ZEILE)
+    # Werte sichern (Zeile unter der Kopfzeile ist die Hinweiszeile)
+    werte = {tn: {r: ws.cell(r, c).value for r in range(erste, ende + 1)} for tn, c in vorhanden.items()}
+    if vorhanden:
+        start = min(vorhanden.values())
+    else:
+        ohne = {k: c for k, c in sp.items()}
+        start = freie_spalte(ws, kopf, ohne, max(ohne.values()) + 1)
+    ziel = list(range(start, start + len(TOOL_SPALTEN)))
+    fremd = [c for c in ziel if c not in vorhanden.values()
+             and any(ws.cell(r, c).value is not None for r in [kopf, kopf + 1] + list(personenzeilen(ws, kopf, sp)))]
+    if fremd:
+        sys.exit(f"{ws.title}: Spalte {get_column_letter(fremd[0])} ist belegt – Tool-Spalten passen nicht hinter „Teilzeit“")
+    alte_spalten = set(vorhanden.values()) | set(ziel)
+    buchst = {get_column_letter(c) for c in alte_spalten}
+    for dv in list(ws.data_validations.dataValidation):
+        if {re.sub(r"\d", "", str(rng).split(":")[0]) for rng in dv.sqref.ranges} <= buchst:
+            ws.data_validations.dataValidation.remove(dv)
+    for c in alte_spalten:
+        for r in range(kopf, ende + 1):
+            z = ws.cell(r, c)
+            z.value = None
+    vorlage = ws.cell(kopf, sp["name"])
+    tabellen_ende = letzte_tabellenzeile(ws, kopf, sp)
+    for (titel, hinweis, breite, fmt, liste_formel), c in zip(TOOL_SPALTEN, ziel):
+        tn = norm(titel)
+        buchstabe = get_column_letter(c)
+        k = ws.cell(kopf, c, titel)
+        k.font = Font(name=vorlage.font.name, size=vorlage.font.size, bold=True)
+        k.fill = copy(vorlage.fill)
+        k.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.cell(kopf + 1, c, hinweis).font = HINWEIS
+        ws.column_dimensions[buchstabe].width = breite
+        einblenden(ws, c)
+        for r, v in werte.get(tn, {}).items():
+            ws.cell(r, c).value = v
+        for r in range(erste, LETZTE_ZEILE + 1):
+            z = ws.cell(r, c)
+            if fmt:
+                z.number_format = fmt
+            if tn in ("pdf", "schwerbehinderung"):
+                z.alignment = Alignment(horizontal="center")
+        # Tabelle durchzeichnen wie die vorhandene (duenne Linien, Rahmen aussen kraeftig)
+        for r in range(kopf, tabellen_ende + 1):
+            links = Side(style="medium") if c == ziel[0] else DUENN_SCHWARZ
+            rechts = Side(style="medium") if c == ziel[-1] else DUENN_SCHWARZ
+            oben = Side(style="medium") if r == kopf else DUENN_SCHWARZ
+            unten = Side(style="medium") if r in (kopf, tabellen_ende) else DUENN_SCHWARZ
+            ws.cell(r, c).border = Border(left=links, right=rechts, top=oben, bottom=unten)
         if liste_formel:
             dv = DataValidation(type="list", formula1=liste_formel, allow_blank=True)
             dv.add(f"{buchstabe}{erste}:{buchstabe}{LETZTE_ZEILE}")
             ws.add_data_validation(dv)
-        sp[norm(titel)] = col
-        protokoll.append(f"{ws.title}: Spalte „{titel}“ ({buchstabe}) ergaenzt")
+        sp[tn] = c
+    if [vorhanden.get(norm(t[0])) for t in TOOL_SPALTEN] != ziel:
+        protokoll.append(f"{ws.title}: Spalten {get_column_letter(ziel[0])}–{get_column_letter(ziel[-1])}: "
+                         + ", ".join(t[0] for t in TOOL_SPALTEN) + " (Reihenfolge wie im Vordruck, PDF zuletzt)")
 
-    # Auf vielen Blaettern sind die Spalten rechts von "Teilzeit" ausgeblendet –
-    # die Spalten des Tools muessen trotzdem sichtbar sein.
-    for k, c in sp.items():
-        if k.startswith("pdf") or k in {norm(z[0]) for z in zusatz}:
-            if einblenden(ws, c):
-                protokoll.append(f"{ws.title}: Spalte „{ws.cell(kopf, c).value}“ war ausgeblendet – eingeblendet")
+
+def letzte_tabellenzeile(ws, kopf, sp):
+    """Letzte Zeile, bis zu der die vorhandene Tabelle (Spalte Name) umrandet ist."""
+    c = sp["name"]
+    letzte = kopf
+    for r in range(kopf, min(ws.max_row, LETZTE_ZEILE) + 1):
+        b = ws.cell(r, c).border
+        if any(getattr(b, s).style for s in ("left", "right", "top", "bottom")):
+            letzte = r
+    return letzte
 
 
 def freie_spalte(ws, kopf, sp, ab):
