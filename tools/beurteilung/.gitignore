@@ -1,0 +1,6 @@
+# Der Vordruck (BPOL 4 00 069) und die daraus gebaute HTML gehoeren nicht ins
+# Repository, ebenso keine Notenuebersichten mit Personaldaten.
+/dist/
+/src/vordruck_vorbereitet.pdf
+*.xlsx
+*.xlsm

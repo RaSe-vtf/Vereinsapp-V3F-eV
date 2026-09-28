@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:">
+<title>Beurteilungen erstellen</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --karte: #fff; --text: #1d2330; --leise: #5f6776; --linie: #d9dde4;
+    --akzent: #1f3864; --akzent-hell: #e8edf6; --ok: #1e7a3c; --warn: #9a6200; --warn-bg: #fff5de;
+    --fehler: #a4262c; --fehler-bg: #fde7e9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15181e; --karte: #1e222a; --text: #e6e8ec; --leise: #a0a7b4; --linie: #343a45;
+      --akzent: #9db8e8; --akzent-hell: #243049; --ok: #6cc98a; --warn: #f0c060; --warn-bg: #3a3020;
+      --fehler: #ff8a8f; --fehler-bg: #3d2226;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; color: var(--akzent); }
+  .unter { color: var(--leise); margin: 0 0 24px; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .karte h2 { font-size: 17px; margin: 0 0 4px; display: flex; gap: 10px; align-items: center; }
+  .nr { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+        background: var(--akzent); color: var(--karte); font-size: 14px; }
+  .karte > p { color: var(--leise); margin: 0 0 14px; }
+  .ablage { display: block; border: 2px dashed var(--linie); border-radius: 8px; padding: 26px 16px; text-align: center;
+            color: var(--leise); cursor: pointer; transition: background .15s, border-color .15s; }
+  .ablage:hover, .ablage.aktiv { border-color: var(--akzent); background: var(--akzent-hell); color: var(--text); }
+  .ablage strong { color: var(--akzent); }
+  input[type=file] { display: none; }
+  .ergebnis:empty { display: none; }
+  .ergebnis { margin-top: 16px; }
+  .meldung { padding: 8px 12px; border-radius: 6px; margin: 6px 0; font-size: 14px; }
+  .meldung.warn { background: var(--warn-bg); color: var(--warn); }
+  .meldung.fehler { background: var(--fehler-bg); color: var(--fehler); }
+  .meldung.ok { background: var(--akzent-hell); color: var(--ok); }
+  .eckdaten { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; margin: 10px 0; }
+  .eckdaten span { color: var(--leise); }
+  .tabelle { overflow-x: auto; border: 1px solid var(--linie); border-radius: 6px; margin: 10px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--linie); vertical-align: top; }
+  th { background: var(--akzent-hell); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td.note { font-family: ui-monospace, Menlo, monospace; white-space: nowrap; }
+  td.hinweis { color: var(--warn); font-size: 12.5px; }
+  button { font: inherit; font-weight: 600; background: var(--akzent); color: var(--karte); border: 0;
+           border-radius: 7px; padding: 10px 18px; cursor: pointer; margin-top: 8px; }
+  button:disabled { opacity: .5; cursor: default; }
+  details { margin-top: 8px; font-size: 14px; }
+  summary { cursor: pointer; color: var(--leise); }
+  footer { color: var(--leise); font-size: 13px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dienstliche Beurteilungen</h1>
+  <p class="unter">Vordruck BPOL 4 00 069 – automatisch aus der Notenübersicht befüllen</p>
+
+  <section class="karte">
+    <h2><span class="nr">1</span> PDFs erzeugen</h2>
+    <p>In Excel auf „Beurteilungen erstellen“ alles auswählen, speichern und die Excel-Datei hier hineinziehen.
+       Es werden Personalangaben, Beurteilende, die vier Teilnoten und die Gesamtnote eingetragen – alles andere
+       ergänzen die Beurteilenden im PDF.</p>
+    <label class="ablage" id="ablage-excel">
+      <input type="file" id="datei-excel" accept=".xlsx,.xlsm" multiple>
+      <strong>Notenübersicht (.xlsx) hier ablegen</strong><br>oder klicken zum Auswählen
+    </label>
+    <div class="ergebnis" id="ergebnis-excel"></div>
+  </section>
+
+  <section class="karte">
+    <h2><span class="nr">2</span> Beurteilung fertigstellen</h2>
+    <p>Die von den Beurteilenden ausgefüllte PDF hier hineinziehen. Ist die Begründung der Gesamtnote länger als das
+       Feld, wird sie auf Fortsetzungsseiten direkt hinter Seite 5 weitergeführt. Zu lange Texte in anderen Feldern
+       werden gemeldet.</p>
+    <label class="ablage" id="ablage-pdf">
+      <input type="file" id="datei-pdf" accept=".pdf" multiple>
+      <strong>Ausgefüllte Beurteilung(en) (.pdf) hier ablegen</strong><br>oder klicken zum Auswählen
+    </label>
+    <div class="ergebnis" id="ergebnis-pdf"></div>
+  </section>
+
+  <footer>Alles läuft nur hier in diesem Browserfenster – es werden keine Daten ins Internet übertragen.</footer>
+</main>
+
+<script>/*PDFLIB*/</script>
+<script>/*XLSX*/</script>
+<script>/*JSZIP*/</script>
+<script>/*ENGINE*/</script>
+<script>
+const VORDRUCK_B64 = "/*VORDRUCK*/";
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.BeurteilungEngine;
+  let vordruck = null;
+  function holeVordruck() {
+    if (!vordruck) {
+      const bin = atob(VORDRUCK_B64);
+      vordruck = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) vordruck[i] = bin.charCodeAt(i);
+    }
+    return vordruck;
+  }
+
+  const $ = (id) => document.getElementById(id);
+  function el(tag, attrs, ...kinder) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+    }
+    for (const k of kinder.flat()) if (k != null) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+    return e;
+  }
+  const meldung = (art, t) => el('div', { class: 'meldung ' + art }, t);
+
+  function herunterladen(daten, name, typ) {
+    const url = URL.createObjectURL(new Blob([daten], { type: typ }));
+    const a = el('a', { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  function ablage(labelId, inputId, verarbeite) {
+    const label = $(labelId), input = $(inputId);
+    input.addEventListener('change', () => { if (input.files.length) verarbeite([...input.files]); input.value = ''; });
+    ['dragenter', 'dragover'].forEach((ev) => label.addEventListener(ev, (e) => { e.preventDefault(); label.classList.add('aktiv'); }));
+    ['dragleave', 'drop'].forEach((ev) => label.addEventListener(ev, (e) => { e.preventDefault(); label.classList.remove('aktiv'); }));
+    label.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) verarbeite([...e.dataTransfer.files]); });
+  }
+  // Datei versehentlich neben die Ablage gezogen: nicht im Browser oeffnen
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => e.preventDefault());
+
+  // ---------------------------------------------------------------- Schritt 1
+  async function verarbeiteExcel(dateien) {
+    const ziel = $('ergebnis-excel');
+    ziel.replaceChildren(meldung('ok', 'Lese ' + dateien.map((d) => d.name).join(', ') + ' …'));
+    const alle = [];
+    const inhalt = [];
+    for (const d of dateien) {
+      try {
+        const mappe = E.leseArbeitsmappe(new Uint8Array(await d.arrayBuffer()), d.name);
+        const { liste, uebersprungen } = E.auftraege(mappe);
+        alle.push(...liste);
+        inhalt.push(uebersicht(mappe, liste, uebersprungen));
+      } catch (e) {
+        inhalt.push(meldung('fehler', e.message));
+      }
+    }
+    ziel.replaceChildren(...inhalt);
+    if (!alle.length) {
+      ziel.append(meldung('warn', 'Keine Beurteilung zu erzeugen – Auswahl auf der Startseite prüfen.'));
+      return;
+    }
+    const knopf = el('button', { type: 'button' }, alle.length === 1 ? '1 PDF erzeugen' : alle.length + ' PDFs erzeugen (ZIP)');
+    knopf.addEventListener('click', () => erzeuge(alle, knopf));
+    ziel.append(knopf);
+  }
+
+  function uebersicht(mappe, liste, uebersprungen) {
+    const st = mappe.start;
+    const box = el('div');
+    box.append(el('div', { class: 'eckdaten' },
+      el('div', null, el('span', null, 'Datei: '), mappe.dateiname),
+      el('div', null, el('span', null, 'Art: '), st.art.wert),
+      st.stichtag ? el('div', null, el('span', null, 'Stichtag: '), st.stichtag) : null,
+      el('div', null, el('span', null, 'Zeitraum: '), (st.von || '?') + ' – ' + (st.bis || '?')),
+      el('div', null, el('span', null, 'Beurteilungen: '), String(liste.length))));
+    for (const w of mappe.warnungen) box.append(meldung('warn', w));
+    if (uebersprungen.length) {
+      box.append(el('details', null,
+        el('summary', null, uebersprungen.length + ' Mitarbeiter ohne neue Note übersprungen'),
+        el('div', null, uebersprungen.map((p) => p.name + ', ' + p.vorname + ' (' + p.blatt + ')').join(' · '))));
+    }
+    if (liste.length) {
+      const zeilen = liste.map((a) => el('tr', null,
+        el('td', null, a.person.blatt),
+        el('td', null, a.person.name + ', ' + a.person.vorname),
+        el('td', { class: 'note' }, ['n11', 'n2', 'n42', 'n43'].map((k) => a.person.noten[k] || '–').join(' ')),
+        el('td', { class: 'note' }, a.person.noten.endnote || '–'),
+        el('td', null, a.erst || '–'),
+        el('td', null, a.zweit || '–'),
+        el('td', { class: 'hinweis' }, a.hinweise.join('; '))));
+      box.append(el('div', { class: 'tabelle' }, el('table', null,
+        el('thead', null, el('tr', null, ['Blatt', 'Name', '1.1 2 4.2 4.3', 'Gesamt', 'Erstbeurteilende/r', 'Zweitbeurteilende/r', 'Hinweis']
+          .map((t) => el('th', null, t)))),
+        el('tbody', null, zeilen))));
+    }
+    return box;
+  }
+
+  async function erzeuge(auftraege, knopf) {
+    knopf.disabled = true;
+    const alt = knopf.textContent;
+    try {
+      const vd = holeVordruck();
+      if (auftraege.length === 1) {
+        knopf.textContent = 'Erzeuge …';
+        herunterladen(await E.erzeugePdf(vd, auftraege[0]), E.dateiname(auftraege[0]), 'application/pdf');
+      } else {
+        const zip = new JSZip();
+        const namen = new Set();
+        for (let i = 0; i < auftraege.length; i++) {
+          knopf.textContent = 'Erzeuge ' + (i + 1) + ' von ' + auftraege.length + ' …';
+          let n = E.dateiname(auftraege[i]);
+          while (namen.has(n)) n = n.replace(/(_\d+)?\.pdf$/, (m, z) => '_' + ((z ? +z.slice(1) : 1) + 1) + '.pdf');
+          namen.add(n);
+          zip.file(n, await E.erzeugePdf(vd, auftraege[i]));
+        }
+        knopf.textContent = 'Packe ZIP …';
+        const a = auftraege[0];
+        const tag = (a.stichtag || a.bis || '').split('.').reverse().join('-');
+        herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_' + a.art.kurz + (tag ? '_' + tag : '') + '.zip', 'application/zip');
+      }
+      knopf.textContent = 'Fertig – liegt im Download-Ordner';
+    } catch (e) {
+      knopf.parentNode.append(meldung('fehler', 'Fehler beim Erzeugen: ' + e.message));
+      knopf.textContent = alt;
+    } finally {
+      setTimeout(() => { knopf.disabled = false; knopf.textContent = alt; }, 2500);
+    }
+  }
+
+  // ---------------------------------------------------------------- Schritt 2
+  async function verarbeitePdf(dateien) {
+    const ziel = $('ergebnis-pdf');
+    ziel.replaceChildren(meldung('ok', 'Verarbeite ' + dateien.length + ' Datei(en) …'));
+    const fertige = [];
+    const inhalt = [];
+    for (const d of dateien) {
+      try {
+        const r = await E.fertigstellen(new Uint8Array(await d.arrayBuffer()), d.name);
+        const name = d.name.replace(/\.pdf$/i, '') + '_fertig.pdf';
+        fertige.push({ name, bytes: r.bytes });
+        inhalt.push(el('div', { class: 'eckdaten' }, el('div', null, el('span', null, 'Datei: '), d.name, '  →  ', name)));
+        r.hinweise.forEach((h, i) => inhalt.push(meldung(i === 0 ? 'ok' : 'warn', h)));
+      } catch (e) {
+        inhalt.push(meldung('fehler', e.message));
+      }
+    }
+    ziel.replaceChildren(...inhalt);
+    if (fertige.length === 1) herunterladen(fertige[0].bytes, fertige[0].name, 'application/pdf');
+    else if (fertige.length > 1) {
+      const zip = new JSZip();
+      fertige.forEach((f) => zip.file(f.name, f.bytes));
+      herunterladen(await zip.generateAsync({ type: 'uint8array' }), 'Beurteilungen_fertig.zip', 'application/zip');
+    }
+    if (fertige.length) ziel.append(meldung('ok', 'Fertige Datei(en) liegen im Download-Ordner.'));
+  }
+
+  ablage('ablage-excel', 'datei-excel', verarbeiteExcel);
+  ablage('ablage-pdf', 'datei-pdf', verarbeitePdf);
+})();
+</script>
+</body>
+</html>
