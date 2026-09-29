@@ -27,7 +27,13 @@ letzte Ernennung, Dienststelle/Organisationseinheit, Funktionsbezeichnung/-werti
 vor Beurteilung, Schwerbehinderung ja/nein, Erst-/Zweitbeurteilende, die vier
 Teilnoten (1.1, 2, 4.2, 4.3) und die Gesamtnote (Spalte „neue RBU“) – bei Regel-
 und Anlassbeurteilung auf Seite 5 und unter „G Gesamtbewertung“ auf Seite 3, beim
-Beurteilungsbeitrag nie. Alles bleibt im PDF von den Beurteilenden änderbar.
+Beurteilungsbeitrag nie. Sind eine Anlassbeurteilung und/oder bis zu drei
+Beurteilungsbeiträge mit x und Zeitraum eingetragen, kommt bei jeder
+Beurteilungsart ein Textbaustein in „Allgemeine Bemerkungen“ (Seite 5): bei einem
+Eintrag „Die Anlassbeurteilung vom … bis … wurde in dieser Beurteilung
+berücksichtigt.“, bei mehreren „Folgende Beurteilungen wurden …:“ mit einer
+zeitlich geordneten Aufzählung. ALB-Gesamtnote und -Teilnoten bleiben nur in Excel.
+Alles bleibt im PDF von den Beurteilenden änderbar.
 
 ## Statusämter (fest, vom Nutzer bestätigt)
 
@@ -62,7 +68,7 @@ gesperrt.
 pip install pymupdf openpyxl
 python3 build/vordruck_vorbereiten.py <4_00_069_Vordruck_blanko.pdf> src/vordruck_vorbereitet.pdf
 python3 build/html_bauen.py src/vordruck_vorbereitet.pdf dist/Beurteilung.html
-python3 build/excel_aufbereiten.py <Notenübersicht.xlsx> <Notenübersicht_neu.xlsx>
+python3 build/excel_aufbereiten.py <Notenübersicht.xlsx> <Notenübersicht_neu.xlsx> [--vorlage <früher_aufbereitet.xlsx>]
 python3 build/funktionen_importieren.py <Anforderungsprofile/ oder .zip> <Notenübersicht_neu.xlsx> [...]
 ```
 
@@ -73,12 +79,22 @@ Die Profile selbst liegen nicht im Repository.
 
 Die Notenblätter werden dabei in die Reihenfolge des Vordrucks sortiert
 (Personalangaben, Zug, Funktion, Beteiligung, Schwerbehinderung, Teilnoten,
-Gesamtnote; danach Subsidiärmerkmale, frühere Beurteilungen, Teilzeit, „PDF“
-zuletzt). Alle Formelbezüge, Auswahllisten, Breiten und Gruppenüberschriften
+Gesamtnote, Anlassbeurteilung (x, von, bis, Gesamtnote – vormals „aktueller ALB“ –,
+Statusamt, 4 Teilnoten), Beurteilungsbeiträge 1–3 (x, von, bis); danach
+Subsidiärmerkmale, vorletzte Beurteilung, Teilzeit, „PDF“ zuletzt). Alle Formelbezüge, Auswahllisten, Breiten und Gruppenüberschriften
 werden mit umgesetzt; die Punktetabelle (A1 = 6 … C = 1) liegt ausgeblendet rechts.
 
+Rechenspalten (Lfd.Nr., Summe, Monate, ges., Hilfsspalten) werden in allen
+Tabellenzeilen – inklusive mindestens 10 Reservezeilen unter der letzten Person –
+mit ihrer Formel vorbelegt. Danach werden alle Blätter ohne Kennwort geschützt:
+frei sind nur die Eingabezellen (Datenzeilen außer Rechenspalten, Stichtag S2,
+gelbe Felder der Tool-Blätter); Spaltenbreite, Zeilenhöhe, Formatieren und Filtern
+bleiben erlaubt.
+
 `excel_aufbereiten.py` ist wiederholbar: über eine schon aufbereitete Datei
-laufen gelassen, bleiben Startseite, Beurteiler und Einstellungen erhalten.
+laufen gelassen, bleiben Startseite, Beurteiler, Funktionen und Einstellungen
+erhalten. Kommt eine Rohfassung ohne diese Blätter, übernimmt `--vorlage` sie
+aus einer früher aufbereiteten Datei.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst
 (Spalten werden über die Überschriften gefunden).
 

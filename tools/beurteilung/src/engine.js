@@ -232,6 +232,11 @@
         funktion: col('funktion'), koop: col('kooperation'), gespraech: col('gespräch vor'),
         sbh: col('schwerbehind'),
       };
+      // Beruecksichtigte Beurteilungen: Anlassbeurteilung + bis zu 3 Beitraege
+      const genau = (k) => (k in sp ? sp[k] : -1);
+      const frueher = [['Anlassbeurteilung', 'alb']].concat([1, 2, 3].map((i) => ['Beurteilungsbeitrag', 'bb ' + i]))
+        .map(([art, k]) => ({ art: art, spalte: k.toUpperCase(), x: genau(k + ' (x)'), von: genau(k + ' von'), bis: genau(k + ' bis') }))
+        .filter((f) => f.x >= 0);
       for (const [k, v] of Object.entries(c)) {
         if (v < 0 && !['pdf', 'zug', 'geschlecht', 'amtsbez', 'funktion', 'koop', 'gespraech', 'sbh'].includes(k)) {
           warnungen.push('Blatt „' + name + '“: Spalte für „' + k + '“ nicht gefunden.');
@@ -260,6 +265,9 @@
           koop: datumsliste(wert('koop')),
           gespraech: datum(wert('gespraech')),
           sbh: norm(wert('sbh')),
+          frueher: frueher.map((f) => ({
+            art: f.art, spalte: f.spalte, x: !leer(r[f.x]), von: f.von >= 0 ? datum(r[f.von]) : '', bis: f.bis >= 0 ? datum(r[f.bis]) : '',
+          })).filter((f) => f.x || f.von || f.bis),
           noten: {
             n11: text(wert('n11')).toUpperCase(), n2: text(wert('n2')).toUpperCase(),
             n42: text(wert('n42')).toUpperCase(), n43: text(wert('n43')).toUpperCase(),
@@ -310,6 +318,27 @@
     return [mappe.einst.dienststelle, oe].filter((t) => !leer(t)).join(', ');
   }
 
+  /** "TT.MM.JJJJ" -> sortierbare Zahl JJJJMMTT (unbekannt: 0). */
+  function tagZahl(t) {
+    const m = String(t).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    return m ? +m[3] * 10000 + +m[2] * 100 + +m[1] : 0;
+  }
+
+  /**
+   * Textbaustein fuer "Allgemeine Bemerkungen" (Seite 5): welche Anlass-
+   * beurteilung/Beurteilungsbeitraege beruecksichtigt wurden. Leer, wenn keine.
+   */
+  function bemerkungText(liste) {
+    if (!liste.length) return '';
+    if (liste.length === 1) {
+      const f = liste[0];
+      return (f.art === 'Anlassbeurteilung' ? 'Die ' : 'Der ') + f.art + ' vom ' + f.von + ' bis ' + f.bis +
+        ' wurde in dieser Beurteilung berücksichtigt.';
+    }
+    return ['Folgende Beurteilungen wurden in dieser Beurteilung berücksichtigt:']
+      .concat(liste.map((f) => '- ' + f.art + ' vom ' + f.von + ' bis ' + f.bis)).join('\n');
+  }
+
   /** Liefert die zu erzeugenden Beurteilungen einer Arbeitsmappe. */
   function auftraege(mappe) {
     const st = mappe.start;
@@ -341,6 +370,19 @@
             ', die übrigen bitte im PDF ergänzen');
         }
         if (!leer(p.sbh) && !['ja', 'nein'].includes(p.sbh)) hinweise.push('Schwerbehinderung „' + p.sbh + '“ ist weder ja noch nein');
+        const beruecksichtigt = [];
+        for (const f of p.frueher) {
+          if (!f.x) {
+            hinweise.push(f.spalte + ': Zeitraum eingetragen, aber kein x gesetzt – nicht berücksichtigt');
+          } else if (leer(f.von) || leer(f.bis)) {
+            hinweise.push(f.spalte + ': x gesetzt, aber „' + f.spalte + ' ' + (leer(f.von) ? 'von' : 'bis') +
+              '“ fehlt – nicht eingetragen, bitte im PDF unter „Allgemeine Bemerkungen“ ergänzen');
+          } else {
+            if (tagZahl(f.von) > tagZahl(f.bis)) hinweise.push(f.spalte + ': „von“ (' + f.von + ') liegt nach „bis“ (' + f.bis + ')');
+            beruecksichtigt.push(f);
+          }
+        }
+        beruecksichtigt.sort((x, y) => tagZahl(x.von) - tagZahl(y.von));
         liste.push({
           person: p,
           art: st.art,
@@ -352,6 +394,8 @@
           amtsbez: amtsbezeichnung(mappe, p, hinweise),
           dienststelle: dienststelle(mappe, p),
           funktion: funktion,
+          beruecksichtigt: beruecksichtigt,
+          bemerkung: bemerkungText(beruecksichtigt),
           erst: beurteilerText(mappe, erstWahl, 'Erstbeurteilende/r', hinweise),
           zweit: beurteilerText(mappe, zweitWahl, 'Zweitbeurteilende/r', hinweise),
           hinweise: hinweise,
@@ -545,6 +589,9 @@
     }
     p.koop.slice(0, KOOP_FELDER).forEach((d, i) => setzeText(form, 'f.koorperation.' + (i + 1), d));
     setzeText(form, 'f.gespraech.1', p.gespraech);
+    // Allgemeine Bemerkungen: beruecksichtigte Anlassbeurteilung/Beitraege
+    // (ohne feste Umbrueche – das mehrzeilige Feld bricht selbst um)
+    setzeText(form, 'f.allg.1', t(a.bemerkung));
     if (p.sbh === 'ja' || p.sbh === 'nein') {
       // wie das Skript des Vordrucks (kk_schwerbehindert): bei "nein" bleiben
       // Einverstaendnis und Gespraech mit der Vertrauensperson gesperrt
@@ -739,5 +786,5 @@
     return FELDNAMEN[n] || n;
   }
 
-  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen };
+  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen, bemerkungText };
 });

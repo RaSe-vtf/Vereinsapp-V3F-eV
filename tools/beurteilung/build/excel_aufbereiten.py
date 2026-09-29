@@ -9,11 +9,17 @@ berichtigt bekannte Fehler der Notenuebersicht:
   * Bemerkungen, die als Text-Zahl gespeichert sind, werden echte Zahlen,
   * Blattnamen ohne (veraltete) Personenzahl,
   * Kopierfehler in Ueberschriften (Laufbahn gD, Statusamt gD).
+Ausserdem: Spalten fuer Anlassbeurteilung und Beurteilungsbeitraege, Tabelle
+in Reihenfolge des Vordrucks, Rechenspalten in allen Tabellenzeilen vorbelegt
+und Blattschutz (ohne Kennwort) – beschreibbar sind nur die Eingabezellen.
 
 Das Skript ist wiederholbar: laeuft es ueber eine bereits aufbereitete
 Datei, werden vorhandene Einstellungen/Beurteiler uebernommen.
 
-Aufruf: python3 excel_aufbereiten.py <notenuebersicht.xlsx> <ziel.xlsx>
+Aufruf: python3 excel_aufbereiten.py <notenuebersicht.xlsx> <ziel.xlsx> [--vorlage <alt.xlsx>]
+  --vorlage: fehlen der Datei die Tool-Blaetter (z.B. Rohfassung), werden
+             Startseite, Beurteiler, Funktionen und Einstellungen aus dieser
+             frueher aufbereiteten Datei uebernommen.
 """
 import re
 import sys
@@ -198,86 +204,81 @@ def berichtige_notenblatt(ws, protokoll):
     # Monate ohne Datum: "n.N." statt DATEDIF ab 1900 (z.B. 1533)
     kein_datum(ws, kopf, protokoll)
 
+    # Rechenspalten in allen Tabellenzeilen (auch Reservezeilen) vorbelegen,
+    # Tabelle zeichnen und alles ausser den Eingabezellen sperren
+    pos = positionen(ws, kopf)
+    breite = pos["pdf"]
+    ende, rechen = erweitere_tabelle(ws, kopf, pos, breite, protokoll)
+    kein_datum(ws, kopf, protokoll)  # "ges." neben eben ergaenzten Monatsformeln
+    gestalte_tabelle(ws, kopf, pos, breite, ende)
+    schuetze_notenblatt(ws, kopf, breite, ende, rechen)
 
+
+NOTENLISTE = '"A1,A2,B1,B2,B3,C"'
 TOOL_SPALTEN = [
     # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
     ("Funktion", "Auswahl aus Blatt „Funktionen“", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
     ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
     ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
     ("Schwerbehinderung", "ja / nein", 16, None, '"ja,nein"'),
+    ("ALB (x)", "x = vorhanden", 9, None, '"x"'),
+    ("ALB von", "TT.MM.JJJJ", 12, DATUM, None),
+    ("ALB bis", "TT.MM.JJJJ", 12, DATUM, None),
+    ("ALB 1.1", "Note", 7, None, NOTENLISTE),
+    ("ALB 2", "Note", 7, None, NOTENLISTE),
+    ("ALB 4.2", "Note", 7, None, NOTENLISTE),
+    ("ALB 4.3", "Note", 7, None, NOTENLISTE),
+] + [t for i in (1, 2, 3) for t in (
+    (f"BB {i} (x)", "x = vorhanden", 9, None, '"x"'),
+    (f"BB {i} von", "TT.MM.JJJJ", 12, DATUM, None),
+    (f"BB {i} bis", "TT.MM.JJJJ", 12, DATUM, None),
+)] + [
     ("PDF", "x = erstellen", 11, None, '"x"'),
 ]
+MITTIG = {"pdf", "schwerbehinderung", "alb (x)", "bb 1 (x)", "bb 2 (x)", "bb 3 (x)",
+          "alb 1.1", "alb 2", "alb 4.2", "alb 4.3", "alb gesamtnote"}
 
 
 def ordne_tool_spalten(ws, kopf, sp, erste, protokoll):
-    """Legt die Tool-Spalten an bzw. sortiert vorhandene um (Werte bleiben erhalten)."""
-    titel_norm = [norm(t[0]) for t in TOOL_SPALTEN]
-    vorhanden = {}
-    for k, c in sp.items():
-        for tn in titel_norm:
-            if k == tn or (tn == "pdf" and k.startswith("pdf")):
-                vorhanden[tn] = c
-    if len(vorhanden) == len(TOOL_SPALTEN):
-        for c in vorhanden.values():
-            einblenden(ws, c)
-        return  # schon angelegt – Position regelt sortiere_tabelle()
-    ende = max(ws.max_row, LETZTE_ZEILE)
-    # Werte sichern (Zeile unter der Kopfzeile ist die Hinweiszeile)
-    werte = {tn: {r: ws.cell(r, c).value for r in range(erste, ende + 1)} for tn, c in vorhanden.items()}
-    if vorhanden:
-        start = min(vorhanden.values())
-    else:
-        ohne = {k: c for k, c in sp.items()}
-        start = freie_spalte(ws, kopf, ohne, max(ohne.values()) + 1)
-    ziel = list(range(start, start + len(TOOL_SPALTEN)))
-    fremd = [c for c in ziel if c not in vorhanden.values()
-             and any(ws.cell(r, c).value is not None for r in [kopf, kopf + 1] + list(personenzeilen(ws, kopf, sp)))]
-    if fremd:
-        sys.exit(f"{ws.title}: Spalte {get_column_letter(fremd[0])} ist belegt – Tool-Spalten passen nicht hinter „Teilzeit“")
-    alte_spalten = set(vorhanden.values()) | set(ziel)
-    buchst = {get_column_letter(c) for c in alte_spalten}
-    for dv in list(ws.data_validations.dataValidation):
-        if {re.sub(r"\d", "", str(rng).split(":")[0]) for rng in dv.sqref.ranges} <= buchst:
-            ws.data_validations.dataValidation.remove(dv)
-    for c in alte_spalten:
-        for r in range(kopf, ende + 1):
-            z = ws.cell(r, c)
-            z.value = None
+    """Legt fehlende Tool-Spalten hinten an (Position regelt danach sortiere_tabelle)."""
+    if "aktueller alb" in sp:  # Note der Anlassbeurteilung gehoert jetzt in den ALB-Block
+        c = sp.pop("aktueller alb")
+        ws.cell(kopf, c).value = "ALB Gesamtnote"
+        sp["alb gesamtnote"] = c
+        dv = DataValidation(type="list", formula1=NOTENLISTE, allow_blank=True)
+        dv.add(f"{get_column_letter(c)}{erste}:{get_column_letter(c)}{LETZTE_ZEILE}")
+        ws.add_data_validation(dv)
+        protokoll.append(f"{ws.title}: „aktueller ALB“ heißt jetzt „ALB Gesamtnote“ (Block Anlassbeurteilung)")
     vorlage = ws.cell(kopf, sp["name"])
-    tabellen_ende = letzte_tabellenzeile(ws, kopf, sp)
-    for (titel, hinweis, breite, fmt, liste_formel), c in zip(TOOL_SPALTEN, ziel):
+    neu = []
+    for titel, hinweis, breite, fmt, liste_formel in TOOL_SPALTEN:
         tn = norm(titel)
+        vorhanden = next((c for k, c in sp.items() if k == tn or (tn == "pdf" and k.startswith("pdf"))), None)
+        if vorhanden:
+            einblenden(ws, vorhanden)
+            continue
+        c = freie_spalte(ws, kopf, sp, max(sp.values()) + 1)
         buchstabe = get_column_letter(c)
         k = ws.cell(kopf, c, titel)
         k.font = Font(name=vorlage.font.name, size=vorlage.font.size, bold=True)
         k.fill = copy(vorlage.fill)
         k.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         ws.cell(kopf + 1, c, hinweis).font = HINWEIS
-        ws.column_dimensions[buchstabe].width = breite
-        einblenden(ws, c)
-        for r, v in werte.get(tn, {}).items():
-            ws.cell(r, c).value = v
+        setze_spalte(ws, c, breite, False)
         for r in range(erste, LETZTE_ZEILE + 1):
             z = ws.cell(r, c)
             if fmt:
                 z.number_format = fmt
-            if tn in ("pdf", "schwerbehinderung"):
+            if tn in MITTIG:
                 z.alignment = Alignment(horizontal="center")
-        # Tabelle durchzeichnen wie die vorhandene (duenne Linien, Rahmen aussen kraeftig)
-        for r in range(kopf, tabellen_ende + 1):
-            links = Side(style="medium") if c == ziel[0] else DUENN_SCHWARZ
-            rechts = Side(style="medium") if c == ziel[-1] else DUENN_SCHWARZ
-            oben = Side(style="medium") if r == kopf else DUENN_SCHWARZ
-            unten = Side(style="medium") if r in (kopf, tabellen_ende) else DUENN_SCHWARZ
-            ws.cell(r, c).border = Border(left=links, right=rechts, top=oben, bottom=unten)
         if liste_formel:
             dv = DataValidation(type="list", formula1=liste_formel, allow_blank=True)
             dv.add(f"{buchstabe}{erste}:{buchstabe}{LETZTE_ZEILE}")
             ws.add_data_validation(dv)
         sp[tn] = c
-    if [vorhanden.get(norm(t[0])) for t in TOOL_SPALTEN] != ziel:
-        protokoll.append(f"{ws.title}: Spalten {get_column_letter(ziel[0])}–{get_column_letter(ziel[-1])}: "
-                         + ", ".join(t[0] for t in TOOL_SPALTEN) + " (Reihenfolge wie im Vordruck, PDF zuletzt)")
+        neu.append(titel)
+    if neu:
+        protokoll.append(f"{ws.title}: neue Spalten " + ", ".join(neu))
 
 
 # Zielreihenfolge der Notenblaetter: zuerst alles in der Reihenfolge, in der es
@@ -301,14 +302,23 @@ ZIELREIHENFOLGE = [
     ("n42", lambda k: k.startswith("4.2")),
     ("n43", lambda k: k.startswith("4.3")),
     ("neue_rbu", lambda k: k == "neue rbu"),
+    ("alb_x", lambda k: k == "alb (x)"),
+    ("alb_von", lambda k: k == "alb von"),
+    ("alb_bis", lambda k: k == "alb bis"),
+    ("alb", lambda k: k in ("aktueller alb", "alb gesamtnote")),
+    ("alb_amt", None),            # "im Statusamt eines" rechts neben der ALB-Gesamtnote
+    ("alb_n11", lambda k: k == "alb 1.1"),
+    ("alb_n2", lambda k: k == "alb 2"),
+    ("alb_n42", lambda k: k == "alb 4.2"),
+    ("alb_n43", lambda k: k == "alb 4.3"),
+] + [(f"bb{i}_{t}", (lambda n: (lambda k: k == n))(f"bb {i} " + ("(x)" if t == "x" else t)))
+     for i in (1, 2, 3) for t in ("x", "von", "bis")] + [
     ("summe", lambda k: k == "summe"),
     ("monate", lambda k: k == "monate"),
     ("beginn", lambda k: k.startswith("beginn dienstzeit") or k.startswith("datum der verleihung")),
     ("monate_halb", lambda k: k.startswith("monate (zur")),
     ("ges", lambda k: k == "ges."),
     ("bemerkungen", lambda k: k == "bemerkungen"),
-    ("alb", lambda k: k == "aktueller alb"),
-    ("alb_amt", None),            # "im Statusamt eines" rechts neben "aktueller ALB"
     ("letzte_rbu", lambda k: k == "letzte rbu"),
     ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
     ("teilzeit", lambda k: k == "teilzeit"),
@@ -316,9 +326,11 @@ ZIELREIHENFOLGE = [
 ]
 GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
     ("Subsidiärmerkmale ", "summe", "bemerkungen"),
-    ("letzte Beurteilung", "alb", "alb_amt"),
+    ("Anlassbeurteilung", "alb_x", "alb_n43"),
+    ("Beurteilungsbeiträge", "bb1_x", "bb3_bis"),
     ("vorletzte Beurteilung", "letzte_rbu", "letzte_rbu_amt"),
 ]
+ALTE_GRUPPEN = ("letzte Beurteilung",)
 _REF = re.compile(r"^(\$?)([A-Z]{1,3})(\$?)(\d+)$")
 
 
@@ -346,32 +358,37 @@ def _formel_umsetzen(formel, zuordnung, feste_zeilen, erste_zeile):
     return tok.render()
 
 
-def sortiere_tabelle(ws, kopf, protokoll):
-    """Sortiert die Spalten der Tabelle nach ZIELREIHENFOLGE und schreibt alle Bezuege um."""
+def positionen(ws, kopf):
+    """Schluessel aus ZIELREIHENFOLGE -> Spalte, erkannt ueber die Kopfzeile."""
     sp_liste = [(c.column, norm(c.value)) for c in ws[kopf] if c.value is not None]
-    alt = {}
+    pos = {}
     for schluessel, erkennung in ZIELREIHENFOLGE:
         if erkennung is None:
             continue
         for c, k in sp_liste:
-            if erkennung(k) and c not in alt.values():
-                alt[schluessel] = c
+            if erkennung(k) and c not in pos.values():
+                pos[schluessel] = c
                 break
     for basis in ("alb", "letzte_rbu"):
-        if basis in alt and norm(ws.cell(kopf, alt[basis] + 1).value).startswith("im status"):
-            alt[basis + "_amt"] = alt[basis] + 1
-    bekannt = set(alt.values())
-    unbekannt = [(c, k) for c, k in sp_liste if c not in bekannt and c <= max(bekannt)]
-    if unbekannt:
-        sys.exit(f"{ws.title}: unbekannte Spalte(n) {unbekannt} – Umsortieren abgebrochen")
+        if basis in pos and norm(ws.cell(kopf, pos[basis] + 1).value).startswith("im status"):
+            pos[basis + "_amt"] = pos[basis] + 1
+    return pos
+
+
+def sortiere_tabelle(ws, kopf, protokoll):
+    """Sortiert die Spalten der Tabelle nach ZIELREIHENFOLGE und schreibt alle Bezuege um."""
+    alt = positionen(ws, kopf)
     reihenfolge = [s for s, _ in ZIELREIHENFOLGE if s in alt]
     zuordnung = {alt[s]: i + 1 for i, s in enumerate(reihenfolge)}
+    tabellenbreite = len(reihenfolge)
+    # Alle uebrigen Spalten (ausgeblendete Hilfsformeln, Punktetabelle, Unbekanntes)
+    # behalten ihre Reihenfolge und kommen dahinter.
+    breite = max(ws.max_column, max(zuordnung))
+    for c in range(1, breite + 1):
+        if c not in zuordnung:
+            zuordnung[c] = max(zuordnung.values()) + 1
     if all(a == n for a, n in zuordnung.items()):
-        gestalte_tabelle(ws, kopf, alt, max(zuordnung))  # schon sortiert – nur Darstellung
-        return
-    breite = max(zuordnung)
-    if sorted(zuordnung) != list(range(1, breite + 1)):
-        sys.exit(f"{ws.title}: Tabellenspalten nicht lückenlos – Umsortieren abgebrochen")
+        return  # schon sortiert
 
     erste_zeile = kopf - 1  # Zeile der Gruppenueberschriften
     feste_zeilen = {r for r in range(kopf + 1, ws.max_row + 1)
@@ -452,10 +469,16 @@ def sortiere_tabelle(ws, kopf, protokoll):
     for c, (w, versteckt) in alt_dim.items():
         d = ws.column_dimensions[get_column_letter(zuordnung[c])]
         d.min = d.max = zuordnung[c]
-        d.width, d.hidden = w, versteckt
+        if w is not None:
+            d.width = w
+        d.hidden = versteckt
 
     # 6) Gruppenueberschriften neu zusammenfassen
     neu = {s: i + 1 for i, s in enumerate(reihenfolge)}
+    bekannte_texte = {norm(t) for t, _, _ in GRUPPEN_UEBERSCHRIFTEN} | {norm(t) for t in ALTE_GRUPPEN}
+    for c in range(1, breite + 1):
+        if norm(ws.cell(erste_zeile, c).value) in bekannte_texte:
+            ws.cell(erste_zeile, c).value = None
     for text, von, bis in GRUPPEN_UEBERSCHRIFTEN:
         if von in neu and bis in neu:
             a, b = neu[von], neu[bis]
@@ -466,22 +489,20 @@ def sortiere_tabelle(ws, kopf, protokoll):
             if b > a:
                 ws.merge_cells(start_row=erste_zeile, start_column=a, end_row=erste_zeile, end_column=b)
 
-    # 7) Darstellung: Linien, Umbruch, Zeilenhoehen
-    gestalte_tabelle(ws, kopf, neu, breite)
-
     protokoll.append(f"{ws.title}: Spalten nach Reihenfolge der Beurteilung sortiert: "
-                     + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, breite + 1)))
+                     + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, tabellenbreite + 1)))
 
 
 LINKSBUENDIG = ("name", "vorname", "funktion", "koop", "bemerkungen")
 ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
 
 
-def gestalte_tabelle(ws, kopf, pos, breite):
+def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
     """Linien (duenn innen, kraeftig aussen/an Gruppengrenzen), Zeilenumbruch in allen
     Zellen und an den Inhalt angepasste Zeilenhoehen – nichts ragt in Nachbarzellen."""
-    grenzen = {pos[s] for s in ("name", "funktion", "n11", "summe", "alb", "teilzeit", "pdf") if s in pos}
-    ende = letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
+    grenzen = {pos[s] for s in ("name", "funktion", "n11", "alb_x", "bb1_x", "summe", "letzte_rbu", "teilzeit", "pdf")
+               if s in pos}
+    ende = ende or letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
     links_spalten = {pos[s] for s in LINKSBUENDIG if s in pos}
     for r in range(kopf, ende + 1):
         for c in range(1, breite + 1):
@@ -544,6 +565,100 @@ def kein_datum(ws, kopf, protokoll):
         protokoll.append(f"{ws.title}: {n} Monatsformeln zeigen ohne Datum „{KEIN_DATUM}“")
 
 
+RESERVEZEILEN = 10  # leere, vorbereitete Tabellenzeilen unter der letzten Person
+
+
+def _zeilen_verschieben(formel, delta, erste_zeile):
+    """Verschiebt relative Zeilenbezuege (ab erste_zeile) um delta – wie beim Herunterziehen."""
+    tok = Tokenizer(formel)
+    for t in tok.items:
+        if t.type == Token.OPERAND and t.subtype == Token.RANGE and "!" not in t.value:
+            teile = []
+            for teil in t.value.split(":"):
+                m = _REF.match(teil)
+                if m and not m.group(3) and int(m.group(4)) >= erste_zeile:
+                    teil = f"{m.group(1)}{m.group(2)}{int(m.group(4)) + delta}"
+                teile.append(teil)
+            t.value = ":".join(teile)
+    return tok.render()
+
+
+def erweitere_tabelle(ws, kopf, pos, breite, protokoll):
+    """Stellt sicher, dass jede Tabellenzeile (Personen + Reservezeilen) in allen
+    Rechenspalten ihre Formel hat – auch in den ausgeblendeten Hilfsspalten.
+    Gibt die letzte Tabellenzeile und die Menge der Rechenspalten zurueck."""
+    erste = kopf + 2
+    c_name = pos["name"]
+    name_bst = get_column_letter(c_name)
+    ende = letzte_tabellenzeile(ws, kopf, {"name": c_name})
+    personen = [r for r in range(erste, LETZTE_ZEILE + 1)
+                if ws.cell(r, c_name).value and not re.fullmatch(r"A\d{2}", str(ws.cell(r, c_name).value))]
+    ziel = max(ende, (max(personen) if personen else erste) + RESERVEZEILEN)
+    for r in range(ende + 1, ziel + 1):  # nur in leere Zeilen hinein erweitern
+        if r > LETZTE_ZEILE or any(ws.cell(r, c).value is not None for c in range(1, breite + 1)):
+            ziel = r - 1
+            break
+    ende = max(ende, ziel)
+
+    rechen, neu = set(), 0
+    for c in range(1, ws.max_column + 1):
+        vorlage = next(((r, ws.cell(r, c).value) for r in range(erste, ende + 1)
+                        if isinstance(ws.cell(r, c).value, str) and ws.cell(r, c).value.startswith("=")), None)
+        if vorlage is None:
+            continue
+        rechen.add(c)
+        r0, formel = vorlage
+        bst = get_column_letter(c)
+        for r in range(erste, ende + 1):
+            z = ws.cell(r, c)
+            if z.value is not None:
+                continue
+            if c == pos.get("lfdnr"):
+                z.value = f'=IF(${name_bst}{r}="","",MAX(${bst}${erste}:{bst}{r - 1})+1)'
+            else:
+                z.value = f'=IF(${name_bst}{r}="","",{_zeilen_verschieben(formel, r - r0, erste)[1:]})'
+            if r > erste:
+                z._style = copy(ws.cell(r - 1, c)._style)
+            neu += 1
+    if neu:
+        protokoll.append(f"{ws.title}: {neu} fehlende Formeln in Rechenspalten ergänzt (Tabelle bis Zeile {ende})")
+    return ende, rechen
+
+
+def schuetze_notenblatt(ws, kopf, breite, ende, rechen):
+    """Blattschutz ohne Kennwort: beschreibbar sind nur die Eingabezellen der
+    Tabelle (keine Formeln) und der Stichtag oben; Kopf, Statistik, Rechen- und
+    Hilfsspalten sind gesperrt. Spaltenbreite, Zeilenhoehe, Formatieren und
+    Filtern bleiben erlaubt."""
+    alles_sperren(ws)
+    offen = Protection(locked=False)
+    for r in range(kopf + 2, ende + 1):
+        for c in range(1, breite + 1):
+            if c not in rechen:
+                ws.cell(r, c).protection = offen
+    for z in ws[2]:
+        if norm(z.value).startswith("stichtag"):
+            ws.cell(2, z.column + 1).protection = offen
+    erlaube(ws)
+
+
+def alles_sperren(ws):
+    """Zellen, die im Original schon als "nicht gesperrt" formatiert waren, wieder sperren."""
+    gesperrt = Protection(locked=True)
+    for row in ws.iter_rows():
+        for z in row:
+            if not z.protection.locked:
+                z.protection = gesperrt
+
+
+def erlaube(ws):
+    ws.protection.sheet = True
+    ws.protection.formatCells = False    # False = trotz Schutz erlaubt
+    ws.protection.formatColumns = False
+    ws.protection.formatRows = False
+    ws.protection.autoFilter = False
+
+
 def letzte_tabellenzeile(ws, kopf, sp):
     """Letzte Zeile, bis zu der die vorhandene Tabelle (Spalte Name) umrandet ist."""
     c = sp["name"]
@@ -557,27 +672,39 @@ def letzte_tabellenzeile(ws, kopf, sp):
 
 def freie_spalte(ws, kopf, sp, ab):
     """Erste Spalte ab `ab`, die in Kopfzeile, Hinweiszeile und allen Personenzeilen leer ist."""
-    zeilen = [kopf, kopf + 1] + list(personenzeilen(ws, kopf, sp))
     col = ab
-    while any(ws.cell(r, col).value is not None for r in zeilen) or col in sp.values():
+    while any(ws.cell(r, col).value is not None for r in range(1, ws.max_row + 1)) or col in sp.values():
         col += 1
     return col
 
 
 def einblenden(ws, col):
     """Blendet genau eine Spalte ein, auch wenn sie Teil eines ausgeblendeten Bereichs ist."""
+    d = next((d for d in ws.column_dimensions.values() if (d.min or 0) <= col <= (d.max or 0)), None)
+    if d is None or not d.hidden:
+        return False
+    setze_spalte(ws, col, d.width, False)
+    return True
+
+
+def setze_spalte(ws, col, breite, versteckt):
+    """Breite/Sichtbarkeit genau einer Spalte setzen; ein Bereich, der sie
+    enthaelt (z.B. AA:AI ausgeblendet), wird dafuer aufgeteilt."""
     for key, dim in list(ws.column_dimensions.items()):
         lo, hi = dim.min or 0, dim.max or 0
-        if not (lo <= col <= hi) or not dim.hidden:
+        if not (lo <= col <= hi):
             continue
-        breite = dim.width
+        w, h = dim.width, dim.hidden
         del ws.column_dimensions[key]
-        for a, b, versteckt in ((lo, col - 1, True), (col, col, False), (col + 1, hi, True)):
+        for a, b in ((lo, col - 1), (col + 1, hi)):
             if a <= b:
                 neu = ws.column_dimensions[get_column_letter(a)]
-                neu.min, neu.max, neu.width, neu.hidden = a, b, breite, versteckt
-        return True
-    return False
+                neu.min, neu.max, neu.width, neu.hidden = a, b, w, h
+    d = ws.column_dimensions[get_column_letter(col)]
+    d.min = d.max = col
+    if breite is not None:
+        d.width = breite
+    d.hidden = versteckt
 
 
 def berichtige_kopierfehler(wb, ist_gd, protokoll):
@@ -689,6 +816,7 @@ def baue_beurteiler(wb, alt_zeilen):
     for col, b in zip("ABCDE", (28, 18, 20, 18, 34)):
         ws.column_dimensions[col].width = b
     ws.freeze_panes = "A4"
+    sperre_ausser_eingabe(ws)
     return ws
 
 
@@ -711,17 +839,18 @@ def baue_funktionen(wb, alt_zeilen):
     for i, b in enumerate([32, 12] + [40] * TAETIGKEITEN):
         ws.column_dimensions[get_column_letter(i + 1)].width = b
     ws.freeze_panes = "B4"
+    sperre_ausser_eingabe(ws)
     return ws
 
 
 def sperre_ausser_eingabe(ws):
     """Blattschutz ohne Kennwort: nur die gelben Eingabefelder bleiben frei."""
+    alles_sperren(ws)
     for row in ws.iter_rows():
         for z in row:
             if z.fill is not None and z.fill.fgColor is not None and z.fill.fgColor.rgb in ("00FFF2CC", "FFFFF2CC"):
                 z.protection = Protection(locked=False)
-    ws.protection.sheet = True
-    ws.protection.formatColumns = False  # Spaltenbreite bleibt anpassbar
+    erlaube(ws)
 
 
 def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
@@ -868,16 +997,26 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 34
     ws.column_dimensions["C"].width = 34
+    sperre_ausser_eingabe(ws)
     return ws
 
 
-def main(quelle, ziel):
+def main(quelle, ziel, vorlage=None):
     wb = openpyxl.load_workbook(quelle)
     protokoll = []
-    alt_start, alt_start_z = alte_werte(wb, START)
-    _, alt_beurt_z = alte_werte(wb, BEURTEILER)
-    alt_einst, alt_einst_z = alte_werte(wb, EINSTELLUNGEN)
-    alt_funkt_z = alte_zeilen(wb, FUNKTIONEN, 2 + TAETIGKEITEN)
+    # Eintraege der Tool-Blaetter aus der Datei selbst, sonst aus einer
+    # frueher aufbereiteten Fassung (--vorlage), damit nichts verloren geht
+    alt = openpyxl.load_workbook(vorlage) if vorlage else None
+    von = lambda name: wb if name in wb.sheetnames or alt is None else alt
+    if alt is not None:
+        uebernommen = [n for n in (START, BEURTEILER, EINSTELLUNGEN, FUNKTIONEN)
+                       if n not in wb.sheetnames and n in alt.sheetnames]
+        if uebernommen:
+            protokoll.append(f"aus {vorlage} übernommen: " + ", ".join(uebernommen))
+    alt_start, alt_start_z = alte_werte(von(START), START)
+    _, alt_beurt_z = alte_werte(von(BEURTEILER), BEURTEILER)
+    alt_einst, alt_einst_z = alte_werte(von(EINSTELLUNGEN), EINSTELLUNGEN)
+    alt_funkt_z = alte_zeilen(von(FUNKTIONEN), FUNKTIONEN, 2 + TAETIGKEITEN)
     for name in (START, BEURTEILER, EINSTELLUNGEN, FUNKTIONEN):
         if name in wb.sheetnames:
             del wb[name]
@@ -916,4 +1055,12 @@ def main(quelle, ziel):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    args = sys.argv[1:]
+    vorlage = None
+    if "--vorlage" in args:
+        i = args.index("--vorlage")
+        vorlage = args[i + 1]
+        del args[i:i + 2]
+    if len(args) != 2:
+        sys.exit(__doc__)
+    main(args[0], args[1], vorlage)

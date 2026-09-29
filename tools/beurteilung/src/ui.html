@@ -105,7 +105,7 @@
     <p>In Excel auf „Beurteilungen erstellen“ alles auswählen, <strong>speichern und schließen</strong>
        (Windows: <kbd>Strg</kbd>+<kbd>S</kbd>, dann Excel-Fenster schließen · Mac: <kbd>⌘</kbd>+<kbd>S</kbd>, dann <kbd>⌘</kbd>+<kbd>W</kbd>)
        und die Excel-Datei hier hineinziehen. Eine noch geöffnete Datei ist im Auswahlfenster gesperrt bzw. liefert den alten Stand.
-       Es werden Personalangaben, Beurteilende, die vier Teilnoten und die Gesamtnote eingetragen – alles andere
+       Es werden Personalangaben, Beurteilende, die vier Teilnoten, die Gesamtnote und berücksichtigte Anlassbeurteilungen/Beurteilungsbeiträge eingetragen – alles andere
        ergänzen die Beurteilenden im PDF.</p>
     <label class="ablage" id="ablage-excel">
       <input type="file" id="datei-excel" accept=".xlsx,.xlsm" multiple>
@@ -289,11 +289,12 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
         el('td', { class: 'note' }, ['n11', 'n2', 'n42', 'n43'].map((k) => a.person.noten[k] || '–').join(' ')),
         el('td', { class: 'note' }, a.person.noten.endnote || '–'),
         el('td', null, a.funktion ? a.funktion.bezeichnung : '–'),
+        el('td', null, a.beruecksichtigt.length ? a.beruecksichtigt.map((f) => (f.art === 'Anlassbeurteilung' ? 'ALB' : 'BB')).join(', ') : '–'),
         el('td', null, a.erst || '–'),
         el('td', null, a.zweit || '–'),
         el('td', { class: 'hinweis' }, a.hinweise.join('; '))));
       box.append(el('div', { class: 'tabelle' }, el('table', null,
-        el('thead', null, el('tr', null, ['Blatt', 'Name', '1.1 2 4.2 4.3', 'Gesamt', 'Funktion', 'Erstbeurteilende/r', 'Zweitbeurteilende/r', 'Hinweis']
+        el('thead', null, el('tr', null, ['Blatt', 'Name', '1.1 2 4.2 4.3', 'Gesamt', 'Funktion', 'ALB/BB', 'Erstbeurteilende/r', 'Zweitbeurteilende/r', 'Hinweis']
           .map((t) => el('th', null, t)))),
         el('tbody', null, zeilen))));
     }
