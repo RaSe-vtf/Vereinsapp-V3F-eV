@@ -84,9 +84,14 @@ Statusamt, 4 Teilnoten), Beurteilungsbeiträge 1–3 (x, von, bis); danach
 Subsidiärmerkmale, vorletzte Beurteilung, Teilzeit, „PDF“ zuletzt). Alle Formelbezüge, Auswahllisten, Breiten und Gruppenüberschriften
 werden mit umgesetzt; die Punktetabelle (A1 = 6 … C = 1) liegt ausgeblendet rechts.
 
-Rechenspalten (Lfd.Nr., Summe, Monate, ges., Hilfsspalten) werden in allen
-Tabellenzeilen – inklusive mindestens 10 Reservezeilen unter der letzten Person –
-mit ihrer Formel vorbelegt. Danach werden alle Blätter ohne Kennwort geschützt:
+Jedes Notenblatt hat eine feste Tabelle für 60 Personen (Zeilen 14–73). Jede
+Rechenspalte trägt in jeder Zeile dieselbe Formel (Zeile ohne Namen: leer; fehlende
+Angabe: „n.N.“): Lfd.Nr. = Anzahl Namen bis zur Zeile, Amtsbez. = Reitername
+(+ „in“ bei Geschlecht w), Summe = Punkte der 4 Teilnoten (nur wenn alle 4 gültig),
+Monate/Monate (zur Hälfte) = DATEDIF zum Stichtag S2 (fehlt Datum/Stichtag oder
+liegt das Datum danach: n.N.), ges. = Summe beider. Die Rechenhilfen (4 Punkte-
+spalten, Punktetabelle) werden hinter „PDF“ in allen Blättern gleich neu angelegt
+und ausgeblendet; die Statistik oben zählt genau die 60 Tabellenzeilen. Danach werden alle Blätter ohne Kennwort geschützt:
 frei sind nur die Eingabezellen (Datenzeilen außer Rechenspalten, Stichtag S2,
 gelbe Felder der Tool-Blätter); Spaltenbreite, Zeilenhöhe, Formatieren und Filtern
 bleiben erlaubt.
@@ -98,6 +103,12 @@ aus einer früher aufbereiteten Datei.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst
 (Spalten werden über die Überschriften gefunden).
 
-- `src/engine.js` – Kern: Excel lesen, PDF befüllen, fertigstellen
+Beurteilung.html kann außerdem Listen leeren (Bereich 3): gewählte Notenblätter,
+immer mit Rückfrage; es entsteht eine neue Datei `…_leer.xlsx` (Original bleibt).
+Dafür werden in den 60 Tabellenzeilen bis zur Spalte „PDF“ direkt im XML alle
+Werte ohne Formel entfernt; Formeln, Formate, Auswahllisten und Blattschutz
+bleiben, Excel rechnet beim Öffnen neu (`fullCalcOnLoad`).
+
+- `src/engine.js` – Kern: Excel lesen, PDF befüllen, fertigstellen, Listen leeren
 - `src/ui.html` – Oberfläche (Platzhalter werden beim Bauen ersetzt)
 - `vendor/` – pdf-lib 1.17.1 (MIT), SheetJS 0.18.5 mini (Apache-2.0), JSZip 3.10.1 (MIT)

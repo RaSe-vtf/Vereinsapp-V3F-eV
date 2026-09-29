@@ -10,8 +10,10 @@ berichtigt bekannte Fehler der Notenuebersicht:
   * Blattnamen ohne (veraltete) Personenzahl,
   * Kopierfehler in Ueberschriften (Laufbahn gD, Statusamt gD).
 Ausserdem: Spalten fuer Anlassbeurteilung und Beurteilungsbeitraege, Tabelle
-in Reihenfolge des Vordrucks, Rechenspalten in allen Tabellenzeilen vorbelegt
-und Blattschutz (ohne Kennwort) – beschreibbar sind nur die Eingabezellen.
+in Reihenfolge des Vordrucks, feste Tabelle fuer 60 Personen mit einheitlichen
+Formeln ("n.N." bei fehlenden Angaben), Amtsbezeichnung aus dem Reiternamen,
+ausgeblendete Rechenhilfen und Blattschutz (ohne Kennwort) – beschreibbar sind
+nur die Eingabezellen.
 
 Das Skript ist wiederholbar: laeuft es ueber eine bereits aufbereitete
 Datei, werden vorhandene Einstellungen/Beurteiler uebernommen.
@@ -201,15 +203,12 @@ def berichtige_notenblatt(ws, protokoll):
     # Gesamte Tabelle in die Reihenfolge des Vordrucks bringen
     sortiere_tabelle(ws, kopf, protokoll)
 
-    # Monate ohne Datum: "n.N." statt DATEDIF ab 1900 (z.B. 1533)
-    kein_datum(ws, kopf, protokoll)
-
-    # Rechenspalten in allen Tabellenzeilen (auch Reservezeilen) vorbelegen,
-    # Tabelle zeichnen und alles ausser den Eingabezellen sperren
+    # Feste Tabelle fuer PERSONEN_JE_BLATT Personen mit einheitlichen Formeln,
+    # Rechenhilfen ausgeblendet dahinter, zeichnen und alles ausser den
+    # Eingabezellen sperren
     pos = positionen(ws, kopf)
     breite = pos["pdf"]
-    ende, rechen = erweitere_tabelle(ws, kopf, pos, breite, protokoll)
-    kein_datum(ws, kopf, protokoll)  # "ges." neben eben ergaenzten Monatsformeln
+    ende, rechen = vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll)
     gestalte_tabelle(ws, kopf, pos, breite, ende)
     schuetze_notenblatt(ws, kopf, breite, ende, rechen)
 
@@ -537,92 +536,137 @@ def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
 
 
 KEIN_DATUM = "n.N."
-_DATEDIF = re.compile(r'^=DATEDIF\((\$?[A-Z]{1,3}\$?\d+),(\$?[A-Z]{1,3}\$?\d+),"M"\)(/2)?$')
-_SUMME2 = re.compile(r"^=SUM\((\$?[A-Z]{1,3}\$?\d+),(\$?[A-Z]{1,3}\$?\d+)\)$")
+PERSONEN_JE_BLATT = 60
+PUNKTE = [("A1", 6), ("A2", 5), ("B1", 4), ("B2", 3), ("B3", 2), ("C", 1)]  # Subsidiaermerkmal "Summe"
 
 
-def kein_datum(ws, kopf, protokoll):
-    """Monate/Monate (zur Haelfte)/ges.: ohne Datum "n.N." anzeigen statt einer Zahl ab 1900."""
-    n = 0
-    datedif_zellen = set()
-    for row in ws.iter_rows(min_row=kopf + 1):
-        for z in row:
-            m = _DATEDIF.match(str(z.value or ""))
-            if m:
-                z.value = f'=IF({m.group(1)}="","{KEIN_DATUM}",{z.value[1:]})'
-                datedif_zellen.add(z.coordinate)
-                n += 1
-            elif str(z.value or "").startswith('=IF(') and f'"{KEIN_DATUM}",DATEDIF(' in str(z.value):
-                datedif_zellen.add(z.coordinate)
-    # "ges." = Summe zweier Monatswerte: fehlt einer davon, ebenfalls "n.N."
-    for row in ws.iter_rows(min_row=kopf + 1):
-        for z in row:
-            m = _SUMME2.match(str(z.value or ""))
-            if m and {m.group(1).replace("$", ""), m.group(2).replace("$", "")} <= datedif_zellen:
-                z.value = f'=IF(COUNT({m.group(1)},{m.group(2)})<2,"{KEIN_DATUM}",SUM({m.group(1)},{m.group(2)}))'
-                n += 1
-    if n:
-        protokoll.append(f"{ws.title}: {n} Monatsformeln zeigen ohne Datum „{KEIN_DATUM}“")
-
-
-RESERVEZEILEN = 10  # leere, vorbereitete Tabellenzeilen unter der letzten Person
-
-
-def _zeilen_verschieben(formel, delta, erste_zeile):
-    """Verschiebt relative Zeilenbezuege (ab erste_zeile) um delta – wie beim Herunterziehen."""
-    tok = Tokenizer(formel)
-    for t in tok.items:
-        if t.type == Token.OPERAND and t.subtype == Token.RANGE and "!" not in t.value:
-            teile = []
-            for teil in t.value.split(":"):
-                m = _REF.match(teil)
-                if m and not m.group(3) and int(m.group(4)) >= erste_zeile:
-                    teil = f"{m.group(1)}{m.group(2)}{int(m.group(4)) + delta}"
-                teile.append(teil)
-            t.value = ":".join(teile)
-    return tok.render()
-
-
-def erweitere_tabelle(ws, kopf, pos, breite, protokoll):
-    """Stellt sicher, dass jede Tabellenzeile (Personen + Reservezeilen) in allen
-    Rechenspalten ihre Formel hat – auch in den ausgeblendeten Hilfsspalten.
-    Gibt die letzte Tabellenzeile und die Menge der Rechenspalten zurueck."""
+def vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll):
+    """Feste Tabelle mit PERSONEN_JE_BLATT Zeilen. Jede Rechenspalte bekommt in
+    jeder Zeile dieselbe Formel; ohne Namen bleibt die Zeile leer, fehlt eine
+    Angabe (Datum, Stichtag, Note), steht "n.N.". Die Rechenhilfen (Notenpunkte,
+    Punktetabelle) werden hinter der Tabelle einheitlich neu angelegt und
+    ausgeblendet. Gibt letzte Tabellenzeile und Rechenspalten zurueck."""
+    L = get_column_letter
     erste = kopf + 2
-    c_name = pos["name"]
-    name_bst = get_column_letter(c_name)
-    ende = letzte_tabellenzeile(ws, kopf, {"name": c_name})
-    personen = [r for r in range(erste, LETZTE_ZEILE + 1)
-                if ws.cell(r, c_name).value and not re.fullmatch(r"A\d{2}", str(ws.cell(r, c_name).value))]
-    ziel = max(ende, (max(personen) if personen else erste) + RESERVEZEILEN)
-    for r in range(ende + 1, ziel + 1):  # nur in leere Zeilen hinein erweitern
-        if r > LETZTE_ZEILE or any(ws.cell(r, c).value is not None for c in range(1, breite + 1)):
-            ziel = r - 1
-            break
-    ende = max(ende, ziel)
+    ende = erste + PERSONEN_JE_BLATT - 1
+    alt_ende = letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
+    N = L(pos["name"])
+    personen = [r for r in range(erste, ws.max_row + 1) if ws.cell(r, pos["name"]).value not in (None, "")]
+    if personen and max(personen) > ende:
+        sys.exit(f"{ws.title}: Personen bis Zeile {max(personen)} – die Tabelle fasst {PERSONEN_JE_BLATT} "
+                 f"(Zeilen {erste}-{ende}).")
+    stichtag = next((z.column + 1 for z in ws[2] if norm(z.value).startswith("stichtag")), None)
+    if stichtag is None:
+        sys.exit(f"{ws.title}: „Stichtag:“ in Zeile 2 nicht gefunden.")
+    ST = f"${L(stichtag)}$2"
 
-    rechen, neu = set(), 0
-    for c in range(1, ws.max_column + 1):
-        vorlage = next(((r, ws.cell(r, c).value) for r in range(erste, ende + 1)
-                        if isinstance(ws.cell(r, c).value, str) and ws.cell(r, c).value.startswith("=")), None)
-        if vorlage is None:
-            continue
-        rechen.add(c)
-        r0, formel = vorlage
-        bst = get_column_letter(c)
-        for r in range(erste, ende + 1):
+    # Unterhalb der Tabelle: alte Formeln weg, Daten dort waeren ein Fehler
+    for r in range(ende + 1, ws.max_row + 1):
+        for c in range(1, breite + 1):
             z = ws.cell(r, c)
-            if z.value is not None:
-                continue
-            if c == pos.get("lfdnr"):
-                z.value = f'=IF(${name_bst}{r}="","",MAX(${bst}${erste}:{bst}{r - 1})+1)'
+            if isinstance(z.value, str) and z.value.startswith("="):
+                z.value = None
+            elif z.value is not None:
+                sys.exit(f"{ws.title}: {z.coordinate} unter der Tabelle enthält „{z.value}“ – bitte prüfen.")
+            z.style = "Normal"
+        ws.row_dimensions[r].height = None
+
+    # Rechenhilfen hinter der Tabelle einheitlich neu anlegen
+    for m in list(ws.merged_cells.ranges):
+        if m.max_col > breite:
+            ws.unmerge_cells(str(m))
+    for row in ws.iter_rows(min_col=breite + 1):
+        for z in row:
+            z.value = None
+            z.style = "Normal"
+    for key, d in list(ws.column_dimensions.items()):
+        if (d.max or 0) > breite:
+            del ws.column_dimensions[key]
+    hilfe = {k: breite + 1 + i for i, k in enumerate(("n11", "n2", "n42", "n43"))}
+    t_note, t_punkte = breite + 6, breite + 7
+    TAB = f"${L(t_note)}${erste}:${L(t_punkte)}${erste + len(PUNKTE) - 1}"
+    for k, c in hilfe.items():
+        ws.cell(kopf, c, "Punkte " + str(ws.cell(kopf, pos[k]).value).split()[0].rstrip(".")).font = HINWEIS
+    ws.cell(kopf, t_note, "Note").font = HINWEIS
+    ws.cell(kopf, t_punkte, "Punkte").font = HINWEIS
+    for i, (note, punkte) in enumerate(PUNKTE):
+        ws.cell(erste + i, t_note, note)
+        ws.cell(erste + i, t_punkte, punkte)
+    for c in range(breite + 1, t_punkte + 1):
+        setze_spalte(ws, c, 10, True)
+    for c in range(1, breite + 1):  # die Tabelle selbst ist vollstaendig sichtbar
+        d = next((d for d in ws.column_dimensions.values() if (d.min or 0) <= c <= (d.max or 0)), None)
+        if d is not None and d.hidden:
+            setze_spalte(ws, c, d.width, False)
+
+    kuerzel = blattbasis(ws.title)
+    G = L(pos["geschlecht"])
+    H1, H4 = L(hilfe["n11"]), L(hilfe["n43"])
+    E, B = L(pos["ernennung"]), L(pos["beginn"])
+    M, MH = L(pos["monate"]), L(pos["monate_halb"])
+
+    def monate(datum, r, faktor=""):
+        return (f'IFERROR(IF(OR({datum}{r}="",{ST}="",{datum}{r}>{ST}),"{KEIN_DATUM}",'
+                f'DATEDIF({datum}{r},{ST},"M"){faktor}),"{KEIN_DATUM}")')
+
+    formeln = {
+        "lfdnr": lambda r: f"COUNTA(${N}${erste}:${N}{r})",
+        "amtsbez": lambda r: f'"{kuerzel}"&IF({G}{r}="w","in","")',
+        "summe": lambda r: f'IF(COUNT({H1}{r}:{H4}{r})<4,"{KEIN_DATUM}",SUM({H1}{r}:{H4}{r}))',
+        "monate": lambda r: monate(E, r),
+        "monate_halb": lambda r: monate(B, r, "/2"),
+        "ges": lambda r: f'IF(COUNT({M}{r},{MH}{r})<2,"{KEIN_DATUM}",{M}{r}+{MH}{r})',
+    }
+    for k, c in hilfe.items():
+        formeln[("hilfe", k)] = (lambda q: lambda r: f'IFERROR(VLOOKUP({q}{r},{TAB},2,FALSE),"")')(L(pos[k]))
+    spalte = {k: (hilfe[k[1]] if isinstance(k, tuple) else pos[k]) for k in formeln}
+
+    geaendert = 0
+    for r in range(erste, ende + 1):
+        if r > alt_ende:  # neue Tabellenzeilen: Format der ersten Zeile
+            for c in range(1, breite + 1):
+                ws.cell(r, c)._style = copy(ws.cell(erste, c)._style)
+        for k, f in formeln.items():
+            z = ws.cell(r, spalte[k])
+            neu = f'=IF(${N}{r}="","",{f(r)})'
+            if k == "amtsbez" and z.value not in (None, "") and not str(z.value).startswith("="):
+                soll = kuerzel + ("in" if norm(ws.cell(r, pos["geschlecht"]).value) == "w" else "")
+                if str(z.value).strip() != soll:
+                    protokoll.append(f"{ws.title}: {ws.cell(r, pos['name']).value}: Amtsbez. „{z.value}“ -> „{soll}“ (aus Reiter/Geschlecht)")
+            if z.value != neu:
+                geaendert += spalte[k] <= breite and z.value is not None
+                z.value = neu
+
+    # Statistik oben auf genau die Tabellenzeilen
+    NOTE = L(pos["neue_rbu"])
+    for r in (2, 3):
+        for c in range(1, 11):
+            z = ws.cell(r, c)
+            v = str(z.value or "")
+            if v.upper().startswith("=COUNTA("):
+                z.value = f"=COUNTA({N}{erste}:{N}{ende})"
+            elif v.upper().startswith("=COUNTIF("):
+                z.value = f"=COUNTIF(${NOTE}${erste}:${NOTE}${ende},{L(c)}$1)"
+
+    # Amtsbezeichnung ist jetzt berechnet: keine Auswahlliste mehr, Geschlecht m/w
+    amt = pos["amtsbez"]
+    for dv in list(ws.data_validations.dataValidation):
+        rest = [x for x in dv.sqref.ranges if not (x.min_col <= amt <= x.max_col)]
+        if len(rest) != len(dv.sqref.ranges):
+            if rest:
+                dv.sqref = MultiCellRange(" ".join(map(str, rest)))
             else:
-                z.value = f'=IF(${name_bst}{r}="","",{_zeilen_verschieben(formel, r - r0, erste)[1:]})'
-            if r > erste:
-                z._style = copy(ws.cell(r - 1, c)._style)
-            neu += 1
-    if neu:
-        protokoll.append(f"{ws.title}: {neu} fehlende Formeln in Rechenspalten ergänzt (Tabelle bis Zeile {ende})")
-    return ende, rechen
+                ws.data_validations.dataValidation.remove(dv)
+    g = pos["geschlecht"]
+    if not any(x.min_col <= g <= x.max_col for dv in ws.data_validations.dataValidation for x in dv.sqref.ranges):
+        dv = DataValidation(type="list", formula1='"m,w"', allow_blank=True)
+        dv.add(f"{G}{erste}:{G}{ende}")
+        ws.add_data_validation(dv)
+
+    if geaendert:
+        protokoll.append(f"{ws.title}: Tabelle für {PERSONEN_JE_BLATT} Personen (Zeilen {erste}-{ende}), "
+                         f"{geaendert} abweichende Formeln vereinheitlicht")
+    return ende, {pos[k] for k in ("lfdnr", "amtsbez", "summe", "monate", "monate_halb", "ges")}
 
 
 def schuetze_notenblatt(ws, kopf, breite, ende, rechen):
