@@ -53,6 +53,7 @@ AMTSBEZEICHNUNGEN = [
     ("PHK", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A11"),
     ("PHKZ", "Polizeihauptkommissar", "Polizeihauptkommissarin", "A12"),
     ("EPHK", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin", "A13"),
+    ("EPHKZ", "Erster Polizeihauptkommissar", "Erste Polizeihauptkommissarin", "A13Z"),  # vorlaeufig, Bestaetigung offen
 ]
 # Namen, die in alten Staenden auf externe Arbeitsmappen zeigten
 # ([1]Formeln / [2]Beurteilungen) und die Meldung "Aktualisierung nicht
@@ -60,12 +61,21 @@ AMTSBEZEICHNUNGEN = [
 EXTERNE_NAMEN = ("Amtsbezeichnung", "Note", "Relevant", "Status", "Statusamt")
 AMTSKUERZEL = [k for e in AMTSBEZEICHNUNGEN if not e[0].endswith("Z") for k in (e[0], e[0] + "in")]
 
-STATUSAMT_GD = {  # Kopierfehler aus den mD-Blaettern in A4/A9 der gD-Blaetter
+STATUSAMT_GD = {  # Blattkopf A4 (Besoldung) und A9 (Statusamt) je Reiter – Kopierfehler werden berichtigt
+    "PM": (7, "Statusamt: Polizeimeister/-in A 7"),
+    "POM": (8, "Statusamt: Polizeiobermeister/-in A 8"),
+    "PHM": ("9m", "Statusamt: Polizeihauptmeister/-in A 9m"),
+    "PHMZ": ("9mZ", "Statusamt: Polizeihauptmeister/-in A 9mZ"),
     "PK": ("9g", "Statusamt: Polizeikommissar/-in A 9g"),
     "POK": (10, "Statusamt: Polizeioberkommissar/-in A 10"),
     "PHK": (11, "Statusamt: Polizeihauptkommissar/-in A 11"),
     "PHKZ": (12, "Statusamt: Polizeihauptkommissar/-in A 12"),
+    "EPHK": (13, "Statusamt: Erster Polizeihauptkommissar/-in A 13"),
+    "EPHKZ": ("13Z", "Statusamt: Erster Polizeihauptkommissar/-in A 13Z"),
 }
+# Befoerderungskette je Laufbahn: fehlende Reiter werden als Kopie des
+# jeweils vorigen (leer) angelegt
+KETTE_GD = ["PK", "POK", "PHK", "PHKZ", "EPHK", "EPHKZ"]
 
 FUNKTIONEN = "Funktionen"
 TAETIGKEITEN = 5  # Vordruck Seite 2: "in der Regel nicht mehr als fuenf je Funktion"
@@ -134,7 +144,6 @@ def berichtige_notenblatt(ws, protokoll):
             z3.value = f"=IFERROR({col}2/$D$2,0)"
     if ws["D3"].value == "=SUM(E3:M3)":
         ws["D3"] = "=SUM(E3:J3)"
-    protokoll.append(f"{ws.title}: Zaehlformeln auf Zeilen {erste}-{LETZTE_ZEILE} erweitert, #DIV/0! abgefangen")
 
     # Hilfsformeln AD:AG (Notenpunkte der Subsidiaermerkmale) und Summe Q:
     # auf einigen Blaettern um eine Zeile verschoben oder auf fremde Zeilen
@@ -207,7 +216,7 @@ def berichtige_notenblatt(ws, protokoll):
     # Rechenhilfen ausgeblendet dahinter, zeichnen und alles ausser den
     # Eingabezellen sperren
     pos = positionen(ws, kopf)
-    breite = pos["pdf"]
+    breite = pos.get("befoerdert", pos["pdf"])  # letzte Spalte der Tabelle
     ende, rechen = vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll)
     gestalte_tabelle(ws, kopf, pos, breite, ende)
     schuetze_notenblatt(ws, kopf, breite, ende, rechen)
@@ -233,6 +242,7 @@ TOOL_SPALTEN = [
     (f"BB {i} bis", "TT.MM.JJJJ", 12, DATUM, None),
 )] + [
     ("PDF", "x = erstellen", 11, None, '"x"'),
+    ("befördert am", "TT.MM.JJJJ", 13, DATUM, None),
 ]
 MITTIG = {"pdf", "schwerbehinderung", "alb (x)", "bb 1 (x)", "bb 2 (x)", "bb 3 (x)",
           "alb 1.1", "alb 2", "alb 4.2", "alb 4.3", "alb gesamtnote"}
@@ -322,6 +332,7 @@ ZIELREIHENFOLGE = [
     ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
     ("teilzeit", lambda k: k == "teilzeit"),
     ("pdf", lambda k: k.startswith("pdf")),
+    ("befoerdert", lambda k: k.startswith("befördert")),
 ]
 GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
     ("Subsidiärmerkmale ", "summe", "bemerkungen"),
@@ -701,6 +712,7 @@ def erlaube(ws):
     ws.protection.formatColumns = False
     ws.protection.formatRows = False
     ws.protection.autoFilter = False
+    ws.protection.objects = True         # Knoepfe nicht verschieb-/loeschbar (bleiben klickbar)
 
 
 def letzte_tabellenzeile(ws, kopf, sp):
@@ -758,19 +770,59 @@ def berichtige_kopierfehler(wb, ist_gd, protokoll):
         basis = blattbasis(ws.title)
         kopf = kopfzeile(ws)
         sp = spalten(ws, kopf)
+        kuerzel = {e[0] for e in AMTSBEZEICHNUNGEN}
+        if ws["A2"].value in kuerzel and ws["A2"].value != basis and basis in kuerzel:
+            protokoll.append(f"{ws.title}: A2 „{ws['A2'].value}“ -> „{basis}“")
+            ws["A2"] = basis
+        if basis in STATUSAMT_GD:
+            besoldung, text = STATUSAMT_GD[basis]
+            if str(ws["A9"].value or "").startswith("Statusamt:") and ws["A9"].value != text:
+                protokoll.append(f"{ws.title}: A9 „{ws['A9'].value}“ -> „{text}“")
+                ws["A9"] = text
+            if ws["A4"].value is not None and str(ws["A4"].value) != str(besoldung):
+                protokoll.append(f"{ws.title}: A4 „{ws['A4'].value}“ -> „{besoldung}“")
+                ws["A4"] = besoldung
         if ist_gd:
             for k, c in sp.items():
                 if k == "beginn dienstzeit laufbahn md":
                     ws.cell(kopf, c).value = "Beginn Dienstzeit Laufbahn gD"
                     protokoll.append(f"{ws.title}: Ueberschrift „Laufbahn mD“ -> „Laufbahn gD“")
-            if basis in STATUSAMT_GD:
-                besoldung, text = STATUSAMT_GD[basis]
-                if re.match(r"Statusamt: Polizei(ober|haupt)?meister", str(ws["A9"].value or "")):
-                    protokoll.append(f"{ws.title}: A9 „{ws['A9'].value}“ -> „{text}“")
-                    ws["A9"] = text
-                if str(ws["A4"].value) == "9mZ" and besoldung != "9mZ":
-                    protokoll.append(f"{ws.title}: A4 „9mZ“ -> „{besoldung}“")
-                    ws["A4"] = besoldung
+
+
+def ergaenze_reiter(wb, notenblaetter, kette, protokoll):
+    """Legt fehlende Reiter der Befoerderungskette als leere Kopie des vorigen an
+    (gleicher Aufbau, Formeln, Auswahllisten) und ordnet die Reiter nach der Kette."""
+    for i, name in enumerate(kette):
+        if name in wb.sheetnames or i == 0 or kette[i - 1] not in wb.sheetnames:
+            continue
+        quelle = wb[kette[i - 1]]
+        ws = wb.copy_worksheet(quelle)
+        ws.title = name
+        for dv in quelle.data_validations.dataValidation:
+            ws.add_data_validation(copy(dv))
+        ws.freeze_panes = quelle.freeze_panes
+        ws.sheet_view.zoomScale = quelle.sheet_view.zoomScale
+        kopf = kopfzeile(ws)
+        pos = positionen(ws, kopf)
+        breite = pos.get("befoerdert", pos["pdf"])
+        for r in range(kopf + 2, kopf + 2 + PERSONEN_JE_BLATT):
+            for c in range(1, breite + 1):
+                z = ws.cell(r, c)
+                if not (isinstance(z.value, str) and z.value.startswith("=")):
+                    z.value = None
+            ws.row_dimensions[r].height = None
+        besoldung, text = STATUSAMT_GD[name]
+        ws["A2"], ws["A4"], ws["A9"] = name, besoldung, text
+        berichtige_notenblatt(ws, [])  # Amtsbezeichnung, Schutz usw. fuer den neuen Reiter
+        notenblaetter.append(ws)
+        protokoll.append(f"Reiter „{name}“ neu angelegt (leer, Aufbau wie „{quelle.title}“)")
+    # Reihenfolge: Kette zuerst, dann alle uebrigen Notenblaetter
+    rang = {n: i for i, n in enumerate(kette)}
+    alt_pos = {w.title: i for i, w in enumerate(notenblaetter)}
+    notenblaetter.sort(key=lambda w: (rang.get(w.title, len(kette)), alt_pos[w.title]))
+    for i, w in enumerate(notenblaetter):
+        wb.move_sheet(w, i - wb.worksheets.index(w))
+    return notenblaetter
 
 
 def entferne_externe_verknuepfungen(wb, protokoll):
@@ -945,11 +997,11 @@ def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
 
 
 def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
-    ws = wb.create_sheet(START, 0)
+    ws = wb.create_sheet(START, len(notenblaetter))  # hinter die Vergleichsgruppen
     ws.sheet_view.showGridLines = False
     for w in wb.worksheets:
         w.sheet_view.tabSelected = False
-    ws.sheet_view.tabSelected = True
+    wb.worksheets[0].sheet_view.tabSelected = True   # Datei oeffnet mit der ersten Vergleichsgruppe
     wb.active = 0
 
     def wert(label, standard):
@@ -1045,8 +1097,82 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
     return ws
 
 
+# --------------------------------------------------------------------------
+# Knoepfe fuer die Makros (Beurteilungs-Makros.txt) auf jedem Notenblatt.
+# openpyxl kann keine Formen schreiben, daher direkt ins gespeicherte XML.
+# --------------------------------------------------------------------------
+KNOEPFE = [  # Text, Makro, Spalte (0-basiert), Zeile von/bis (0-basiert), Farbe
+    ("Beförderungen übernehmen", "BefoerderungenUebernehmen", 19, 0, 2, "1F3864"),
+    ("Liste leeren", "ListeLeeren", 19, 3, 5, "A61C1C"),
+]
+_NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+
+def _knopf_xml(nr, text, makro, spalte, von, bis, farbe):
+    return (f'<xdr:twoCellAnchor editAs="absolute">'
+            f'<xdr:from><xdr:col>{spalte}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{von}</xdr:row><xdr:rowOff>30000</xdr:rowOff></xdr:from>'
+            f'<xdr:to><xdr:col>{spalte + 6}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{bis}</xdr:row><xdr:rowOff>120000</xdr:rowOff></xdr:to>'
+            f'<xdr:sp macro="[0]!{makro}" textlink="">'
+            f'<xdr:nvSpPr><xdr:cNvPr id="{nr + 1}" name="Knopf {makro}"/><xdr:cNvSpPr/></xdr:nvSpPr>'
+            f'<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>'
+            f'<a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="{farbe}"/></a:solidFill>'
+            f'<a:ln><a:noFill/></a:ln></xdr:spPr>'
+            f'<xdr:txBody><a:bodyPr vertOverflow="clip" wrap="square" rtlCol="0" anchor="ctr"/><a:lstStyle/>'
+            f'<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="de-DE" sz="1100" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>'
+            f'</a:rPr><a:t>{text}</a:t></a:r></a:p></xdr:txBody></xdr:sp><xdr:clientData/></xdr:twoCellAnchor>')
+
+
+def knoepfe_einfuegen(datei, blaetter):
+    import zipfile
+    with zipfile.ZipFile(datei) as z:
+        teile = {n: z.read(n) for n in z.namelist()}
+    wb_xml = teile["xl/workbook.xml"].decode()
+    rels = teile["xl/_rels/workbook.xml.rels"].decode()
+    ziel = {m.group(1): m.group(2) for m in re.finditer(r'<Relationship[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"', rels)}
+    ziel.update({m.group(2): m.group(1) for m in re.finditer(r'<Relationship[^>]*Target="([^"]+)"[^>]*Id="([^"]+)"', rels)})
+    pfade = {}
+    for m in re.finditer(r'<sheet\b[^>]*>', wb_xml):
+        name = re.search(r'name="([^"]*)"', m.group(0)).group(1)
+        rid = re.search(r'r:id="([^"]+)"', m.group(0)).group(1)
+        t = ziel[rid]
+        pfade[name.replace("&amp;", "&")] = t.lstrip("/") if t.startswith("/") else "xl/" + t
+    typen = teile["[Content_Types].xml"].decode()
+    nr = max([int(x) for n in teile for x in re.findall(r"^xl/drawings/drawing(\d+)\.xml$", n)] or [0])
+    for blatt in blaetter:
+        pfad = pfade[blatt]
+        xml = teile[pfad].decode()
+        if "<drawing " in xml:
+            continue
+        nr += 1
+        zeichnung = (f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                     f'<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+                     f'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                     + "".join(_knopf_xml(i + 1, *k) for i, k in enumerate(KNOEPFE)) + "</xdr:wsDr>")
+        teile[f"xl/drawings/drawing{nr}.xml"] = zeichnung.encode()
+        typen = typen.replace("</Types>", f'<Override PartName="/xl/drawings/drawing{nr}.xml" '
+                              f'ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>')
+        ordner, name = pfad.rsplit("/", 1)
+        rels_pfad = f"{ordner}/_rels/{name}.rels"
+        srels = teile.get(rels_pfad, b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                          b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>').decode()
+        rid = "rIdKnopf"
+        srels = srels.replace("</Relationships>", f'<Relationship Id="{rid}" Type="{_NS_R}/drawing" '
+                              f'Target="../drawings/drawing{nr}.xml"/></Relationships>')
+        teile[rels_pfad] = srels.encode()
+        if "xmlns:r=" not in xml.split(">", 2)[1]:
+            xml = re.sub(r"<worksheet\b", f'<worksheet xmlns:r="{_NS_R}"', xml, count=1)
+        tag = f'<drawing r:id="{rid}"/>'
+        m = re.search(r"<(legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b", xml)
+        xml = xml[:m.start()] + tag + xml[m.start():] if m else xml.replace("</worksheet>", tag + "</worksheet>")
+        teile[pfad] = xml.encode()
+    teile["[Content_Types].xml"] = typen.encode()
+    with zipfile.ZipFile(datei, "w", zipfile.ZIP_DEFLATED) as z:
+        for n, d in teile.items():
+            z.writestr(n, d)
+
+
 def main(quelle, ziel, vorlage=None):
-    wb = openpyxl.load_workbook(quelle)
+    wb = openpyxl.load_workbook(quelle, keep_vba=quelle.lower().endswith(".xlsm"))
     protokoll = []
     # Eintraege der Tool-Blaetter aus der Datei selbst, sonst aus einer
     # frueher aufbereiteten Fassung (--vorlage), damit nichts verloren geht
@@ -1087,6 +1213,8 @@ def main(quelle, ziel, vorlage=None):
                 zuege.append(z)
         if stichtag is None and norm(ws["R2"].value).startswith("stichtag"):
             stichtag = ws["S2"].value
+    if ist_gd:
+        notenblaetter = ergaenze_reiter(wb, notenblaetter, KETTE_GD, protokoll)
     zuege.sort(key=lambda z: (z in (None, ""), not isinstance(z, (int, float)), str(z)))
 
     baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z)
@@ -1094,6 +1222,7 @@ def main(quelle, ziel, vorlage=None):
     baue_funktionen(wb, alt_funkt_z)
     baue_einstellungen(wb, zuege, alt_einst, alt_einst_z)
     wb.save(ziel)
+    knoepfe_einfuegen(ziel, [ws.title for ws in notenblaetter])
     print("\n".join(protokoll))
     print(f"-> {ziel}")
 

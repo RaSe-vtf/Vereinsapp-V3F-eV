@@ -103,12 +103,22 @@ aus einer früher aufbereiteten Datei.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst
 (Spalten werden über die Überschriften gefunden).
 
-Beurteilung.html kann außerdem Listen leeren (Bereich 3): gewählte Notenblätter,
-immer mit Rückfrage; es entsteht eine neue Datei `…_leer.xlsx` (Original bleibt).
-Dafür werden in den 60 Tabellenzeilen bis zur Spalte „PDF“ direkt im XML alle
-Werte ohne Formel entfernt; Formeln, Formate, Auswahllisten und Blattschutz
-bleiben, Excel rechnet beim Öffnen neu (`fullCalcOnLoad`).
+Reiter: vorn die Vergleichsgruppen (gD: PK, POK, PHK, PHKZ, EPHK, EPHKZ – fehlende
+Reiter der Kette werden als leere Kopie des vorigen angelegt; mD: PM, POM, PHM,
+PHMZ), dahinter Startseite, Beurteiler, Funktionen, Einstellungen; die Datei
+öffnet mit der ersten Vergleichsgruppe. EPHKZ ist vorläufig als A13Z hinterlegt
+(Bezeichnung/Besoldungsgruppe vom Nutzer noch zu bestätigen).
 
-- `src/engine.js` – Kern: Excel lesen, PDF befüllen, fertigstellen, Listen leeren
+Hinter „PDF“ steht „befördert am“. Excel-Funktionen (nicht in Beurteilung.html,
+das nur die PDF-Bögen erzeugt) laufen als Makros: `makros/Beurteilungs-Makros.txt`
+(ASCII, zum Einfügen in ein Modul; Umlaute in Meldungen über `{ae}` usw.) mit
+`BefoerderungenUebernehmen` und `ListeLeeren`. Die Knöpfe dafür schreibt
+`excel_aufbereiten.py` als Formen direkt ins XML (`knoepfe_einfuegen`,
+`macro="[0]!…"`). Beide Makros fragen nach und legen vorher mit `SaveCopyAs` eine
+Sicherungskopie an. Eine .xlsm als Quelle wird mit `keep_vba` aufbereitet, die
+Makros bleiben erhalten. Getestet mit LibreOffice im VBA-Modus (UNO); Excel
+selbst prüft der Nutzer (Makros_einrichten.pdf).
+
+- `src/engine.js` – Kern: Excel lesen, PDF befüllen, fertigstellen
 - `src/ui.html` – Oberfläche (Platzhalter werden beim Bauen ersetzt)
 - `vendor/` – pdf-lib 1.17.1 (MIT), SheetJS 0.18.5 mini (Apache-2.0), JSZip 3.10.1 (MIT)

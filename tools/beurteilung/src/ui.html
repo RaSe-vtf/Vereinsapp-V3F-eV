@@ -52,10 +52,6 @@
   button { font: inherit; font-weight: 600; background: var(--akzent); color: var(--karte); border: 0;
            border-radius: 7px; padding: 10px 18px; cursor: pointer; margin-top: 8px; }
   button:disabled { opacity: .5; cursor: default; }
-  button.gefahr { background: var(--fehler); }
-  .wahlliste { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0; }
-  .wahl { cursor: pointer; font-size: 14px; }
-  .wahl input { width: auto; margin: 0 4px 0 0; }
   details { margin-top: 8px; font-size: 14px; }
   summary { cursor: pointer; color: var(--leise); }
   footer { color: var(--leise); font-size: 13px; text-align: center; }
@@ -113,7 +109,7 @@
        ergänzen die Beurteilenden im PDF.</p>
     <label class="ablage" id="ablage-excel">
       <input type="file" id="datei-excel" accept=".xlsx,.xlsm" multiple>
-      <strong>Notenübersicht (.xlsx) hier ablegen</strong><br>oder klicken zum Auswählen
+      <strong>Notenübersicht (.xlsx oder .xlsm) hier ablegen</strong><br>oder klicken zum Auswählen
     </label>
     <div class="ergebnis" id="ergebnis-excel"></div>
   </section>
@@ -128,19 +124,6 @@
       <strong>Ausgefüllte Beurteilung(en) (.pdf) hier ablegen</strong><br>oder klicken zum Auswählen
     </label>
     <div class="ergebnis" id="ergebnis-pdf"></div>
-  </section>
-
-  <section class="karte">
-    <h2><span class="nr">3</span> Liste leeren (neue Runde)</h2>
-    <p>Erzeugt eine <strong>leere Kopie</strong> der Notenübersicht: In den gewählten Vergleichsgruppen werden alle
-       Eintragungen gelöscht (Namen, Daten, Noten, ALB/BB, Bemerkungen, PDF-Markierung). Formeln, Auswahllisten,
-       Blattschutz, Startseite, Beurteiler, Funktionen und Einstellungen bleiben erhalten.
-       Ihre Originaldatei wird <strong>nicht</strong> verändert.</p>
-    <label class="ablage" id="ablage-leeren">
-      <input type="file" id="datei-leeren" accept=".xlsx,.xlsm">
-      <strong>Notenübersicht (.xlsx) hier ablegen</strong><br>oder klicken zum Auswählen
-    </label>
-    <div class="ergebnis" id="ergebnis-leeren"></div>
   </section>
 
   <footer>Alles läuft nur hier in diesem Browserfenster – es werden keine Daten ins Internet übertragen
@@ -381,59 +364,8 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     if (fertige.length) ziel.append(meldung('ok', 'Fertige Datei(en) liegen im Download-Ordner.'), link);
   }
 
-  // ---------------------------------------------------------------- Schritt 3
-  const personen = (n) => n + (n === 1 ? ' Person' : ' Personen');
-  async function verarbeiteLeeren(dateien) {
-    const ziel = $('ergebnis-leeren');
-    const d = dateien[0];
-    let daten, blaetter;
-    try {
-      daten = await lies(d, ['.xlsx', '.xlsm']);
-      blaetter = E.leerenVorschau(daten, d.name);
-    } catch (e) {
-      ziel.replaceChildren(meldung('fehler', e.message));
-      return;
-    }
-    const kaesten = blaetter.map((b) => {
-      const k = el('input', { type: 'checkbox' });
-      k.dataset.name = b.name;
-      return { b, k, zeile: el('label', { class: 'wahl' }, k, ' ' + b.name + ' (' + personen(b.personen) + ')') };
-    });
-    const alle = el('input', { type: 'checkbox' });
-    alle.addEventListener('change', () => kaesten.forEach((x) => { x.k.checked = alle.checked; }));
-    const knopf = el('button', { type: 'button', class: 'gefahr' }, 'Ausgewählte Listen leeren …');
-    const antwort = el('div');
-    knopf.addEventListener('click', async () => {
-      const wahl = kaesten.filter((x) => x.k.checked).map((x) => x.b);
-      if (!wahl.length) { antwort.replaceChildren(meldung('warn', 'Bitte mindestens eine Vergleichsgruppe ankreuzen.')); return; }
-      const neuName = d.name.replace(/\.(xlsx|xlsm)$/i, '') + '_leer' + (d.name.match(/\.(xlsx|xlsm)$/i) || ['.xlsx'])[0];
-      const frage = 'Sollen wirklich ALLE Eintragungen gelöscht werden in:\n\n' +
-        wahl.map((b) => '  • ' + b.name + ' (' + personen(b.personen) + ')').join('\n') +
-        '\n\nEs entsteht die neue Datei „' + neuName + '“. Die Originaldatei „' + d.name + '“ bleibt unverändert.';
-      if (!window.confirm(frage)) {
-        antwort.replaceChildren(meldung('ok', 'Abgebrochen – es wurde nichts gelöscht.'));
-        return;
-      }
-      try {
-        const bytes = await E.leeren(JSZip, daten, wahl);
-        const link = herunterladen(bytes, neuName,
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        antwort.replaceChildren(meldung('ok', 'Geleert: ' + wahl.map((b) => b.name).join(', ') + '. Die neue Datei „' +
-          neuName + '“ liegt im Download-Ordner – dort umbenennen und in den Ordner mit Beurteilung.html legen. ' +
-          'Excel rechnet beim Öffnen neu; beim Schließen einmal speichern.'), link);
-      } catch (e) {
-        antwort.replaceChildren(meldung('fehler', 'Leeren nicht möglich: ' + e.message));
-      }
-    });
-    ziel.replaceChildren(
-      el('div', { class: 'eckdaten' }, el('div', null, el('span', null, 'Datei: '), d.name)),
-      el('div', { class: 'wahlliste' }, el('label', { class: 'wahl' }, alle, ' alle Vergleichsgruppen'), ...kaesten.map((x) => x.zeile)),
-      knopf, antwort);
-  }
-
   ablage('ablage-excel', 'datei-excel', verarbeiteExcel);
   ablage('ablage-pdf', 'datei-pdf', verarbeitePdf);
-  ablage('ablage-leeren', 'datei-leeren', verarbeiteLeeren);
   if (sperre.hidden) setzeStatus('bereit', '✓ Tool bereit – Excel-Datei auswählen oder hineinziehen.');
 })();
 </script>

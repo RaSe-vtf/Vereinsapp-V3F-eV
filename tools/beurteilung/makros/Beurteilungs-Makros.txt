@@ -1,0 +1,431 @@
+Option Explicit
+
+' ==========================================================================
+' Makros fuer die Notenuebersicht (Beurteilungs-Tool BPOL 4 00 069)
+'
+'   ListeLeeren                 - leert den aktuellen Reiter (Vergleichsgruppe)
+'   BefoerderungenUebernehmen   - verschiebt alle Personen mit Datum in
+'                                 "befoerdert am" in den naechsten Reiter
+'
+' Beide fragen vorher nach und legen vor jeder Aenderung automatisch eine
+' Sicherungskopie im selben Ordner an (Makro-Aenderungen lassen sich in Excel
+' nicht mit Strg+Z rueckgaengig machen).
+' Den gesamten Text in ein leeres Modul einfuegen (Anleitung Makros_einrichten.pdf).
+' ==========================================================================
+
+Private Const TABELLE_ZEILEN As Long = 60
+Private letzteSicherung As String
+
+' Umlaute im Meldungstext: {ae} {oe} {ue} {Ae} {Oe} {Ue} {ss}
+Private Function U(ByVal s As String) As String
+    s = Replace(s, "{ae}", ChrW(228))
+    s = Replace(s, "{oe}", ChrW(246))
+    s = Replace(s, "{ue}", ChrW(252))
+    s = Replace(s, "{Ae}", ChrW(196))
+    s = Replace(s, "{Oe}", ChrW(214))
+    s = Replace(s, "{Ue}", ChrW(220))
+    s = Replace(s, "{ss}", ChrW(223))
+    U = s
+End Function
+
+Private Function Norm(ByVal v As Variant) As String
+    Dim s As String
+    If IsError(v) Or IsEmpty(v) Then Norm = "": Exit Function
+    s = LCase$(CStr(v))
+    s = Replace(s, vbCr, " ")
+    s = Replace(s, vbLf, " ")
+    s = Replace(s, vbTab, " ")
+    Do While InStr(s, "  ") > 0
+        s = Replace(s, "  ", " ")
+    Loop
+    Norm = Trim$(s)
+End Function
+
+Private Function IstLeer(ByVal v As Variant) As Boolean
+    If IsError(v) Then IstLeer = False: Exit Function
+    IstLeer = (Trim$(CStr(v)) = "")
+End Function
+
+' Datum aus einer Zelle (Datum, Datumszahl oder Text TT.MM.JJJJ)
+Private Function AlsDatum(ByVal v As Variant, ByRef d As Date) As Boolean
+    If IsError(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbDate Then
+        d = v
+        AlsDatum = True
+    ElseIf IsNumeric(v) Then
+        If v > 0 And v < 2958466 Then
+            d = CDate(v)
+            AlsDatum = True
+        End If
+    ElseIf IsDate(v) Then
+        d = CDate(v)
+        AlsDatum = True
+    End If
+End Function
+
+' Zeile mit den Ueberschriften ("Lfd.Nr." und "Name"), 0 = kein Notenblatt
+Private Function KopfZeile(ws As Worksheet) As Long
+    Dim r As Long, c As Long, lfd As Boolean, nam As Boolean
+    For r = 1 To 40
+        lfd = False
+        nam = False
+        For c = 1 To 6
+            Select Case Norm(ws.Cells(r, c).Value)
+                Case "lfd.nr.": lfd = True
+                Case "name": nam = True
+            End Select
+        Next c
+        If lfd And nam Then
+            KopfZeile = r
+            Exit Function
+        End If
+    Next r
+    KopfZeile = 0
+End Function
+
+' Spalte ueber die Ueberschrift finden (Like-Muster), 0 = nicht vorhanden
+Private Function Spalte(ws As Worksheet, ByVal kopf As Long, ByVal muster As String) As Long
+    Dim c As Long, letzte As Long
+    letzte = ws.Cells(kopf, ws.Columns.Count).End(xlToLeft).Column
+    For c = 1 To letzte
+        If Norm(ws.Cells(kopf, c).Value) Like muster Then
+            Spalte = c
+            Exit Function
+        End If
+    Next c
+    Spalte = 0
+End Function
+
+' Letzte Spalte der Tabelle ("befoerdert am", sonst "PDF")
+Private Function Tabellenende(ws As Worksheet, ByVal kopf As Long) As Long
+    Tabellenende = Spalte(ws, kopf, "bef?rdert am*")
+    If Tabellenende = 0 Then Tabellenende = Spalte(ws, kopf, "pdf*")
+End Function
+
+Private Sub Entsperren(ws As Worksheet)
+    ws.Unprotect
+End Sub
+
+' Gleicher Blattschutz wie beim Aufbereiten: ohne Kennwort, Formatieren und Filtern erlaubt
+Private Sub Sperren(ws As Worksheet)
+    ws.Protect DrawingObjects:=True, Contents:=True, Scenarios:=False, _
+        AllowFormattingCells:=True, AllowFormattingColumns:=True, _
+        AllowFormattingRows:=True, AllowFiltering:=True
+End Sub
+
+' JJJJ-MM-TT_hh-mm-ss (ohne Format-Kuerzel, damit es in jeder Excel-Sprache gleich ist)
+Private Function Zeitstempel() As String
+    Dim t As Date
+    t = Now
+    Zeitstempel = Year(t) & "-" & Right$("0" & Month(t), 2) & "-" & Right$("0" & Day(t), 2) & "_" & _
+        Right$("0" & Hour(t), 2) & "-" & Right$("0" & Minute(t), 2) & "-" & Right$("0" & Second(t), 2)
+End Function
+
+' Sicherungskopie im selben Ordner: <Name>_Sicherung_JJJJ-MM-TT_hh-mm-ss.xlsm
+Private Function Sicherung() As Boolean
+    Dim wb As Workbook, dateiname As String, punkt As Long
+    Set wb = ThisWorkbook
+    If wb.Path = "" Then
+        MsgBox U("Bitte die Datei zuerst speichern (Strg+S) und dann den Knopf erneut dr{ue}cken."), _
+            vbExclamation, "Sicherungskopie"
+        Exit Function
+    End If
+    dateiname = wb.Name
+    punkt = InStrRev(dateiname, ".")
+    If punkt = 0 Then punkt = Len(dateiname) + 1
+    letzteSicherung = wb.Path & Application.PathSeparator & Left$(dateiname, punkt - 1) & _
+        "_Sicherung_" & Zeitstempel() & Mid$(dateiname, punkt)
+    On Error GoTo Fehler
+    wb.SaveCopyAs letzteSicherung
+    Sicherung = True
+    Exit Function
+Fehler:
+    MsgBox U("Die Sicherungskopie konnte nicht angelegt werden:" & vbLf & Err.Description & vbLf & vbLf & _
+        "Es wurde nichts ver{ae}ndert."), vbCritical, "Sicherungskopie"
+    Sicherung = False
+End Function
+
+' Naechster Reiter der Befoerderungskette ("" = keine Befoerderung in dieser Datei)
+Private Function NaechstesAmt(ByVal blatt As String) As String
+    Select Case UCase$(Trim$(blatt))
+        Case "PM": NaechstesAmt = "POM"
+        Case "POM": NaechstesAmt = "PHM"
+        Case "PHM": NaechstesAmt = "PHMZ"
+        Case "PK": NaechstesAmt = "POK"
+        Case "POK": NaechstesAmt = "PHK"
+        Case "PHK": NaechstesAmt = "PHKZ"
+        Case "PHKZ": NaechstesAmt = "EPHK"
+        Case "EPHK": NaechstesAmt = "EPHKZ"
+        Case Else: NaechstesAmt = ""
+    End Select
+End Function
+
+Private Function Beginnspalte(ws As Worksheet, ByVal kopf As Long) As Long
+    Beginnspalte = Spalte(ws, kopf, "beginn dienstzeit*")
+    If Beginnspalte = 0 Then Beginnspalte = Spalte(ws, kopf, "datum der verleihung*")
+End Function
+
+' Eingaben (keine Formeln) einer Tabellenzeile loeschen
+Private Sub ZeileLeeren(ws As Worksheet, ByVal r As Long, ByVal breite As Long)
+    Dim c As Long
+    For c = 1 To breite
+        If Not ws.Cells(r, c).HasFormula Then
+            If Not IsEmpty(ws.Cells(r, c).Value) Then ws.Cells(r, c).ClearContents
+        End If
+    Next c
+End Sub
+
+' ==========================================================================
+' Knopf "Liste leeren"
+' ==========================================================================
+Public Sub ListeLeeren()
+    Dim ws As Worksheet, kopf As Long, erste As Long, letzte As Long
+    Dim breite As Long, cName As Long, n As Long, r As Long, meldung As String
+
+    Set ws = ActiveSheet
+    kopf = KopfZeile(ws)
+    If kopf = 0 Then
+        MsgBox U("Bitte zuerst den Reiter der Vergleichsgruppe ausw{ae}hlen, der geleert werden soll (z.B. PM)."), _
+            vbExclamation, "Liste leeren"
+        Exit Sub
+    End If
+    erste = kopf + 2
+    letzte = erste + TABELLE_ZEILEN - 1
+    breite = Tabellenende(ws, kopf)
+    cName = Spalte(ws, kopf, "name")
+    For r = erste To letzte
+        If Not IstLeer(ws.Cells(r, cName).Value) Then n = n + 1
+    Next r
+    If n = 0 Then
+        MsgBox U("Der Reiter """ & ws.Name & """ ist bereits leer."), vbInformation, "Liste leeren"
+        Exit Sub
+    End If
+
+    meldung = "Sollen wirklich ALLE Eintragungen im Reiter """ & ws.Name & """ gel{oe}scht werden?" & vbLf & vbLf & _
+        "Betroffen: " & n & IIf(n = 1, " Person", " Personen") & " (Namen, Daten, Noten, ALB/BB, Bemerkungen, " & _
+        "PDF-Markierung, bef{oe}rdert am)." & vbLf & vbLf & _
+        "Formeln, Auswahllisten und alle anderen Reiter bleiben erhalten. " & _
+        "Vorher wird automatisch eine Sicherungskopie im selben Ordner angelegt."
+    If MsgBox(U(meldung), vbYesNo + vbExclamation + vbDefaultButton2, "Liste leeren") <> vbYes Then
+        MsgBox U("Abgebrochen " & ChrW(8211) & " es wurde nichts gel{oe}scht."), vbInformation, "Liste leeren"
+        Exit Sub
+    End If
+    If Not Sicherung() Then Exit Sub
+
+    On Error GoTo Fehler
+    Application.ScreenUpdating = False
+    Entsperren ws
+    For r = erste To letzte
+        ZeileLeeren ws, r, breite
+        ws.Rows(r).RowHeight = ws.StandardHeight
+    Next r
+    Sperren ws
+    Application.ScreenUpdating = True
+    MsgBox U("Der Reiter """ & ws.Name & """ wurde geleert (" & n & IIf(n = 1, " Person", " Personen") & ")." & vbLf & vbLf & _
+        "Sicherungskopie: " & letzteSicherung & vbLf & vbLf & "Bitte die Datei jetzt speichern (Strg+S)."), _
+        vbInformation, "Liste leeren"
+    Exit Sub
+Fehler:
+    Dim fehlerText As String
+    fehlerText = Err.Description
+    On Error Resume Next
+    Sperren ws
+    Application.ScreenUpdating = True
+    MsgBox U("Beim Leeren ist ein Fehler aufgetreten: " & fehlerText & vbLf & vbLf & _
+        "Den vorherigen Stand enth{ae}lt die Sicherungskopie:" & vbLf & letzteSicherung), vbCritical, "Liste leeren"
+End Sub
+
+' ==========================================================================
+' Knopf "Befoerderungen uebernehmen"
+' ==========================================================================
+Public Sub BefoerderungenUebernehmen()
+    Dim ws As Worksheet, zs As Worksheet, zielName As String
+    Dim kopf As Long, erste As Long, letzte As Long, breite As Long
+    Dim zKopf As Long, zErste As Long, zLetzte As Long, zBreite As Long
+    Dim cName As Long, cBef As Long, zName As Long
+    Dim r As Long, i As Long, n As Long, frei As Long, zr As Long, rr As Long, c As Long
+    Dim zeilen() As Long, liste As String, falsch As String, meldung As String
+    Dim datum As Date, daten() As Date
+
+    Set ws = ActiveSheet
+    kopf = KopfZeile(ws)
+    If kopf = 0 Then
+        MsgBox U("Bitte zuerst den Reiter der Vergleichsgruppe ausw{ae}hlen (z.B. PM)."), vbExclamation, _
+            U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    erste = kopf + 2
+    letzte = erste + TABELLE_ZEILEN - 1
+    breite = Tabellenende(ws, kopf)
+    cName = Spalte(ws, kopf, "name")
+    cBef = Spalte(ws, kopf, "bef?rdert am*")
+    If cBef = 0 Then
+        MsgBox U("In diesem Reiter fehlt die Spalte ""bef{oe}rdert am""."), vbExclamation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+
+    ' Personen mit Befoerderungsdatum sammeln und pruefen
+    ReDim zeilen(1 To TABELLE_ZEILEN)
+    ReDim daten(1 To TABELLE_ZEILEN)
+    For r = erste To letzte
+        If Not IstLeer(ws.Cells(r, cName).Value) And Not IstLeer(ws.Cells(r, cBef).Value) Then
+            If AlsDatum(ws.Cells(r, cBef).Value, datum) Then
+                n = n + 1
+                zeilen(n) = r
+                daten(n) = datum
+                If n <= 25 Then liste = liste & "   " & ws.Cells(r, cName).Value & ", " & _
+                    ws.Cells(r, Spalte(ws, kopf, "vorname")).Value & "  (bef{oe}rdert am " & _
+                    Right$("0" & Day(datum), 2) & "." & Right$("0" & Month(datum), 2) & "." & Year(datum) & ")" & vbLf
+            Else
+                falsch = falsch & "   " & ws.Cells(r, cName).Value & ": """ & ws.Cells(r, cBef).Value & """" & vbLf
+            End If
+        End If
+    Next r
+    If falsch <> "" Then
+        MsgBox U("Bitte in ""bef{oe}rdert am"" ein g{ue}ltiges Datum (TT.MM.JJJJ) eintragen:" & vbLf & vbLf & falsch & vbLf & _
+            "Es wurde nichts verschoben."), vbExclamation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    If n = 0 Then
+        MsgBox U("Im Reiter """ & ws.Name & """ ist bei niemandem ein Datum in ""bef{oe}rdert am"" eingetragen."), _
+            vbInformation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    If n > 25 Then liste = liste & "   ... und " & (n - 25) & " weitere" & vbLf
+
+    ' Zielreiter
+    zielName = NaechstesAmt(ws.Name)
+    If zielName <> "" Then
+        On Error Resume Next
+        Set zs = ThisWorkbook.Worksheets(zielName)
+        On Error GoTo 0
+    End If
+    If zs Is Nothing Then
+        MsgBox U("Aus dem Reiter """ & ws.Name & """ gibt es in dieser Datei keinen n{ae}chsten Reiter" & _
+            IIf(zielName <> "", " (""" & zielName & """ fehlt)", "") & "." & vbLf & _
+            "Bitte diese Personen von Hand {ue}bertragen (z.B. Aufstieg in den gehobenen Dienst). Es wurde nichts verschoben."), _
+            vbExclamation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    zKopf = KopfZeile(zs)
+    If zKopf = 0 Then
+        MsgBox U("Der Reiter """ & zielName & """ hat keine Notentabelle."), vbExclamation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    zErste = zKopf + 2
+    zLetzte = zErste + TABELLE_ZEILEN - 1
+    zBreite = Tabellenende(zs, zKopf)
+    zName = Spalte(zs, zKopf, "name")
+    For r = zErste To zLetzte
+        If IstLeer(zs.Cells(r, zName).Value) Then frei = frei + 1
+    Next r
+    If frei < n Then
+        MsgBox U("Im Reiter """ & zielName & """ sind nur noch " & frei & " Zeilen frei, gebraucht werden " & n & "." & _
+            vbLf & "Es wurde nichts verschoben."), vbExclamation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+
+    meldung = "Sollen diese " & IIf(n = 1, "Person", n & " Personen") & " von """ & ws.Name & """ nach """ & zielName & _
+        """ verschoben werden?" & vbLf & vbLf & liste & vbLf & _
+        "Im neuen Reiter: Datum der Ernennung = Bef{oe}rderungsdatum, letzte RBU = bisherige neue RBU. " & _
+        "Teilnoten, neue RBU, ALB/BB, Kooperationsgespr{ae}che und Bemerkungen bleiben leer." & vbLf & _
+        "Vorher wird automatisch eine Sicherungskopie im selben Ordner angelegt."
+    If MsgBox(U(meldung), vbYesNo + vbQuestion + vbDefaultButton2, U("Bef{oe}rderungen {ue}bernehmen")) <> vbYes Then
+        MsgBox U("Abgebrochen " & ChrW(8211) & " es wurde nichts verschoben."), vbInformation, U("Bef{oe}rderungen {ue}bernehmen")
+        Exit Sub
+    End If
+    If Not Sicherung() Then Exit Sub
+
+    On Error GoTo Fehler
+    Application.ScreenUpdating = False
+    Entsperren ws
+    Entsperren zs
+
+    Dim muster As Variant, qc As Long, zc As Long, neueNote As Variant
+    Dim qRbu As Long, zRbu As Long, qNote As Long, qAmt As Long
+    qRbu = Spalte(ws, kopf, "letzte rbu")
+    zRbu = Spalte(zs, zKopf, "letzte rbu")
+    qNote = Spalte(ws, kopf, "neue rbu")
+    qAmt = Spalte(ws, kopf, "amtsbez*")
+
+    For i = 1 To n
+        r = zeilen(i)
+        ' erste freie Zeile im Zielreiter
+        zr = 0
+        For rr = zErste To zLetzte
+            If IstLeer(zs.Cells(rr, zName).Value) Then zr = rr: Exit For
+        Next rr
+
+        ' Stammdaten uebernehmen
+        For Each muster In Array("name", "vorname", "geb*", "geschlecht", "zug", "funktion", "schwerbehind*", "teilzeit")
+            qc = Spalte(ws, kopf, CStr(muster))
+            zc = Spalte(zs, zKopf, CStr(muster))
+            If qc > 0 And zc > 0 Then
+                If Not zs.Cells(zr, zc).HasFormula Then zs.Cells(zr, zc).Value = ws.Cells(r, qc).Value
+            End If
+        Next muster
+        qc = Beginnspalte(ws, kopf)
+        zc = Beginnspalte(zs, zKopf)
+        If qc > 0 And zc > 0 Then zs.Cells(zr, zc).Value = ws.Cells(r, qc).Value
+        ' neues Statusamt seit dem Befoerderungsdatum
+        zc = Spalte(zs, zKopf, "datum der ernennung*")
+        If zc > 0 Then zs.Cells(zr, zc).Value = daten(i)
+        ' letzte RBU = bisherige neue RBU (sonst die bisherige letzte RBU)
+        If qRbu > 0 And zRbu > 0 Then
+            neueNote = ""
+            If qNote > 0 Then neueNote = ws.Cells(r, qNote).Value
+            If Not IstLeer(neueNote) Then
+                zs.Cells(zr, zRbu).Value = neueNote
+                If Norm(zs.Cells(zKopf, zRbu + 1).Value) Like "im status*" Then
+                    If qAmt > 0 Then
+                        zs.Cells(zr, zRbu + 1).Value = ws.Cells(r, qAmt).Value
+                    Else
+                        zs.Cells(zr, zRbu + 1).Value = ws.Name
+                    End If
+                End If
+            Else
+                zs.Cells(zr, zRbu).Value = ws.Cells(r, qRbu).Value
+                If Norm(zs.Cells(zKopf, zRbu + 1).Value) Like "im status*" And _
+                   Norm(ws.Cells(kopf, qRbu + 1).Value) Like "im status*" Then
+                    zs.Cells(zr, zRbu + 1).Value = ws.Cells(r, qRbu + 1).Value
+                End If
+            End If
+        End If
+    Next i
+
+    ' Im bisherigen Reiter entfernen und die Uebrigen nachruecken lassen (von unten nach oben)
+    For i = n To 1 Step -1
+        r = zeilen(i)
+        For rr = r To letzte - 1
+            For c = 1 To breite
+                If Not ws.Cells(rr, c).HasFormula Then
+                    If IsEmpty(ws.Cells(rr + 1, c).Value) Then
+                        If Not IsEmpty(ws.Cells(rr, c).Value) Then ws.Cells(rr, c).ClearContents
+                    Else
+                        ws.Cells(rr, c).Value = ws.Cells(rr + 1, c).Value
+                    End If
+                End If
+            Next c
+        Next rr
+        ZeileLeeren ws, letzte, breite
+    Next i
+
+    Sperren ws
+    Sperren zs
+    Application.ScreenUpdating = True
+    MsgBox U(IIf(n = 1, "1 Person wurde", n & " Personen wurden") & " nach """ & zielName & """ {ue}bernommen." & vbLf & vbLf & _
+        "Sicherungskopie: " & letzteSicherung & vbLf & vbLf & "Bitte die Datei jetzt speichern (Strg+S)."), _
+        vbInformation, U("Bef{oe}rderungen {ue}bernehmen")
+    Exit Sub
+Fehler:
+    Dim fehlerText As String
+    fehlerText = Err.Description
+    On Error Resume Next
+    Sperren ws
+    Sperren zs
+    Application.ScreenUpdating = True
+    MsgBox U("Beim Verschieben ist ein Fehler aufgetreten: " & fehlerText & vbLf & vbLf & _
+        "Den vorherigen Stand enth{ae}lt die Sicherungskopie:" & vbLf & letzteSicherung & vbLf & _
+        "Bitte diese Datei ohne Speichern schlie{ss}en und die Sicherungskopie verwenden."), vbCritical, _
+        U("Bef{oe}rderungen {ue}bernehmen")
+End Sub
