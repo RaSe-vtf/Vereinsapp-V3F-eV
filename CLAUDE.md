@@ -1017,3 +1017,28 @@ The result should be distinctive enough that the visual language alone
 club app. This is a triathlon club app.
 
 The emotional core message is: "Together to the finish."
+
+## Nebenprojekt: Stärke-Ermittlungshilfe (Excel, 3. Hu)
+
+Unabhängig von der Vereinsapp wird in Sitzungen dieses Repos auch die
+Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
+(Dienststelle) bearbeitet: Reiter "Gliederung", "Verfügbarkeit Wochenende",
+"Einsatz importieren" (bis 10 Einsätze, Doppelgliederungs-Abfrage, E/EE in
+"Stärke"), hidden "EinsatzDaten".
+
+- **Makros gehen beim Nutzer immer verloren.** Die Sicherheit auf dem
+  Dienstrechner (Mail-/Download-Filter) löscht die Makros aus jeder
+  gelieferten .xlsm. Deshalb bei jeder Auslieferung: Datei wird ohne
+  Makros ankommen, der Nutzer legt das Makro-Modul selbst neu an
+  (VBA-Editor Alt+F11 → Einfügen → Modul → Quellcode einfügen →
+  Debuggen/Kompilieren → als .xlsm speichern). Den **vollständigen,
+  aktuellen Quellcode immer direkt als Codeblock im Chat** mitliefern
+  (keine .bas per Mail – kommt nicht an). Stand des Codes:
+  `extras/staerke-ermittlungshilfe/Einsatzverwaltung.bas` (bei Änderungen
+  dort mitpflegen).
+- Änderungen immer auf Basis der zuletzt vom Nutzer hochgeladenen Datei
+  bauen (enthält seine Daten); Buttons sind per Formular-Steuerelement mit
+  EinsatzLaden / EinsatzEntfernen / TabelleLeeren verknüpft.
+- Nutzer arbeitet unter Excel für Windows; die Datei nicht auf dem Mac
+  speichern lassen (zerstört ActiveX/Makros).
+- Auslieferung dieses Nebenprojekts als .xlsm (nicht als vereinsapp.zip).
