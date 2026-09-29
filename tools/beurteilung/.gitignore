@@ -4,3 +4,4 @@
 /src/vordruck_vorbereitet.pdf
 *.xlsx
 *.xlsm
+__pycache__/
