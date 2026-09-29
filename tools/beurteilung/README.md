@@ -2,7 +2,7 @@
 
 Befüllt den Vordruck „Dienstliche Beurteilung in der Bundespolizei“ automatisch
 aus der Notenübersicht (Excel). Läuft komplett offline in einer einzigen
-HTML-Datei (Safari, Chrome, Edge), ohne Installation und ohne Makros.
+HTML-Datei (Microsoft Edge, auch Chrome/Firefox), ohne Installation und ohne Makros.
 Hat nichts mit der Vereinsapp zu tun und liegt nur hier im Repository.
 
 ## Ablauf für Nutzer
@@ -12,8 +12,8 @@ Hat nichts mit der Vereinsapp zu tun und liegt nur hier im Repository.
    (eine in Excel geöffnete Datei ist im Auswahlfenster des Browsers gesperrt).
 2. `Beurteilung.html` per Doppelklick öffnen, Excel-Datei hineinziehen → ZIP mit
    einer PDF pro Person im Download-Ordner.
-3. Beurteilende ergänzen alles Weitere im PDF (Adobe Acrobat Reader, nicht
-   „Vorschau“ am Mac).
+3. Beurteilende ergänzen alles Weitere im PDF (Adobe Acrobat Reader oder
+   PDF-XChange, nicht die PDF-Anzeige des Browsers).
 4. Ausgefüllte PDF in `Beurteilung.html` unter „Beurteilung fertigstellen“
    hineinziehen → `…_fertig.pdf`: überlange Begründung der Gesamtnote wird auf
    Fortsetzungsseiten hinter Seite 5 weitergeführt, zu lange Texte in anderen

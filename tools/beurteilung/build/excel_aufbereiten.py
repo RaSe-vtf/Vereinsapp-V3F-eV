@@ -957,7 +957,7 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
         return standard if v in (None, "") else v
 
     zelle(ws, "A1", "Beurteilungen erstellen", TITEL)
-    zelle(ws, "A2", "Gelbe Felder ausfüllen, Excel-Datei speichern und schließen (⌘ S, dann ⌘ W), dann Beurteilung.html "
+    zelle(ws, "A2", "Gelbe Felder ausfüllen, Excel-Datei speichern (Strg+S) und Excel schließen, dann Beurteilung.html "
                     "öffnen und diese Datei hineinziehen.", HINWEIS)
 
     zelle(ws, "A4", "1  Beurteilung", ABSCHNITT)
@@ -1033,7 +1033,7 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
     r += 2
     zelle(ws, f"A{r}", "4  PDFs erzeugen", ABSCHNITT)
     r += 1
-    zelle(ws, f"A{r}", "Diese Excel-Datei speichern und schließen (⌘ S, dann ⌘ W).", FETT)
+    zelle(ws, f"A{r}", "Diese Excel-Datei speichern (Strg+S) und Excel schließen.", FETT)
     zelle(ws, f"A{r + 1}", "Dann Beurteilung.html (im selben Ordner) per Doppelklick öffnen und diese Excel-Datei "
                            "hineinziehen. Solange die Datei in Excel offen ist, ist sie im Browser grau und nicht auswählbar.",
           HINWEIS)
