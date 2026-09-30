@@ -6,7 +6,7 @@ Option Explicit
 '  - EinsatzLaden                  : Einsatzgliederung in naechsten freien Platz laden
 '  - EinsatzEntfernen              : einen geladenen Einsatz wieder entfernen
 '  - DoppelgliederungenEntscheiden : offene Doppelgliederungen abfragen
-'  - TabelleLeeren                 : Grunddaten + Wochenend-Entscheidungen leeren
+'  - TabelleLeeren                 : Grunddaten leeren (Einsaetze + Entscheidungen bleiben)
 '  - GrunddatenAufbereiten         : eingefuegten ePlan-Text in Spalten verteilen
 '  - EntscheidungJa / EntscheidungNein / EntscheidungLoeschen
 '                                  : Wochenend-Pruefaelle entscheiden (gespeichert je
