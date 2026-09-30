@@ -1,0 +1,10 @@
+' Code fuer das Blatt-Modul "Verfuegbarkeit" (VBA-Editor: Doppelklick auf
+' "Verfuegbarkeit" unter "Microsoft Excel Objekte", dort einfuegen).
+' Haelt die Auswahl Funktion / Zug / Trupp an der Person fest.
+Private Sub Worksheet_Change(ByVal Target As Range)
+    GliederungEingabe Target
+End Sub
+
+Private Sub Worksheet_Calculate()
+    GliederungAnzeigen
+End Sub

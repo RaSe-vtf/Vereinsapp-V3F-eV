@@ -1062,3 +1062,17 @@ Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
   Name ePlan + Freitag gespeichert (EinsatzDaten AT:AU, Buttons
   EntscheidungJa/Nein/Loeschen, L27:L163 ist Formel); Grenzen-Warnungen in
   der Stand-Prüfung (EinsatzDaten!A3).
+- Einsatzgliederung (Stand 30.09.2026): In "Verfügbarkeit" je Mitarbeiter
+  Einsatz-Funktion / Zug / Trupp (G25:I161, Speicher EinsatzDaten AW:AZ,
+  an Name ePlan gebunden über Blatt-Code Worksheet_Change/Calculate →
+  `extras/staerke-ermittlungshilfe/Blatt_Verfuegbarkeit.txt`), Kopf H4:H9
+  (Einheit, Kräfteanforderung, Verstärkung, anl., Verf.-Nr., E-Nr.).
+  "Gliederung erstellen" füllt eine Kopie der Gliederungsvorlage
+  (Reiter "Vorlage", Namen in Spalte E; Zugblöcke ab Zeile 136, je +64;
+  FGr 21–25, BefSt 29–32, BearbTr 37–40, Spezialkräfte 80–124) und ruft
+  deren Makros PlanungNHu / EZug1 / HU2Züge / Ehu3Züge / Ehu4ZÜGENEU auf;
+  danach Abfrage "fertig? als E eintragen" → "Einsatz importieren".
+  Die Gliederungsvorlage selbst ist dienstlich und wird NICHT ins Repo
+  übernommen oder weitergegeben (nur lokal auslesen).
+  Offen beim Nutzer: Belegung der unbeschrifteten Zeilen (FGr 23/24,
+  BearbTr 39, sMkw 3. Platz) prüfen.

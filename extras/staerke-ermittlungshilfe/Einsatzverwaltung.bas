@@ -8,6 +8,8 @@ Option Explicit
 '  - DoppelgliederungenEntscheiden : offene Doppelgliederungen abfragen
 '  - TabelleLeeren                 : Grunddaten leeren (Einsaetze + Entscheidungen bleiben)
 '  - GrunddatenAufbereiten         : eingefuegten ePlan-Text in Spalten verteilen
+'  - GliederungErstellen / GliederungAlsEinsatz / NeuePlanung
+'                                  : Einsatzgliederung aus "Verfuegbarkeit" (siehe unten)
 '  - EntscheidungJa / EntscheidungNein / EntscheidungLoeschen
 '                                  : Wochenend-Pruefaelle entscheiden (gespeichert je
 '                                    Person + Freitag in EinsatzDaten AT:AU)
@@ -30,6 +32,11 @@ Private Const WE0 As Long = 27          ' Wochenend-Liste Zeilen 27..163
 Private Const WEN As Long = 163
 Private Const S0 As Long = 10           ' Speicher Wochenend-Entscheidungen EinsatzDaten AT:AU, Zeilen 10..509
 Private Const SN As Long = 509
+Private Const V0 As Long = 25           ' Liste in "Verfuegbarkeit" Zeilen 25..161
+Private Const VN As Long = 161
+Private Const GS0 As Long = 10          ' Speicher Zuweisungen EinsatzDaten AW:AZ
+Private Const GSN As Long = 509
+Private mAnzeige As Boolean
 
 ' ---------------------------------------------------------------------
 Public Sub EinsatzLaden()
@@ -758,3 +765,505 @@ Private Function DateiName(ByVal pfad As String) As String
     If InStrRev(pfad, "/") > i Then i = InStrRev(pfad, "/")
     DateiName = Mid$(pfad, i + 1)
 End Function
+
+' =====================================================================
+'  Einsatzgliederung aus dem Reiter "Verfuegbarkeit"
+'  - GliederungEingabe / GliederungAnzeigen : werden vom Blatt-Code in
+'    "Verfuegbarkeit" aufgerufen (Auswahl bleibt an der Person haengen)
+'  - GliederungErstellen      : Kopie der Gliederungsvorlage fuellen
+'  - GliederungAlsEinsatz     : zugewiesene Mitarbeiter als E eintragen
+'  - NeuePlanung              : alle Zuweisungen loeschen
+'  Speicher: EinsatzDaten AW:AZ (Name ePlan | Funktion | Zug | Trupp),
+'  Zeilen 10..509; BB25:BB161 = zuletzt angezeigte Namen.
+' =====================================================================
+Private Function BlattV() As Worksheet
+    Set BlattV = ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit")
+End Function
+
+' Auswahl in G:I der Liste wurde geaendert -> an die Person speichern
+Public Sub GliederungEingabe(ByVal Target As Range)
+    Dim ws As Worksheet, sp As Worksheet, bereich As Range, z As Range
+    Dim r As Long, k As Long, nm As String
+    Set ws = Target.Worksheet
+    Set bereich = Intersect(Target, ws.Range(ws.Cells(V0, 7), ws.Cells(VN, 9)))
+    If bereich Is Nothing Then Exit Sub
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    Application.EnableEvents = False
+    On Error GoTo Ende
+    For Each z In bereich.Cells
+        r = z.Row
+        nm = Trim$(CStr(ws.Cells(r, 6).Value))
+        If nm = "" Then
+            z.ClearContents
+        Else
+            k = GliedZeile(sp, nm, Trim$(CStr(z.Value)) <> "")
+            If k > 0 Then
+                sp.Cells(k, 50 + z.Column - 7).Value = z.Value
+                If Trim$(CStr(sp.Cells(k, 50).Value) & CStr(sp.Cells(k, 51).Value) & CStr(sp.Cells(k, 52).Value)) = "" Then
+                    sp.Range(sp.Cells(k, 49), sp.Cells(k, 52)).ClearContents
+                End If
+            End If
+            sp.Cells(r, 54).Value = nm
+        End If
+    Next z
+Ende:
+    Application.EnableEvents = True
+End Sub
+
+' Liste hat sich umsortiert -> Auswahl wieder an die richtigen Personen schreiben
+Public Sub GliederungAnzeigen()
+    Dim ws As Worksheet, sp As Worksheet, namen As Variant, snap As Variant
+    Dim i As Long, n As Long, geaendert As Boolean, d As Object, nm As String, aus() As Variant, w As Variant
+    If mAnzeige Then Exit Sub
+    Set ws = BlattV()
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    n = VN - V0 + 1
+    namen = ws.Range(ws.Cells(V0, 6), ws.Cells(VN, 6)).Value
+    snap = sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).Value
+    For i = 1 To n
+        If CStr(namen(i, 1)) <> CStr(snap(i, 1)) Then geaendert = True: Exit For
+    Next i
+    If Not geaendert Then Exit Sub
+    mAnzeige = True
+    Application.EnableEvents = False
+    On Error GoTo Ende
+    Set d = GliedDaten(sp)
+    ReDim aus(1 To n, 1 To 3)
+    For i = 1 To n
+        nm = Trim$(CStr(namen(i, 1)))
+        If nm <> "" Then
+            If d.Exists(nm) Then
+                w = d(nm)
+                aus(i, 1) = w(1): aus(i, 2) = w(2): aus(i, 3) = w(3)
+            End If
+        End If
+    Next i
+    ws.Range(ws.Cells(V0, 7), ws.Cells(VN, 9)).Value = aus
+    sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).Value = namen
+Ende:
+    Application.EnableEvents = True
+    mAnzeige = False
+End Sub
+
+Public Sub NeuePlanung()
+    Dim ws As Worksheet, sp As Worksheet
+    If MsgBox("Alle Zuweisungen (Funktion / Zug / Trupp) und die Kopfangaben der Gliederung loeschen?", _
+              vbYesNo + vbQuestion, "Neue Planung") = vbNo Then Exit Sub
+    Set ws = BlattV()
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    Application.EnableEvents = False
+    sp.Range(sp.Cells(GS0, 49), sp.Cells(GSN, 52)).ClearContents
+    ws.Range(ws.Cells(V0, 7), ws.Cells(VN, 9)).ClearContents
+    ws.Range("H6:K9").ClearContents
+    sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).Value = ws.Range(ws.Cells(V0, 6), ws.Cells(VN, 6)).Value
+    sp.Range("BD4").ClearContents
+    Application.EnableEvents = True
+    MsgBox "Neue Planung begonnen - alle Zuweisungen sind geloescht.", vbInformation, "Neue Planung"
+End Sub
+
+' ---------------------------------------------------------------------
+Public Sub GliederungErstellen()
+    Dim ws As Worksheet, sp As Worksheet, wbG As Workbook, wv As Worksheet
+    Dim einheit As String, hu As Long, zuege As Long, verst As String, anl As String, verf As String, enr As String
+    Dim slots As Object, belegt As Object, pers As Collection, p As Variant
+    Dim fehler As String, hinweis As String, key As String, zeilen As Variant, i As Long, r As Long
+    Dim datei As Variant, ordner As String, neu As String, makro As String, vName As String
+    Dim vdat As Variant, schutz As Boolean, anzahl As Long, mFehler As String, unbekannt As String
+
+    Set ws = BlattV()
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    einheit = Trim$(CStr(ws.Range("H4").Value))
+    hu = Val(einheit)
+    zuege = KraefteZuege(CStr(ws.Range("H5").Value))
+    verst = Trim$(CStr(ws.Range("H6").Value)): anl = Trim$(CStr(ws.Range("H7").Value))
+    verf = Trim$(CStr(ws.Range("H8").Value)): enr = Trim$(CStr(ws.Range("H9").Value))
+    If hu < 1 Or hu > 4 Then MsgBox "Bitte oben die Einheit (Hundertschaft) waehlen.", vbExclamation, "Gliederung": Exit Sub
+    If zuege = 0 Then MsgBox "Bitte oben die Kraefteanforderung waehlen.", vbExclamation, "Gliederung": Exit Sub
+
+    ' --- Zuweisungen einsammeln und pruefen
+    Set pers = GliedPersonen(sp, ws, zuege, fehler, hinweis)
+    If pers.Count = 0 And fehler = "" Then
+        MsgBox "Es ist noch niemand einer Funktion zugewiesen.", vbExclamation, "Gliederung"
+        Exit Sub
+    End If
+    Set slots = GliedSlots(zuege)
+    Set belegt = CreateObject("Scripting.Dictionary")
+    For Each p In pers
+        key = p(5)
+        If key = "" Then
+            ' Fehler wurde bereits gemeldet
+        ElseIf Not slots.Exists(key) Then
+            fehler = fehler & "  - " & p(1) & ": " & p(6) & " gibt es bei dieser Kraefteanforderung nicht" & vbCr
+        Else
+            zeilen = slots(key)
+            If Not belegt.Exists(key) Then belegt.Add key, 0
+            If belegt(key) > UBound(zeilen) Then
+                fehler = fehler & "  - " & p(1) & ": kein Platz mehr bei " & p(6) & " (" & UBound(zeilen) + 1 & " Plaetze)" & vbCr
+            Else
+                belegt(key) = belegt(key) + 1
+            End If
+        End If
+    Next p
+    If fehler <> "" Then
+        MsgBox "Die Gliederung kann so nicht erstellt werden:" & vbCr & vbCr & fehler, vbExclamation, "Gliederung"
+        Exit Sub
+    End If
+    If hinweis <> "" Then
+        If MsgBox("Bitte pruefen:" & vbCr & vbCr & hinweis & vbCr & "Trotzdem weiter?", vbYesNo + vbQuestion, "Gliederung") = vbNo Then Exit Sub
+    End If
+
+    ' --- Vorlage waehlen und als Kopie speichern
+    On Error Resume Next
+    ordner = CStr(sp.Range("BD3").Value)
+    If ordner <> "" Then ChDrive Left$(ordner, 1): ChDir ordner
+    On Error GoTo 0
+    datei = Application.GetOpenFilename("Excel-Dateien (*.xls*),*.xls*", , "Leere Gliederungsvorlage auswaehlen")
+    If VarType(datei) = vbBoolean Then Exit Sub
+    ordner = Left$(CStr(datei), InStrRev(CStr(datei), "\") - 1)
+    sp.Range("BD3").Value = ordner
+    neu = ordner & "\" & Format(Date, "yyyymmdd") & "_Gliederung_" & DateiTeil(IIf(verst <> "", verst, "Einsatz"))
+    If Dir(neu & ".xlsm") <> "" Then
+        i = 2
+        Do While Dir(neu & "_" & i & ".xlsm") <> ""
+            i = i + 1
+        Loop
+        neu = neu & "_" & i
+    End If
+    neu = neu & ".xlsm"
+
+    Application.DisplayAlerts = False
+    Set wbG = Workbooks.Open(Filename:=CStr(datei), UpdateLinks:=0)
+    wbG.SaveAs Filename:=neu, FileFormat:=52
+    Application.DisplayAlerts = True
+    wbG.Activate
+
+    ' --- Einheit und Kraefteanforderung mit den Makros der Vorlage
+    On Error Resume Next
+    Application.Run "'" & wbG.Name & "'!Planung" & hu & "Hu"
+    If Err.Number <> 0 Then mFehler = mFehler & "  - Einheit (Planung" & hu & "Hu)" & vbCr
+    Err.Clear
+    Select Case zuege
+        Case 1: makro = "EZug1"
+        Case 2: makro = "HU2Z" & ChrW(252) & "ge"
+        Case 3: makro = "Ehu3Z" & ChrW(252) & "ge"
+        Case 4: makro = "Ehu4Z" & ChrW(220) & "GENEU"
+    End Select
+    wbG.Activate
+    Application.Run "'" & wbG.Name & "'!" & makro
+    If Err.Number <> 0 Then mFehler = mFehler & "  - Kraefteanforderung (" & makro & ")" & vbCr
+    Err.Clear
+    Set wv = wbG.Worksheets("Vorlage")
+    If Err.Number <> 0 Then
+        On Error GoTo 0
+        MsgBox "In der gewaehlten Datei gibt es keinen Reiter ""Vorlage"". Ist es die richtige Gliederungsvorlage?", vbExclamation, "Gliederung"
+        Exit Sub
+    End If
+    schutz = wv.ProtectContents
+    wv.Unprotect
+    On Error GoTo 0
+
+    ' --- Kopf und Namen eintragen
+    If verst <> "" Then wv.Range("D7").Value = "Einsatz zur Verst" & ChrW(228) & "rkung der " & verst
+    If anl <> "" Then wv.Range("D9").Value = "anl. " & anl
+    If verf <> "" Then wv.Range("D11").Value = "'" & verf
+    If enr <> "" Then wv.Range("AA11").Value = "'" & enr
+    For Each p In slots.Items
+        For i = 0 To UBound(p)
+            wv.Cells(p(i), 5).ClearContents
+        Next i
+    Next p
+    vdat = wv.Range("AX389:BD1503").Value
+    Set belegt = CreateObject("Scripting.Dictionary")
+    For Each p In pers
+        key = p(5)
+        zeilen = slots(key)
+        If Not belegt.Exists(key) Then belegt.Add key, 0
+        r = zeilen(belegt(key))
+        belegt(key) = belegt(key) + 1
+        vName = VorlageName(vdat, CStr(p(2)), CStr(p(3)), hu)
+        If vName = "" Then
+            vName = CStr(p(2))
+            unbekannt = unbekannt & "  - " & p(1) & ": " & p(6) & vbCr
+        End If
+        wv.Cells(r, 5).Value = vName
+        anzahl = anzahl + 1
+    Next p
+    If schutz Then wv.Protect AllowFormattingCells:=True, AllowInsertingColumns:=True, AllowInsertingRows:=True, _
+                              AllowDeletingColumns:=True, AllowSorting:=True, AllowFiltering:=True
+    wv.Activate
+    wbG.Save
+    sp.Range("BD4").Value = Mid$(neu, InStrRev(neu, "\") + 1)
+
+    MsgBox "Gliederung erstellt und gespeichert:" & vbCr & neu & vbCr & vbCr & _
+           "Eingetragen: " & anzahl & " Mitarbeiter" & _
+           IIf(mFehler = "", "", vbCr & vbCr & "Folgende Makros der Vorlage fehlen - bitte auf der Startflaeche selbst waehlen:" & vbCr & mFehler) & _
+           IIf(unbekannt = "", "", vbCr & vbCr & "Nicht in der Personalliste der Vorlage gefunden (Name bitte in Spalte E pruefen):" & vbCr & unbekannt), _
+           vbInformation, "Gliederung"
+
+    If MsgBox("Bist du mit dieser Gliederung fertig?" & vbCr & vbCr & _
+              "Sollen die Mitarbeiter jetzt als E (Einsatz) in ""Staerke"" eingetragen werden?" & vbCr & _
+              "(Nein = spaeter ueber ""Gliederung als E eintragen"")", vbYesNo + vbQuestion, "Gliederung") = vbYes Then
+        ThisWorkbook.Activate
+        GliederungAlsEinsatz
+    End If
+End Sub
+
+' Traegt alle zugewiesenen Mitarbeiter als neuen Einsatz in "Einsatz importieren" ein.
+Public Sub GliederungAlsEinsatz()
+    Dim ws As Worksheet, wsE As Worksheet, sp As Worksheet, pers As Collection, p As Variant
+    Dim fehler As String, hinweis As String, platz As Long, k As Long, r As Long, frei As Long, n As Long
+    Dim dVon As Date, dBis As Date, ok As Boolean, bez As String, dname As String, m As Long, y As Long
+    Dim ausgabe() As Variant, manuell() As Variant
+
+    Set ws = BlattV()
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    Set wsE = ThisWorkbook.Worksheets(BLATT)
+    Set pers = GliedPersonen(sp, ws, 4, fehler, hinweis)
+    If pers.Count = 0 Then MsgBox "Es ist niemand einer Funktion zugewiesen.", vbExclamation, "Gliederung als E": Exit Sub
+
+    dname = CStr(sp.Range("BD4").Value)
+    If dname = "" Then dname = "Gliederung aus Verfuegbarkeit"
+    bez = Trim$(CStr(ws.Range("H6").Value))
+    If bez <> "" Then bez = "Einsatz zur Verst" & ChrW(228) & "rkung der " & bez Else bez = "Einsatz"
+    If Trim$(CStr(ws.Range("H7").Value)) <> "" Then bez = bez & " anl. " & Trim$(CStr(ws.Range("H7").Value))
+
+    For k = 1 To SLOTS
+        If StrComp(CStr(wsE.Cells(SLOT0 + k - 1, 2).Value), dname, vbTextCompare) = 0 Then
+            If MsgBox("""" & dname & """ ist bereits als Einsatz " & k & " eingetragen." & vbCr & _
+                      "Trotzdem noch einmal eintragen?", vbYesNo + vbQuestion, "Gliederung als E") = vbNo Then Exit Sub
+            Exit For
+        End If
+    Next k
+    For k = 1 To SLOTS
+        If Trim$(CStr(wsE.Cells(SLOT0 + k - 1, 2).Value)) = "" Then platz = k: Exit For
+    Next k
+    If platz = 0 Then MsgBox "Alle " & SLOTS & " Einsatz-Plaetze sind belegt.", vbExclamation, "Gliederung als E": Exit Sub
+
+    ' Zeitraum = Zeitraum im Reiter "Verfuegbarkeit"
+    On Error Resume Next
+    m = CLng(ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende").Range("AI2").Value)
+    y = CLng(ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende").Range("AI3").Value)
+    dVon = DateSerial(y, m, CLng(ws.Range("C4").Value))
+    dBis = DateSerial(y, m, CLng(ws.Range("C5").Value))
+    ok = (Err.Number = 0 And m > 0 And y > 2000 And dBis >= dVon)
+    On Error GoTo 0
+    If ok Then
+        If MsgBox("Einsatz eintragen fuer " & pers.Count & " Mitarbeiter" & vbCr & _
+                  "Zeitraum: " & Format(dVon, "dd.mm.yyyy") & " - " & Format(dBis, "dd.mm.yyyy") & vbCr & vbCr & _
+                  "Stimmt der Zeitraum? (Nein = anderen Zeitraum eingeben)", vbYesNo + vbQuestion, "Gliederung als E") = vbNo Then ok = False
+    End If
+    If Not ok Then
+        If Not ZeitraumAbfragen(dVon, dBis) Then MsgBox "Kein gueltiger Zeitraum - abgebrochen.", vbExclamation: Exit Sub
+    End If
+
+    frei = ErsteFreieZeile(wsE)
+    n = pers.Count
+    If frei + n - 1 > LN Then MsgBox "Die Personenliste in ""Einsatz importieren"" ist voll.", vbExclamation: Exit Sub
+    ReDim ausgabe(1 To n, 1 To 3): ReDim manuell(1 To n, 1 To 1)
+    r = 0
+    For Each p In pers
+        r = r + 1
+        ausgabe(r, 1) = platz: ausgabe(r, 2) = p(4): ausgabe(r, 3) = p(2)
+        manuell(r, 1) = p(0)
+    Next p
+    Application.ScreenUpdating = False
+    wsE.Unprotect KENNWORT
+    wsE.Range(wsE.Cells(frei, 1), wsE.Cells(frei + n - 1, 3)).Value = ausgabe
+    wsE.Range(wsE.Cells(frei, 6), wsE.Cells(frei + n - 1, 6)).Value = manuell
+    r = SLOT0 + platz - 1
+    wsE.Cells(r, 2).Value = dname
+    wsE.Cells(r, 3).Value = bez
+    wsE.Cells(r, 4).Value = dVon
+    wsE.Cells(r, 5).Value = dBis
+    wsE.Cells(r, 6).Value = "ja"
+    wsE.Rows(r).AutoFit
+    Schuetzen wsE
+    Application.ScreenUpdating = True
+    Application.Calculate
+    MsgBox "Als Einsatz " & platz & " eingetragen: " & n & " Mitarbeiter, " & _
+           Format(dVon, "dd.mm.yyyy") & " - " & Format(dBis, "dd.mm.yyyy") & ".", vbInformation, "Gliederung als E"
+    DoppelgliederungenAbfragen
+End Sub
+
+' --- Hilfsfunktionen Gliederung -------------------------------------
+Private Function KraefteZuege(ByVal s As String) As Long
+    If InStr(1, s, "1 E-Zug", vbTextCompare) > 0 Then KraefteZuege = 1: Exit Function
+    If InStr(s, "2") > 0 Then KraefteZuege = 2
+    If InStr(s, "3") > 0 Then KraefteZuege = 3
+    If InStr(s, "4") > 0 Then KraefteZuege = 4
+End Function
+
+Private Function GliedZeile(ByVal sp As Worksheet, ByVal nm As String, ByVal anlegen As Boolean) As Long
+    Dim r As Long, frei As Long
+    For r = GS0 To GSN
+        If StrComp(CStr(sp.Cells(r, 49).Value), nm, vbTextCompare) = 0 Then GliedZeile = r: Exit Function
+        If frei = 0 And Trim$(CStr(sp.Cells(r, 49).Value)) = "" Then frei = r
+    Next r
+    If Not anlegen Then Exit Function
+    If frei = 0 Then MsgBox "Der Speicher fuer Zuweisungen ist voll.", vbExclamation: Exit Function
+    sp.Cells(frei, 49).Value = nm
+    GliedZeile = frei
+End Function
+
+' Name ePlan -> Array(Name, Funktion, Zug, Trupp)
+Private Function GliedDaten(ByVal sp As Worksheet) As Object
+    Dim d As Object, v As Variant, i As Long, nm As String
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = vbTextCompare
+    v = sp.Range(sp.Cells(GS0, 49), sp.Cells(GSN, 52)).Value
+    For i = 1 To UBound(v)
+        nm = Trim$(CStr(v(i, 1)))
+        If nm <> "" And Not d.Exists(nm) Then d.Add nm, Array(nm, v(i, 2), v(i, 3), v(i, 4))
+    Next i
+    Set GliedDaten = d
+End Function
+
+' Sammelt alle Zuweisungen: Array(ePlan, Anzeigename, Nachname, Initial, Amtsbez., Platz-Schluessel, Beschreibung)
+Private Function GliedPersonen(ByVal sp As Worksheet, ByVal ws As Worksheet, ByVal zuege As Long, _
+                               ByRef fehler As String, ByRef hinweis As String) As Collection
+    Dim c As New Collection, v As Variant, i As Long, st As Worksheet, rr As Variant
+    Dim ep As String, f As String, zg As String, tr As String, nach As String, ini As String, amt As String
+    Dim key As String, besch As String, zn As Long, gelistet As Variant
+    Set st = ThisWorkbook.Worksheets("St" & ChrW(228) & "rke")
+    v = sp.Range(sp.Cells(GS0, 49), sp.Cells(GSN, 52)).Value
+    gelistet = ws.Range(ws.Cells(V0, 6), ws.Cells(VN, 6)).Value
+    For i = 1 To UBound(v)
+        ep = Trim$(CStr(v(i, 1)))
+        f = Trim$(CStr(v(i, 2))): zg = Trim$(CStr(v(i, 3))): tr = Trim$(CStr(v(i, 4)))
+        If ep <> "" And f <> "" Then
+            rr = Application.Match(ep, st.Range("B10:B146"), 0)
+            If IsError(rr) Then
+                nach = ep: amt = ""
+                If InStr(ep, ".") > 0 Then nach = Mid$(ep, InStr(ep, ".") + 1)
+            Else
+                nach = Trim$(CStr(st.Cells(rr + 9, 6).Value))
+                amt = Trim$(CStr(st.Cells(rr + 9, 5).Value))
+                If nach = "" Then nach = Mid$(ep, InStr(ep, ".") + 1)
+            End If
+            ini = ""
+            If Mid$(ep, 2, 1) = "." Then ini = Left$(ep, 1)
+            If Not InListe(gelistet, ep) Then
+                hinweis = hinweis & "  - " & nach & " (" & ep & ") ist im gewaehlten Zeitraum nicht (mehr) verfuegbar" & vbCr
+            End If
+
+            key = "": besch = f
+            Select Case f
+                Case "ZF", "sZF", "Bearb.", "KF", "TF", "PVB", "sMkw", "BeDo"
+                    If zuege = 1 Then
+                        If zg <> "" And zg <> "1" Then
+                            fehler = fehler & "  - " & nach & ": Zug " & zg & " gibt es bei 1 E-Zug nicht" & vbCr
+                        End If
+                        zn = 1
+                    Else
+                        zn = Val(zg)
+                        If zn < 1 Or zn > zuege Then
+                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt der Zug (1-" & zuege & ")" & vbCr
+                        End If
+                    End If
+                    If f = "TF" Or f = "PVB" Then
+                        If tr = "BAT" Or (Val(tr) >= 1 And Val(tr) <= 6 And tr = CStr(Val(tr))) Then
+                            key = f & "|" & zn & "|" & tr
+                            besch = f & " " & IIf(tr = "BAT", "BAT-Trupp", "Trupp " & tr) & ", " & zn & ". Zug"
+                        Else
+                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt der Trupp (BAT oder 1-6)" & vbCr
+                        End If
+                    Else
+                        key = f & "|" & zn
+                        besch = f & ", " & zn & ". Zug"
+                    End If
+                Case "TF Spez", "PVB Spez"
+                    Select Case tr
+                        Case "BeDo", "A-Trupp", "P" & ChrW(196) & "D", "FLT", "Sonst."
+                            key = f & "|" & tr
+                            besch = Left$(f, InStr(f, " ") - 1) & " " & tr
+                        Case Else
+                            fehler = fehler & "  - " & nach & ": bei " & f & " als Trupp BeDo, A-Trupp, P" & ChrW(196) & "D, FLT oder Sonst. waehlen" & vbCr
+                    End Select
+                Case Else
+                    key = f
+            End Select
+            c.Add Array(ep, nach & " (" & ep & ")", nach, ini, amt, key, besch)
+        End If
+    Next i
+    Set GliedPersonen = c
+End Function
+
+' Plaetze (Zeilen in "Vorlage") je Schluessel
+Private Function GliedSlots(ByVal zuege As Long) As Object
+    Dim d As Object, k As Long, b As Long, t As Long
+    Set d = CreateObject("Scripting.Dictionary")
+    If zuege >= 2 Then
+        d.Add "HF", Array(21): d.Add "sHF", Array(22): d.Add "FGr", Array(23, 24): d.Add "KF FGr", Array(25)
+        d.Add "TF BefSt", Array(29): d.Add "Bearb BefSt", Array(30, 31): d.Add "KF BefSt", Array(32)
+        d.Add "TF BearbTr", Array(37): d.Add "Bearb BearbTr", Array(38, 39): d.Add "KF BearbTr", Array(40)
+        d.Add "TF Spez|BeDo", Array(80, 82): d.Add "PVB Spez|BeDo", Array(81, 83, 84)
+        d.Add "TF Spez|A-Trupp", Array(88): d.Add "PVB Spez|A-Trupp", Array(89, 90, 91, 92)
+        d.Add "TF Spez|P" & ChrW(196) & "D", Array(96): d.Add "PVB Spez|P" & ChrW(196) & "D", Array(97, 98, 99, 100)
+        d.Add "TF Spez|FLT", Array(104): d.Add "PVB Spez|FLT", Array(105, 106, 107, 108)
+        d.Add "TF Spez|Sonst.", Array(120): d.Add "PVB Spez|Sonst.", Array(121, 122, 123, 124)
+    End If
+    For k = 1 To zuege
+        b = 136 + (k - 1) * 64
+        d.Add "ZF|" & k, Array(b)
+        d.Add "sZF|" & k, Array(b + 1)
+        d.Add "Bearb.|" & k, Array(b + 2, b + 3)
+        d.Add "KF|" & k, Array(b + 4)
+        d.Add "TF|" & k & "|BAT", Array(b + 6)
+        d.Add "PVB|" & k & "|BAT", Array(b + 7, b + 8, b + 9, b + 10)
+        For t = 1 To 6
+            d.Add "TF|" & k & "|" & t, Array(b + 12 + (t - 1) * 6)
+            d.Add "PVB|" & k & "|" & t, Array(b + 13 + (t - 1) * 6, b + 14 + (t - 1) * 6, b + 15 + (t - 1) * 6, b + 16 + (t - 1) * 6)
+        Next t
+        d.Add "sMkw|" & k, Array(b + 48, b + 49, b + 50)
+        d.Add "BeDo|" & k, Array(b + 51, b + 52, b + 53)
+    Next k
+    Set GliedSlots = d
+End Function
+
+' Sucht die Schreibweise in der Personalliste der Vorlage (AX = Name, AY = Vorname, BD = Hu)
+Private Function VorlageName(ByVal vdat As Variant, ByVal nach As String, ByVal ini As String, ByVal hu As Long) As String
+    Dim i As Long, basis As String, t As String, treffer As New Collection, auswahl As New Collection, x As Variant
+    For i = 1 To UBound(vdat)
+        t = Trim$(CStr(vdat(i, 1)))
+        If t <> "" Then
+            basis = t
+            If InStr(t, ",") > 0 Then basis = Trim$(Left$(t, InStr(t, ",") - 1))
+            If StrComp(basis, nach, vbTextCompare) = 0 Then treffer.Add i
+        End If
+    Next i
+    If treffer.Count = 0 Then Exit Function
+    If treffer.Count = 1 Then VorlageName = Trim$(CStr(vdat(treffer(1), 1))): Exit Function
+    If ini <> "" Then
+        For Each x In treffer
+            If StrComp(Left$(Trim$(CStr(vdat(x, 2))), 1), ini, vbTextCompare) = 0 Then auswahl.Add x
+        Next x
+        If auswahl.Count = 1 Then VorlageName = Trim$(CStr(vdat(auswahl(1), 1))): Exit Function
+        If auswahl.Count > 1 Then Set treffer = auswahl
+    End If
+    Set auswahl = New Collection
+    For Each x In treffer
+        If Trim$(CStr(vdat(x, 7))) = hu & "." Then auswahl.Add x
+    Next x
+    If auswahl.Count = 1 Then VorlageName = Trim$(CStr(vdat(auswahl(1), 1)))
+End Function
+
+Private Function InListe(ByVal liste As Variant, ByVal nm As String) As Boolean
+    Dim i As Long
+    For i = 1 To UBound(liste)
+        If StrComp(Trim$(CStr(liste(i, 1))), nm, vbTextCompare) = 0 Then InListe = True: Exit Function
+    Next i
+End Function
+
+Private Function DateiTeil(ByVal s As String) As String
+    Dim i As Long, ch As String, r As String
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If ch Like "[A-Za-z0-9-]" Or AscW(ch) > 191 Then
+            r = r & ch
+        ElseIf Right$(r, 1) <> "_" Then
+            r = r & "_"
+        End If
+    Next i
+    DateiTeil = Left$(r, 40)
+End Function
+
