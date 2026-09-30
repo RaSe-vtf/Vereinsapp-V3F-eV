@@ -24,6 +24,9 @@
   const FERTIG_MARKE = 'BeurteilungFertiggestellt';
   const ENTWURF_MARKE = 'BeurteilungEntwurf'; // Info-Eintrag + Markierung im Seiteninhalt
   const ENTWURF_FUSS = ' – ENTWURF';
+  const SCHREIBFELD = 'f.begruend.schreibseite'; // nur im Entwurf: grosses Eingabefeld hinter Seite 5
+  const SCHREIB_HINWEIS = 'Bitte die Begründung auf der Schreibseite direkt hinter dieser Seite eingeben – ' +
+    'sie wird beim Fertigstellen hierher übernommen (bei Bedarf mit Fortsetzungsseiten).';
 
   // Notenfelder im Vordruck: [Erstbeurteilende/r, Zweitbeurteilende/r]
   const NOTENFELDER = {
@@ -751,6 +754,7 @@
     for (const f of GEAENDERT.get(form) || []) f.updateAppearances(courier);
     stelleDAwieder(daSicherung);
     pdf.setTitle('Dienstliche Beurteilung ' + p.name + ', ' + p.vorname);
+    await schreibseite(pdf, form, courier, t(fusszeile(a) + ENTWURF_FUSS));
     await wasserzeichen(pdf);
     return pdf.save({ updateFieldAppearances: false });
   }
@@ -819,6 +823,75 @@
       if (seite.contentStreamRef) refs.push(seite.contentStreamRef);
     }
     pdf.getInfoDict().set(PDFName.of(ENTWURF_MARKE), pdf.context.obj(refs));
+  }
+
+  /**
+   * Schreibseite: Im Entwurf wird die Begruendung auf einer eigenen Seite hinter
+   * Seite 5 in ein seitengrosses Feld (feste 10 pt) geschrieben – so bleibt beim
+   * Schreiben alles sichtbar. Das Feld auf Seite 5 zeigt nur einen Hinweis.
+   */
+  /** Seite, auf der das (erste) Widget eines Feldes liegt */
+  function seiteVonFeld(pdf, feld) {
+    const widget = feld.acroField.getWidgets()[0];
+    for (const seite of pdf.getPages()) {
+      const annots = seite.node.Annots();
+      if (!annots) continue;
+      for (let i = 0; i < annots.size(); i++) {
+        if (pdf.context.lookup(annots.get(i)) === widget.dict) return seite;
+      }
+    }
+    return undefined;
+  }
+
+  async function schreibseite(pdf, form, courier, fuss) {
+    const helv = await pdf.embedFont(StandardFonts.Helvetica);
+    const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const begr = form.getTextField(BEGRUENDUNG);
+    const seite5 = seiteVonFeld(pdf, begr) || pdf.getPage(4);
+    const idx = pdf.getPages().indexOf(seite5);
+    const seite = pdf.insertPage(idx + 1, [595.276, 841.89]);
+    const rechts = 566, x = 58, oben = 755, unten = 70;
+    const rt = (s, y, f, g) => seite.drawText(s, { x: rechts - f.widthOfTextAtSize(s, g), y, size: g, font: f });
+    rt('Dienstliche Beurteilung in der Bundespolizei', 800, helvB, 10);
+    rt('(Anlage 4 BeurtRL BPOL)', 787, helv, 10);
+    seite.drawText('Begründung der Gesamtnote – Schreibseite', { x, y: oben + 10, size: 11, font: helvB });
+    seite.drawText('(vgl. Nr. 4.3 und 4.5) · nur im Entwurf – wird beim Fertigstellen auf Seite 5 übernommen und entfernt',
+      { x, y: oben + 1, size: 7, font: helv, color: rgb(0.35, 0.35, 0.35) });
+    const feld = form.createTextField(SCHREIBFELD);
+    feld.enableMultiline();
+    feld.addToPage(seite, { x, y: unten, width: rechts - x, height: oben - 8 - unten, font: courier,
+      borderColor: rgb(0.45, 0.45, 0.45), borderWidth: 0.75 });
+    feld.acroField.setDefaultAppearance('/Cour 10 Tf 0 g'); // wie das Feld auf Seite 5
+    if (fuss) seite.drawText(fuss, { x: 176, y: 36, size: 8, font: courier });
+    seite.drawText('BPOL 4 00 069 08 16  (Schreibseite zu Seite 5 – nur im Entwurf)', { x: 57, y: 22, size: 6, font: helv });
+    // Seite 5: nur Hinweis, gesperrt
+    begr.setText(SCHREIB_HINWEIS);
+    begr.updateAppearances(courier);
+    begr.acroField.setDefaultAppearance('/Cour 10 Tf 0 g');
+    begr.enableReadOnly();
+  }
+
+  /** Holt den Text der Schreibseite nach Seite 5 und entfernt die Schreibseite. */
+  function uebernimmSchreibseite(pdf, form, hinweise) {
+    let feld;
+    try { feld = form.getTextField(SCHREIBFELD); } catch (e) { return; }
+    const begr = form.getTextField(BEGRUENDUNG);
+    const text = feld.getText() || '';
+    const alt = begr.getText() || '';
+    const seite = seiteVonFeld(pdf, feld);
+    let neu = text;
+    if (leer(text) && !leer(alt) && alt !== SCHREIB_HINWEIS) neu = alt; // doch auf Seite 5 geschrieben
+    else if (!leer(text) && !leer(alt) && alt !== SCHREIB_HINWEIS && alt !== text) {
+      hinweise.push('Auf Seite 5 und auf der Schreibseite stand Text – übernommen wurde der Text der Schreibseite.');
+    }
+    begr.disableReadOnly();
+    begr.acroField.dict.set(PDFName.of('V'), PDFString.of(''));
+    begr.setText(neu === SCHREIB_HINWEIS ? '' : neu);
+    form.removeField(feld);
+    if (seite) {
+      pdf.removePage(pdf.getPages().indexOf(seite));
+      pdf.context.delete(seite.ref); // Seitenobjekt samt Verweisen restlos entfernen
+    }
   }
 
   /** Entfernt das Wasserzeichen; true, wenn die Datei ein Entwurf des Tools war. */
@@ -971,7 +1044,8 @@
     const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
     const hinweise = [];
 
-    // Entwurf -> Endversion: Wasserzeichen und "– ENTWURF" in der Fusszeile entfernen
+    // Entwurf -> Endversion: Schreibseite uebernehmen, Wasserzeichen und "– ENTWURF" entfernen
+    uebernimmSchreibseite(pdf, form, hinweise);
     if (!entferneWasserzeichen(pdf)) {
       hinweise.push('Hinweis: Diese PDF trägt kein Entwurfskennzeichen – stammt sie aus Beurteilung.html?');
     }

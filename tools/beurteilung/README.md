@@ -61,6 +61,12 @@ gesperrt.
   (Fußzeile 8 pt) – Text schrumpft nicht mehr.
 - „Begründung der Gesamtnote“: darf länger als das Feld werden (Fortsetzung
   beim Fertigstellen). Dafür wird der Berechtigungsschutz entfernt.
+- Nur im Entwurf: Schreibseite hinter Seite 5 mit einem seitengroßen Feld
+  `f.begruend.schreibseite` (10 pt), damit auch lange Begründungen beim
+  Schreiben sichtbar bleiben; das Feld auf Seite 5 zeigt dann nur einen
+  Hinweis (schreibgeschützt). Beim Fertigstellen wird der Text nach Seite 5
+  übernommen, Feld und Seite werden restlos entfernt. Ältere Entwürfe ohne
+  Schreibseite werden wie bisher verarbeitet.
 
 ## Bauen
 
