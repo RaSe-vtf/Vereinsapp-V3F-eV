@@ -7,6 +7,8 @@ Option Explicit
 '  - EinsatzEntfernen              : einen geladenen Einsatz wieder entfernen
 '  - DoppelgliederungenEntscheiden : offene Doppelgliederungen abfragen
 '  - TabelleLeeren                 : Grunddaten + Wochenend-Entscheidungen leeren
+'  Die Reiter sind geschuetzt (Blattschutz ohne Kennwort); die Makros heben
+'  den Schutz kurz auf und setzen ihn danach wieder.
 '  Die Zuordnung der Namen und das Setzen von E / EE im Reiter "Staerke"
 '  erledigen die Formeln der Arbeitsmappe.
 ' =====================================================================
@@ -19,6 +21,7 @@ Private Const KN As Long = 33
 Private Const L0 As Long = 38           ' Personenliste Zeilen 38..1037
 Private Const LN As Long = 1037
 Private Const QUELLE As String = "A1:AN600"
+Private Const KENNWORT As String = ""       ' Blattschutz-Kennwort (leer = ohne)
 
 ' ---------------------------------------------------------------------
 Public Sub EinsatzLaden()
@@ -88,6 +91,7 @@ Public Sub EinsatzLaden()
                vbExclamation, "Einsatz laden"
         Exit Sub
     End If
+    ws.Unprotect KENNWORT
     ReDim ausgabe(1 To n, 1 To 3)
     For r = 1 To n
         ausgabe(r, 1) = platz: ausgabe(r, 2) = amt(r): ausgabe(r, 3) = nam(r)
@@ -113,6 +117,7 @@ Public Sub EinsatzLaden()
     End If
     ws.Cells(r, 6).Value = "ja"
     ws.Rows(r).AutoFit                          ' Datei-/Einsatzname vollstaendig anzeigen
+    Schuetzen ws
 
     Application.Calculate
     ws.Activate
@@ -173,6 +178,7 @@ Public Sub EinsatzEntfernen()
               "Die E dieses Einsatzes verschwinden aus ""Staerke"".", vbYesNo + vbQuestion, "Einsatz entfernen") = vbNo Then Exit Sub
 
     Application.ScreenUpdating = False
+    ws.Unprotect KENNWORT
 
     ' Personenliste ohne diesen Einsatz neu schreiben (Spalten A:C + manuelle Zuordnung F)
     daten = ws.Range(ws.Cells(L0, 1), ws.Cells(LN, 3)).Value
@@ -208,6 +214,7 @@ Public Sub EinsatzEntfernen()
     ' Platz leeren
     ws.Range(ws.Cells(r, 2), ws.Cells(r, 6)).ClearContents
     ws.Rows(r).AutoFit
+    Schuetzen ws
 
     Application.ScreenUpdating = True
     Application.Calculate
@@ -302,6 +309,11 @@ End Sub
 ' =====================================================================
 '  Hilfsfunktionen
 ' =====================================================================
+Private Sub Schuetzen(ByVal ws As Worksheet)
+    ws.Protect Password:=KENNWORT, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+               AllowFormattingColumns:=True, AllowFormattingRows:=True, AllowFiltering:=True
+End Sub
+
 Private Function ErsteFreieZeile(ByVal ws As Worksheet) As Long
     Dim r As Long
     For r = LN To L0 Step -1
