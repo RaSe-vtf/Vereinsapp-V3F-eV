@@ -219,6 +219,7 @@ def berichtige_notenblatt(ws, protokoll):
     breite = pos.get("befoerdert", pos["pdf"])  # letzte Spalte der Tabelle
     ende, rechen = vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll)
     gestalte_tabelle(ws, kopf, pos, breite, ende)
+    faerbe_tabelle(ws, kopf, pos, breite, ende)
     schuetze_notenblatt(ws, kopf, breite, ende, rechen)
 
 
@@ -715,6 +716,40 @@ def erlaube(ws):
     ws.protection.objects = True         # Knoepfe nicht verschieb-/loeschbar (bleiben klickbar)
 
 
+OHNE_BEDEUTUNG = {"FF92D050", "FFCCFFCC", "FFFFFF00", "FFFF0000"}  # Gruen, Hellgruen, Gelb, Rot aus alten Staenden
+BLOCKFARBEN = {"alb": "DDEBF7", "bb": "E4DFEC"}  # Anlassbeurteilung hellblau, Beurteilungsbeitraege hellviolett
+
+
+def faerbe_tabelle(ws, kopf, pos, breite, ende):
+    """Entfernt zufaellige Markierungsfarben aus den Datenzeilen, unterlegt die
+    Bloecke Anlassbeurteilung/Beurteilungsbeitraege in den Ueberschriften und
+    setzt die Gruppenueberschriften mittig."""
+    for r in range(kopf + 2, ende + 1):
+        for c in range(1, breite + 1):
+            z = ws.cell(r, c)
+            if z.fill is not None and z.fill.fill_type == "solid" and z.fill.fgColor.type == "rgb" \
+                    and z.fill.fgColor.rgb in OHNE_BEDEUTUNG:
+                z.fill = PatternFill(fill_type=None)
+    bloecke = {"alb": ("alb_x", "alb_n43"), "bb": ("bb1_x", "bb3_bis")}
+    for name, (von, bis) in bloecke.items():
+        if von in pos and bis in pos:
+            fuellung = PatternFill("solid", fgColor=BLOCKFARBEN[name])
+            for c in range(pos[von], pos[bis] + 1):
+                for r in (kopf - 1, kopf):
+                    ws.cell(r, c).fill = fuellung
+    # Legende "Spalten mit Formeln hinterlegt" (hellgruen in der Ueberschrift):
+    # auch Lfd.Nr. und Amtsbez. rechnen inzwischen selbst
+    vorlage = ws.cell(kopf, pos["summe"]).fill if "summe" in pos else None
+    if vorlage is not None and vorlage.fill_type == "solid":
+        for k in ("lfdnr", "amtsbez"):
+            if k in pos:
+                ws.cell(kopf, pos[k]).fill = copy(vorlage)
+    for m in ws.merged_cells.ranges:
+        if m.min_row == kopf - 1 and m.max_row == kopf - 1:
+            z = ws.cell(m.min_row, m.min_col)
+            z.alignment = Alignment(horizontal="center", vertical="center")
+
+
 def letzte_tabellenzeile(ws, kopf, sp):
     """Letzte Zeile, bis zu der die vorhandene Tabelle (Spalte Name) umrandet ist."""
     c = sp["name"]
@@ -1102,8 +1137,8 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
 # openpyxl kann keine Formen schreiben, daher direkt ins gespeicherte XML.
 # --------------------------------------------------------------------------
 KNOEPFE = [  # Text, Makro, Spalte (0-basiert), Zeile von/bis (0-basiert), Farbe
-    ("Beförderungen übernehmen", "BefoerderungenUebernehmen", 19, 0, 2, "1F3864"),
-    ("Liste leeren", "ListeLeeren", 19, 3, 5, "A61C1C"),
+    ("Beförderungen übernehmen", "BefoerderungenUebernehmen", 20, 0, 2, "1F3864"),  # eine Spalte Abstand zum Stichtag
+    ("Liste leeren", "ListeLeeren", 20, 3, 5, "A61C1C"),
 ]
 _NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
