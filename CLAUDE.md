@@ -1063,16 +1063,24 @@ Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
   EntscheidungJa/Nein/Loeschen, L27:L163 ist Formel); Grenzen-Warnungen in
   der Stand-Prüfung (EinsatzDaten!A3).
 - Einsatzgliederung (Stand 30.09.2026): In "Verfügbarkeit" je Mitarbeiter
-  Einsatz-Funktion / Zug / Trupp (G25:I161, Speicher EinsatzDaten AW:AZ,
-  an Name ePlan gebunden über Blatt-Code Worksheet_Change/Calculate →
-  `extras/staerke-ermittlungshilfe/Blatt_Verfuegbarkeit.txt`), Kopf H4:H9
-  (Einheit, Kräfteanforderung, Verstärkung, anl., Verf.-Nr., E-Nr.).
-  "Gliederung erstellen" füllt eine Kopie der Gliederungsvorlage
-  (Reiter "Vorlage", Namen in Spalte E; Zugblöcke ab Zeile 136, je +64;
-  FGr 21–25, BefSt 29–32, BearbTr 37–40, Spezialkräfte 80–124) und ruft
-  deren Makros PlanungNHu / EZug1 / HU2Züge / Ehu3Züge / Ehu4ZÜGENEU auf;
-  danach Abfrage "fertig? als E eintragen" → "Einsatz importieren".
-  Die Gliederungsvorlage selbst ist dienstlich und wird NICHT ins Repo
-  übernommen oder weitergegeben (nur lokal auslesen).
-  Offen beim Nutzer: Belegung der unbeschrifteten Zeilen (FGr 23/24,
-  BearbTr 39, sMkw 3. Platz) prüfen.
+  G = Zug, H = Einsatz-Funktion, I = Trupp 1–6 (G25:I161, Speicher
+  EinsatzDaten AW:AZ = Name ePlan | Funktion | Zug | Trupp, an die Person
+  gebunden über Blatt-Code Worksheet_Change/Calculate →
+  `extras/staerke-ermittlungshilfe/Blatt_Verfuegbarkeit.txt`). Zugwahl
+  schlägt die Grundfunktion vor (ZF/sZF/TF/PVB, Bearb → Bearb Zugtrupp),
+  änderbar. Funktionen (Reihenfolge fest): HF, sHF, KF HF, Führer BefKw,
+  Bearb BefKw (3, dritter auf KF-Zeile), BDE-TF, BDE-Bearb (Bearb.- und
+  KF-Zeile) = Hu-Führungsgruppe ohne Zug; ZF, sZF, KF Zug, Bearb Zugtrupp,
+  BAT-TF, BAT-Bearb (2), TF, PVB (Trupp 1–6) je Zug. Spezialkräfte, sMkw
+  und BeDo sind externe Kräfte und werden von Hand in der Gliederung
+  eingetragen. Kopf H4:H9 (Einheit, Kräfteanforderung, Verstärkung, anl.,
+  Verf.-Nr., E-Nr.). "Gliederung erstellen" füllt eine Kopie der
+  Gliederungsvorlage (Reiter "Vorlage", Namen in Spalte E; Zugblöcke ab
+  Zeile 136, je +64) und ruft deren Makros PlanungNHu / EZug1 / HU2Züge /
+  Ehu3Züge / Ehu4ZÜGENEU auf; danach Abfrage "fertig? als E eintragen" →
+  "Einsatz importieren". Die Gliederungsvorlage selbst ist dienstlich und
+  wird NICHT ins Repo übernommen oder weitergegeben (nur lokal auslesen,
+  keine Personaldaten daraus im Chat ausgeben).
+- Auswahllisten immer lückenlos (OFFSET/COUNT bzw. Hilfsliste EinsatzDaten
+  BE:BF), damit der Cursor beim Aufklappen oben steht; feste Listen
+  systematisch von oben sortiert.

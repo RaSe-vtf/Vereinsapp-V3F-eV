@@ -773,6 +773,7 @@ End Function
 '  - GliederungErstellen      : Kopie der Gliederungsvorlage fuellen
 '  - GliederungAlsEinsatz     : zugewiesene Mitarbeiter als E eintragen
 '  - NeuePlanung              : alle Zuweisungen loeschen
+'  Liste: G = Zug, H = Einsatz-Funktion, I = Trupp (1-6).
 '  Speicher: EinsatzDaten AW:AZ (Name ePlan | Funktion | Zug | Trupp),
 '  Zeilen 10..509; BB25:BB161 = zuletzt angezeigte Namen.
 ' =====================================================================
@@ -798,7 +799,17 @@ Public Sub GliederungEingabe(ByVal Target As Range)
         Else
             k = GliedZeile(sp, nm, Trim$(CStr(z.Value)) <> "")
             If k > 0 Then
-                sp.Cells(k, 50 + z.Column - 7).Value = z.Value
+                sp.Cells(k, Choose(z.Column - 6, 51, 50, 52)).Value = z.Value
+                ' Zug gewaehlt, noch keine Funktion -> Grundfunktion vorschlagen
+                If z.Column = 7 And Trim$(CStr(z.Value)) <> "" And Trim$(CStr(ws.Cells(r, 8).Value)) = "" Then
+                    ws.Cells(r, 8).Value = GrundVorschlag(CStr(ws.Cells(r, 2).Value))
+                    sp.Cells(k, 50).Value = ws.Cells(r, 8).Value
+                End If
+                ' Trupp nur bei TF / PVB
+                If z.Column = 8 And CStr(z.Value) <> "TF" And CStr(z.Value) <> "PVB" And Trim$(CStr(ws.Cells(r, 9).Value)) <> "" Then
+                    ws.Cells(r, 9).ClearContents
+                    sp.Cells(k, 52).ClearContents
+                End If
                 If Trim$(CStr(sp.Cells(k, 50).Value) & CStr(sp.Cells(k, 51).Value) & CStr(sp.Cells(k, 52).Value)) = "" Then
                     sp.Range(sp.Cells(k, 49), sp.Cells(k, 52)).ClearContents
                 End If
@@ -834,7 +845,7 @@ Public Sub GliederungAnzeigen()
         If nm <> "" Then
             If d.Exists(nm) Then
                 w = d(nm)
-                aus(i, 1) = w(1): aus(i, 2) = w(2): aus(i, 3) = w(3)
+                aus(i, 1) = w(2): aus(i, 2) = w(1): aus(i, 3) = w(3)
             End If
         End If
     Next i
@@ -1148,7 +1159,10 @@ Private Function GliedPersonen(ByVal sp As Worksheet, ByVal ws As Worksheet, ByV
 
             key = "": besch = f
             Select Case f
-                Case "ZF", "sZF", "Bearb.", "KF", "TF", "PVB", "sMkw", "BeDo"
+                Case "HF", "sHF", "KF HF", "F" & ChrW(252) & "hrer BefKw", "Bearb BefKw", "BDE-TF", "BDE-Bearb"
+                    key = f
+                    besch = f & " (Hu-F" & ChrW(252) & "hrungsgruppe)"
+                Case "ZF", "sZF", "KF Zug", "Bearb Zugtrupp", "BAT-TF", "BAT-Bearb", "TF", "PVB"
                     If zuege = 1 Then
                         If zg <> "" And zg <> "1" Then
                             fehler = fehler & "  - " & nach & ": Zug " & zg & " gibt es bei 1 E-Zug nicht" & vbCr
@@ -1161,26 +1175,18 @@ Private Function GliedPersonen(ByVal sp As Worksheet, ByVal ws As Worksheet, ByV
                         End If
                     End If
                     If f = "TF" Or f = "PVB" Then
-                        If tr = "BAT" Or (Val(tr) >= 1 And Val(tr) <= 6 And tr = CStr(Val(tr))) Then
+                        If Val(tr) >= 1 And Val(tr) <= 6 And tr = CStr(Val(tr)) Then
                             key = f & "|" & zn & "|" & tr
-                            besch = f & " " & IIf(tr = "BAT", "BAT-Trupp", "Trupp " & tr) & ", " & zn & ". Zug"
+                            besch = f & " Trupp " & tr & ", " & zn & ". Zug"
                         Else
-                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt der Trupp (BAT oder 1-6)" & vbCr
+                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt der Trupp (1-6)" & vbCr
                         End If
                     Else
                         key = f & "|" & zn
                         besch = f & ", " & zn & ". Zug"
                     End If
-                Case "TF Spez", "PVB Spez"
-                    Select Case tr
-                        Case "BeDo", "A-Trupp", "P" & ChrW(196) & "D", "FLT", "Sonst."
-                            key = f & "|" & tr
-                            besch = Left$(f, InStr(f, " ") - 1) & " " & tr
-                        Case Else
-                            fehler = fehler & "  - " & nach & ": bei " & f & " als Trupp BeDo, A-Trupp, P" & ChrW(196) & "D, FLT oder Sonst. waehlen" & vbCr
-                    End Select
                 Case Else
-                    key = f
+                    fehler = fehler & "  - " & nach & ": Funktion """ & f & """ ist unbekannt" & vbCr
             End Select
             c.Add Array(ep, nach & " (" & ep & ")", nach, ini, amt, key, besch)
         End If
@@ -1193,29 +1199,22 @@ Private Function GliedSlots(ByVal zuege As Long) As Object
     Dim d As Object, k As Long, b As Long, t As Long
     Set d = CreateObject("Scripting.Dictionary")
     If zuege >= 2 Then
-        d.Add "HF", Array(21): d.Add "sHF", Array(22): d.Add "FGr", Array(23, 24): d.Add "KF FGr", Array(25)
-        d.Add "TF BefSt", Array(29): d.Add "Bearb BefSt", Array(30, 31): d.Add "KF BefSt", Array(32)
-        d.Add "TF BearbTr", Array(37): d.Add "Bearb BearbTr", Array(38, 39): d.Add "KF BearbTr", Array(40)
-        d.Add "TF Spez|BeDo", Array(80, 82): d.Add "PVB Spez|BeDo", Array(81, 83, 84)
-        d.Add "TF Spez|A-Trupp", Array(88): d.Add "PVB Spez|A-Trupp", Array(89, 90, 91, 92)
-        d.Add "TF Spez|P" & ChrW(196) & "D", Array(96): d.Add "PVB Spez|P" & ChrW(196) & "D", Array(97, 98, 99, 100)
-        d.Add "TF Spez|FLT", Array(104): d.Add "PVB Spez|FLT", Array(105, 106, 107, 108)
-        d.Add "TF Spez|Sonst.", Array(120): d.Add "PVB Spez|Sonst.", Array(121, 122, 123, 124)
+        d.Add "HF", Array(21): d.Add "sHF", Array(22): d.Add "KF HF", Array(25)
+        d.Add "F" & ChrW(252) & "hrer BefKw", Array(29): d.Add "Bearb BefKw", Array(30, 31, 32)
+        d.Add "BDE-TF", Array(37): d.Add "BDE-Bearb", Array(38, 40)
     End If
     For k = 1 To zuege
         b = 136 + (k - 1) * 64
         d.Add "ZF|" & k, Array(b)
         d.Add "sZF|" & k, Array(b + 1)
-        d.Add "Bearb.|" & k, Array(b + 2, b + 3)
-        d.Add "KF|" & k, Array(b + 4)
-        d.Add "TF|" & k & "|BAT", Array(b + 6)
-        d.Add "PVB|" & k & "|BAT", Array(b + 7, b + 8, b + 9, b + 10)
+        d.Add "Bearb Zugtrupp|" & k, Array(b + 2, b + 3)
+        d.Add "KF Zug|" & k, Array(b + 4)
+        d.Add "BAT-TF|" & k, Array(b + 6)
+        d.Add "BAT-Bearb|" & k, Array(b + 7, b + 8)
         For t = 1 To 6
             d.Add "TF|" & k & "|" & t, Array(b + 12 + (t - 1) * 6)
             d.Add "PVB|" & k & "|" & t, Array(b + 13 + (t - 1) * 6, b + 14 + (t - 1) * 6, b + 15 + (t - 1) * 6, b + 16 + (t - 1) * 6)
         Next t
-        d.Add "sMkw|" & k, Array(b + 48, b + 49, b + 50)
-        d.Add "BeDo|" & k, Array(b + 51, b + 52, b + 53)
     Next k
     Set GliedSlots = d
 End Function
@@ -1245,6 +1244,17 @@ Private Function VorlageName(ByVal vdat As Variant, ByVal nach As String, ByVal 
         If Trim$(CStr(vdat(x, 7))) = hu & "." Then auswahl.Add x
     Next x
     If auswahl.Count = 1 Then VorlageName = Trim$(CStr(vdat(auswahl(1), 1)))
+End Function
+
+' Grundfunktion aus der Liste (Spalte B) -> Vorschlag fuer die Einsatz-Funktion
+Private Function GrundVorschlag(ByVal grund As String) As String
+    Select Case Trim$(grund)
+        Case "ZF": GrundVorschlag = "ZF"
+        Case "sZF": GrundVorschlag = "sZF"
+        Case "TF": GrundVorschlag = "TF"
+        Case "PVB": GrundVorschlag = "PVB"
+        Case "Bearb": GrundVorschlag = "Bearb Zugtrupp"
+    End Select
 End Function
 
 Private Function InListe(ByVal liste As Variant, ByVal nm As String) As Boolean
