@@ -29,7 +29,10 @@ from copy import copy
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Side
+from openpyxl.formatting.formatting import ConditionalFormattingList
+from openpyxl.formatting.rule import FormulaRule
 from openpyxl.formula.tokenizer import Token, Tokenizer
+from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.utils import column_index_from_string, get_column_letter
 from openpyxl.worksheet.cell_range import MultiCellRange
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -127,6 +130,7 @@ def personenzeilen(ws, kopf, sp):
 
 def berichtige_notenblatt(ws, protokoll):
     kopf = kopfzeile(ws)
+    entferne_tabellen_formatierung(ws, kopf)
     sp = spalten(ws, kopf)
     erste = kopf + 2  # Zeile nach der Kennziffern-Zeile (A01, A02, ...)
     col_note = get_column_letter(sp["neue rbu"])
@@ -220,13 +224,22 @@ def berichtige_notenblatt(ws, protokoll):
     ende, rechen = vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll)
     gestalte_tabelle(ws, kopf, pos, breite, ende)
     faerbe_tabelle(ws, kopf, pos, breite, ende)
+    bedienhilfen(ws, kopf, pos, breite, ende)
     schuetze_notenblatt(ws, kopf, breite, ende, rechen)
 
 
 NOTENLISTE = '"A1,A2,B1,B2,B3,C"'
 TOOL_SPALTEN = [
     # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
-    ("Funktion", "Auswahl aus Blatt „Funktionen“", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+    ("Funktion", "Hauptfunktion (Dienstposten)", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+    ("Funktion von", "TT.MM.JJJJ", 12, DATUM, None),
+    ("Funktion bis", "TT.MM.JJJJ", 12, DATUM, None),
+    ("Funktion 2", "weitere Funktion", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+    ("Funktion 2 von", "TT.MM.JJJJ", 12, DATUM, None),
+    ("Funktion 2 bis", "TT.MM.JJJJ", 12, DATUM, None),
+    ("Funktion 3", "weitere Funktion", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
+    ("Funktion 3 von", "TT.MM.JJJJ", 12, DATUM, None),
+    ("Funktion 3 bis", "TT.MM.JJJJ", 12, DATUM, None),
     ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
     ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
     ("Schwerbehinderung", "ja / nein", 16, None, '"ja,nein"'),
@@ -304,14 +317,24 @@ ZIELREIHENFOLGE = [
     ("ernennung", lambda k: k.startswith("datum der ernennung")),
     ("zug", lambda k: k == "zug"),
     ("funktion", lambda k: k == "funktion"),
+    ("f1_von", lambda k: k == "funktion von"),
+    ("f1_bis", lambda k: k == "funktion bis"),
+    ("f2", lambda k: k == "funktion 2"),
+    ("f2_von", lambda k: k == "funktion 2 von"),
+    ("f2_bis", lambda k: k == "funktion 2 bis"),
+    ("f3", lambda k: k == "funktion 3"),
+    ("f3_von", lambda k: k == "funktion 3 von"),
+    ("f3_bis", lambda k: k == "funktion 3 bis"),
     ("koop", lambda k: k.startswith("kooperation")),
     ("gespraech", lambda k: k.startswith("gespräch vor")),
     ("sbh", lambda k: k.startswith("schwerbehind")),
+    ("letzte_rbu", lambda k: k == "letzte rbu"),
+    ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
+    ("neue_rbu", lambda k: k == "neue rbu"),   # Gesamtnote vor den Teilnoten
     ("n11", lambda k: k.startswith("1.1")),
     ("n2", lambda k: k.startswith("2.")),
     ("n42", lambda k: k.startswith("4.2")),
     ("n43", lambda k: k.startswith("4.3")),
-    ("neue_rbu", lambda k: k == "neue rbu"),
     ("alb_x", lambda k: k == "alb (x)"),
     ("alb_von", lambda k: k == "alb von"),
     ("alb_bis", lambda k: k == "alb bis"),
@@ -329,13 +352,13 @@ ZIELREIHENFOLGE = [
     ("monate_halb", lambda k: k.startswith("monate (zur")),
     ("ges", lambda k: k == "ges."),
     ("bemerkungen", lambda k: k == "bemerkungen"),
-    ("letzte_rbu", lambda k: k == "letzte rbu"),
-    ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
     ("teilzeit", lambda k: k == "teilzeit"),
     ("pdf", lambda k: k.startswith("pdf")),
     ("befoerdert", lambda k: k.startswith("befördert")),
 ]
 GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
+    ("Funktionen", "funktion", "f3_bis"),
+    ("RBU", "neue_rbu", "n43"),
     ("Subsidiärmerkmale ", "summe", "bemerkungen"),
     ("Anlassbeurteilung", "alb_x", "alb_n43"),
     ("Beurteilungsbeiträge", "bb1_x", "bb3_bis"),
@@ -511,7 +534,8 @@ ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
 def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
     """Linien (duenn innen, kraeftig aussen/an Gruppengrenzen), Zeilenumbruch in allen
     Zellen und an den Inhalt angepasste Zeilenhoehen – nichts ragt in Nachbarzellen."""
-    grenzen = {pos[s] for s in ("name", "funktion", "n11", "alb_x", "bb1_x", "summe", "letzte_rbu", "teilzeit", "pdf")
+    grenzen = {pos[s] for s in ("name", "funktion", "koop", "letzte_rbu", "neue_rbu", "alb_x", "bb1_x", "summe",
+                                "teilzeit", "pdf")
                if s in pos}
     ende = ende or letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
     links_spalten = {pos[s] for s in LINKSBUENDIG if s in pos}
@@ -737,6 +761,10 @@ def faerbe_tabelle(ws, kopf, pos, breite, ende):
             for c in range(pos[von], pos[bis] + 1):
                 for r in (kopf - 1, kopf):
                     ws.cell(r, c).fill = fuellung
+    if "neue_rbu" in pos and "n43" in pos:  # RBU-Block: Farbe der Teilnoten-Ueberschriften
+        fuellung = copy(ws.cell(kopf, pos["n11"]).fill)
+        for c in range(pos["neue_rbu"], pos["n43"] + 1):
+            ws.cell(kopf - 1, c).fill = copy(fuellung)
     # Legende "Spalten mit Formeln hinterlegt" (hellgruen in der Ueberschrift):
     # auch Lfd.Nr. und Amtsbez. rechnen inzwischen selbst
     vorlage = ws.cell(kopf, pos["summe"]).fill if "summe" in pos else None
@@ -858,6 +886,167 @@ def ergaenze_reiter(wb, notenblaetter, kette, protokoll):
     for i, w in enumerate(notenblaetter):
         wb.move_sheet(w, i - wb.worksheets.index(w))
     return notenblaetter
+
+
+# --------------------------------------------------------------------------
+# Bedienhilfen: Hinweiszeile, Auswahllisten/Eingabehinweise, Rotmarkierung
+# --------------------------------------------------------------------------
+START_ZEITRAUM = (f"'{START}'!$B$8", f"'{START}'!$B$9")   # Beurteilungszeitraum von/bis
+START_ART = f"'{START}'!$B$5"
+ROT = dict(fill=PatternFill(bgColor="FFC7CE"), font=Font(color="9C0006"))
+NOTEN_SPALTEN = ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "alb_n11", "alb_n2", "alb_n42", "alb_n43")
+DATUM_SPALTEN = ("geb", "ernennung", "f1_von", "f1_bis", "f2_von", "f2_bis", "f3_von", "f3_bis", "gespraech",
+                 "alb_von", "alb_bis", "bb1_von", "bb1_bis", "bb2_von", "bb2_bis", "bb3_von", "bb3_bis",
+                 "beginn", "befoerdert")
+RECHEN = ("lfdnr", "amtsbez", "summe", "monate", "monate_halb", "ges")
+AMTS_LISTE = '"' + ",".join(k for e in AMTSBEZEICHNUNGEN for k in (e[0], e[0] + "in")) + '"'
+# Schluessel: (Hinweiszeile, Titel Eingabehinweis, Text Eingabehinweis)
+HILFE = {
+    "name": ("Nachname", "Name", "Nachname der Person. Neue Personen in die erste freie Zeile eintragen."),
+    "vorname": ("", "Vorname", ""),
+    "geb": ("TT.MM.JJJJ", "Geburtsdatum", "Datum TT.MM.JJJJ"),
+    "geschlecht": ("m / w", "Geschlecht", "m oder w – bei w wird die weibliche Amtsbezeichnung verwendet."),
+    "ernennung": ("TT.MM.JJJJ", "Datum der Ernennung", "Ernennung im jetzigen Statusamt (TT.MM.JJJJ)."),
+    "zug": ("z.B. 1", "Zug", "Zug der Person – daraus werden Organisationseinheit und ggf. eigene Beurteilende."),
+    "funktion": ("Hauptfunktion (Dienstposten)", "Hauptfunktion", "Dienstposten aus der Liste (Blatt Funktionen). Steht auf Seite 1 des Vordrucks."),
+    "f1_von": ("TT.MM.JJJJ", "Hauptfunktion von", "Nur nötig, wenn weitere Funktionen eingetragen sind."),
+    "f1_bis": ("TT.MM.JJJJ", "Hauptfunktion bis", "Nur nötig, wenn weitere Funktionen eingetragen sind."),
+    "f2": ("weitere Funktion", "Weitere Funktion", "Im Beurteilungszeitraum zusätzlich wahrgenommene Funktion – dann bei allen Funktionen von/bis eintragen."),
+    "f2_von": ("TT.MM.JJJJ", "Funktion 2 von", "Datum TT.MM.JJJJ"),
+    "f2_bis": ("TT.MM.JJJJ", "Funktion 2 bis", "Datum TT.MM.JJJJ"),
+    "f3": ("weitere Funktion", "Weitere Funktion", "Im Beurteilungszeitraum zusätzlich wahrgenommene Funktion – dann bei allen Funktionen von/bis eintragen."),
+    "f3_von": ("TT.MM.JJJJ", "Funktion 3 von", "Datum TT.MM.JJJJ"),
+    "f3_bis": ("TT.MM.JJJJ", "Funktion 3 bis", "Datum TT.MM.JJJJ"),
+    "koop": ("TT.MM.JJJJ; TT.MM.JJJJ", "Kooperationsgespräche", "Ein oder mehrere Daten, mit Semikolon getrennt (bis 6 passen in den Vordruck)."),
+    "gespraech": ("TT.MM.JJJJ", "Gespräch vor Beurteilung", "Datum TT.MM.JJJJ"),
+    "sbh": ("ja / nein", "Schwerbehinderung", "ja oder nein"),
+    "letzte_rbu": ("A1 … C", "Letzte RBU", "Endnote der letzten Regelbeurteilung (wird bei Beförderung automatisch gesetzt)."),
+    "letzte_rbu_amt": ("z.B. POM", "Statusamt der letzten RBU", "Kürzel des damaligen Statusamts."),
+    "neue_rbu": ("A1 … C", "Gesamtnote (neue RBU)", "Gesamtnote der aktuellen Beurteilung – kommt ins PDF (Seite 3 und 5)."),
+    "n11": ("A1 … C", "Teilnote 1.1", "Qualität und Verwertbarkeit – kommt ins PDF."),
+    "n2": ("A1 … C", "Teilnote 2", "Fachwissen – kommt ins PDF."),
+    "n42": ("A1 … C", "Teilnote 4.2", "Zuverlässigkeit – kommt ins PDF."),
+    "n43": ("A1 … C", "Teilnote 4.3", "Zusammenarbeit – kommt ins PDF."),
+    "alb_x": ("x = vorhanden", "Anlassbeurteilung", "x und Zeitraum eintragen – mind. 3 Monate im Beurteilungszeitraum, sonst wird sie nicht berücksichtigt."),
+    "alb_von": ("TT.MM.JJJJ", "Anlassbeurteilung von", "Datum TT.MM.JJJJ"),
+    "alb_bis": ("TT.MM.JJJJ", "Anlassbeurteilung bis", "Datum TT.MM.JJJJ"),
+    "alb": ("A1 … C", "ALB Gesamtnote", "Nur zur Information."),
+    "alb_amt": ("z.B. POM", "Statusamt der ALB", "Nur zur Information."),
+    "alb_n11": ("A1 … C", "ALB 1.1", "Nur zur Information."),
+    "alb_n2": ("A1 … C", "ALB 2", "Nur zur Information."),
+    "alb_n42": ("A1 … C", "ALB 4.2", "Nur zur Information."),
+    "alb_n43": ("A1 … C", "ALB 4.3", "Nur zur Information."),
+    "beginn": ("TT.MM.JJJJ", "Beginn Dienstzeit", "Datum TT.MM.JJJJ – Grundlage für Monate (zur Hälfte)."),
+    "bemerkungen": ("", "Bemerkungen", "Freier Hinweis, geht nicht ins PDF."),
+    "teilzeit": ("", "Teilzeit", "Hinweis für die Beurteilenden, geht nicht ins PDF."),
+    "pdf": ("x = erstellen", "PDF", "x = bei „nur markierte Mitarbeiter“ eine Beurteilung erzeugen."),
+    "befoerdert": ("TT.MM.JJJJ", "Befördert am", "Beförderungsdatum eintragen, dann oben den Knopf „Beförderungen übernehmen“."),
+}
+for _i in (1, 2, 3):
+    HILFE[f"bb{_i}_x"] = ("x = vorhanden", f"Beurteilungsbeitrag {_i}",
+                          "x und Zeitraum eintragen – mind. 3 Monate im Beurteilungszeitraum, sonst wird er nicht berücksichtigt.")
+    HILFE[f"bb{_i}_von"] = ("TT.MM.JJJJ", f"Beurteilungsbeitrag {_i} von", "Datum TT.MM.JJJJ")
+    HILFE[f"bb{_i}_bis"] = ("TT.MM.JJJJ", f"Beurteilungsbeitrag {_i} bis", "Datum TT.MM.JJJJ")
+
+
+def entferne_tabellen_formatierung(ws, kopf):
+    """Eigene bedingte Formatierung der Tabelle entfernen (wird am Ende neu gesetzt);
+    die der Statistik oben (Notenquote) bleibt."""
+    neu = ConditionalFormattingList()
+    for cf in ws.conditional_formatting:
+        if all(r.min_row < kopf - 1 for r in cf.sqref.ranges):
+            for regel in cf.rules:
+                neu.add(str(cf.sqref), regel)
+    ws.conditional_formatting = neu
+
+
+def bedienhilfen(ws, kopf, pos, breite, ende):
+    L = get_column_letter
+    erste = kopf + 2
+    schluessel = {c: k for k, c in pos.items()}
+
+    # Hinweiszeile unter der Kopfzeile (statt der alten Kennziffern A01, A02, ...)
+    for c in range(1, breite + 1):
+        k = schluessel.get(c)
+        text = "rechnet selbst" if k in RECHEN else (HILFE.get(k, ("",))[0] if k else None)
+        z = ws.cell(kopf + 1, c)
+        if k is None and not re.fullmatch(r"A\d{2}", str(z.value or "")):
+            continue
+        z.value = text or None
+        z.font = HINWEIS
+        z.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # Auswahllisten und Eingabehinweise der Tabelle neu aufbauen
+    for dv in list(ws.data_validations.dataValidation):
+        if any(r.min_col <= breite and r.max_row >= erste for r in dv.sqref.ranges):
+            ws.data_validations.dataValidation.remove(dv)
+    listen = {"x": '"x"', "note": NOTENLISTE, "funktion": f"={FUNKTIONEN}!$A$4:$A$103"}
+    for k, c in pos.items():
+        if c > breite or k in RECHEN or k not in HILFE:
+            continue
+        _, titel, text = HILFE[k]
+        bereich = f"{L(c)}{erste}:{L(c)}{ende}"
+        if k in NOTEN_SPALTEN:
+            dv = DataValidation(type="list", formula1=NOTENLISTE, error="Bitte eine Notenstufe aus der Liste wählen: A1, A2, B1, B2, B3 oder C.")
+        elif k in DATUM_SPALTEN:
+            dv = DataValidation(type="date", operator="between", formula1="1", formula2="73050",
+                                error="Bitte ein Datum im Format TT.MM.JJJJ eintragen.")
+        elif k in ("pdf", "alb_x", "bb1_x", "bb2_x", "bb3_x"):
+            dv = DataValidation(type="list", formula1=listen["x"], error="Bitte x eintragen oder leer lassen.")
+        elif k in ("funktion", "f2", "f3"):
+            dv = DataValidation(type="list", formula1=listen["funktion"],
+                                error="Bitte eine Funktion aus der Liste wählen (neue Funktionen im Blatt „Funktionen“ ergänzen).")
+        elif k == "sbh":
+            dv = DataValidation(type="list", formula1='"ja,nein"', error="Bitte ja oder nein wählen.")
+        elif k == "geschlecht":
+            dv = DataValidation(type="list", formula1='"m,w"', error="Bitte m oder w wählen.")
+        elif k in ("letzte_rbu_amt", "alb_amt"):
+            dv = DataValidation(type="list", formula1=AMTS_LISTE, error="Bitte ein Amtskürzel aus der Liste wählen (z.B. POM oder POMin).")
+        else:
+            dv = DataValidation()  # jeder Wert, nur Eingabehinweis
+        dv.allow_blank = True
+        dv.showErrorMessage = dv.type is not None
+        dv.errorStyle = "stop"
+        dv.errorTitle = "Ungültige Eingabe"
+        dv.showInputMessage = bool(text)
+        dv.promptTitle = titel[:32]
+        dv.prompt = text[:255]
+        dv.add(bereich)
+        ws.add_data_validation(dv)
+
+    # Rotmarkierung (Zeilen ohne Namen bleiben unauffaellig)
+    N = f"${L(pos['name'])}"
+    zv, zb = START_ZEITRAUM
+
+    def regel(von, bis, formel):
+        ws.conditional_formatting.add(f"{L(von)}{erste}:{L(bis)}{ende}", FormulaRule(formula=[formel], **ROT))
+
+    if "neue_rbu" in pos:
+        q = f"{L(pos['neue_rbu'])}{erste}"
+        regel(pos["neue_rbu"], pos["neue_rbu"], f'AND({N}{erste}<>"",{q}="",{START_ART}<>"Beurteilungsbeitrag")')
+    for k in NOTEN_SPALTEN:
+        if k in pos:
+            z = f"{L(pos[k])}{erste}"
+            regel(pos[k], pos[k], f'AND({z}<>"",NOT(OR({z}="A1",{z}="A2",{z}="B1",{z}="B2",{z}="B3",{z}="C")))')
+    for x, v, b in [("alb_x", "alb_von", "alb_bis")] + [(f"bb{i}_x", f"bb{i}_von", f"bb{i}_bis") for i in (1, 2, 3)]:
+        if all(k in pos for k in (x, v, b)):
+            X, V, B = (f"${L(pos[k])}{erste}" for k in (x, v, b))
+            ende_im = f'IF({zb}="",{B},MIN({B},{zb}))'
+            regel(pos[x], pos[b],
+                  f'OR(AND({X}<>"",OR({V}="",{B}="")),AND({X}="",OR({V}<>"",{B}<>"")),'
+                  f'AND({X}<>"",{V}<>"",{B}<>"",{ende_im}<EDATE(MAX({V},{zv}),3)-1))')
+    if all(k in pos for k in ("funktion", "f1_von", "f1_bis", "f2", "f3")):
+        F1, F2, F3 = (f"${L(pos[k])}{erste}" for k in ("funktion", "f2", "f3"))
+        for f, v, b in (("funktion", "f1_von", "f1_bis"), ("f2", "f2_von", "f2_bis"), ("f3", "f3_von", "f3_bis")):
+            F, V, B = (f"${L(pos[k])}{erste}" for k in (f, v, b))
+            regel(pos[v], pos[b], f'AND({F}<>"",OR({F2}<>"",{F3}<>""),OR({V}="",{B}=""))')
+    for k in DATUM_SPALTEN:
+        if k in pos and pos[k] <= breite:
+            z = f"{L(pos[k])}{erste}"
+            regel(pos[k], pos[k], f'AND({z}<>"",NOT(ISNUMBER({z})))')
+
+    # Kopf und Namen beim Blaettern stehen lassen
+    ws.freeze_panes = f"{L(pos['vorname'] + 1)}{erste}"
 
 
 def entferne_externe_verknuepfungen(wb, protokoll):
@@ -1031,7 +1220,7 @@ def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
     return ws
 
 
-def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
+def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, infos=None):
     ws = wb.create_sheet(START, len(notenblaetter))  # hinter die Vergleichsgruppen
     ws.sheet_view.showGridLines = False
     for w in wb.worksheets:
@@ -1067,8 +1256,6 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
          "„nur markierte“ = auf den Notenblättern in Spalte „PDF“ ein x setzen"),
         ("Mitarbeiter ohne neue Note überspringen", wert("Mitarbeiter ohne neue Note überspringen", "ja"), ["ja", "nein"],
          "Spalte „neue RBU“ leer -> keine Beurteilung erzeugen"),
-        ("Noten auch für Zweitbeurteilende/n eintragen", wert("Noten auch für Zweitbeurteilende/n eintragen", "ja"), ["ja", "nein"],
-         "nein = nur die Spalte der/des Erstbeurteilenden wird befüllt"),
     ]
     for i, (label, v, werte, hinweis) in enumerate(optionen):
         r = 12 + i
@@ -1077,15 +1264,33 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
         zelle(ws, f"C{r}", hinweis, HINWEIS)
         liste(ws, f"B{r}", werte)
 
-    r = 16
+    r = 15
     zelle(ws, f"A{r}", "Blatt", FETT, KOPF, rahmen=True)
     zelle(ws, f"B{r}", "einbeziehen", FETT, KOPF, rahmen=True)
+    for col, t in zip("CDEF", ("Personen", "mit neuer RBU", "ohne neue RBU", "PDF markiert")):
+        zelle(ws, f"{col}{r}", t, FETT, KOPF, rahmen=True, align=Alignment(horizontal="center"))
     alt_bl = {norm(z[0]): z[1] for z in tabelle(alt_zeilen, "blatt", "einbeziehen")}
     for name in notenblaetter:
         r += 1
-        zelle(ws, f"A{r}", name, rahmen=True)
+        z = zelle(ws, f"A{r}", name, rahmen=True)
+        i = (infos or {}).get(name)
+        if i:
+            # Klick auf den Blattnamen springt in den Reiter
+            z.hyperlink = Hyperlink(ref=z.coordinate, location=f"'{name}'!{i['name']}{i['erste']}")
+            z.font = Font(color="0563C1", underline="single")
+            b = f"'{name}'!${i['name']}${i['erste']}:${i['name']}${i['ende']}"
+            q = f"'{name}'!${i['rbu']}${i['erste']}:${i['rbu']}${i['ende']}"
+            p = f"'{name}'!${i['pdf']}${i['erste']}:${i['pdf']}${i['ende']}"
+            mitte = Alignment(horizontal="center")
+            zelle(ws, f"C{r}", f"=COUNTA({b})", rahmen=True, align=mitte)
+            zelle(ws, f"D{r}", f'=COUNTIFS({b},"<>",{q},"<>")', rahmen=True, align=mitte)
+            zelle(ws, f"E{r}", f"=C{r}-D{r}", rahmen=True, align=mitte)
+            zelle(ws, f"F{r}", f'=COUNTIFS({b},"<>",{p},"<>")', rahmen=True, align=mitte)
         zelle(ws, f"B{r}", alt_bl.get(norm(name), "ja"), fill=EINGABE, rahmen=True)
         liste(ws, f"B{r}", ["ja", "nein"])
+    zelle(ws, f"A{r + 1}", "Klick auf den Blattnamen springt in den Reiter. „ohne neue RBU“ > 0: dort fehlt noch eine Gesamtnote.",
+          HINWEIS)
+    r += 1
 
     r += 2
     zelle(ws, f"A{r}", "3  Beurteilende", ABSCHNITT)
@@ -1128,6 +1333,10 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen):
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 34
     ws.column_dimensions["C"].width = 34
+    for col in "DEF":
+        ws.column_dimensions[col].width = 15
+    # "ohne neue RBU" rot, solange noch Gesamtnoten fehlen
+    ws.conditional_formatting.add(f"E16:E{15 + len(notenblaetter)}", FormulaRule(formula=["E16>0"], **ROT))
     sperre_ausser_eingabe(ws)
     return ws
 
@@ -1252,7 +1461,13 @@ def main(quelle, ziel, vorlage=None):
         notenblaetter = ergaenze_reiter(wb, notenblaetter, KETTE_GD, protokoll)
     zuege.sort(key=lambda z: (z in (None, ""), not isinstance(z, (int, float)), str(z)))
 
-    baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z)
+    infos = {}
+    for ws in notenblaetter:
+        kopf = kopfzeile(ws)
+        pos = positionen(ws, kopf)
+        infos[ws.title] = dict(erste=kopf + 2, ende=kopf + 1 + PERSONEN_JE_BLATT, name=get_column_letter(pos["name"]),
+                               rbu=get_column_letter(pos["neue_rbu"]), pdf=get_column_letter(pos["pdf"]))
+    baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z, infos)
     baue_beurteiler(wb, alt_beurt_z)
     baue_funktionen(wb, alt_funkt_z)
     baue_einstellungen(wb, zuege, alt_einst, alt_einst_z)

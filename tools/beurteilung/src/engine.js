@@ -145,7 +145,6 @@
       bis: datum(s['beurteilungszeitraum bis']),
       nurMarkierte: norm(s['auswahl']).startsWith('nur'),
       ohneNoteUeberspringen: norm(wertMitPraefix(s, 'mitarbeiter ohne neue note')) !== 'nein',
-      zweitNoten: norm(wertMitPraefix(s, 'noten auch für zweit')) !== 'nein',
       erst: text(s['erstbeurteilende/r']),
       zweit: text(s['zweitbeurteilende/r']),
       blaetter: {},
@@ -237,13 +236,17 @@
       const frueher = [['Anlassbeurteilung', 'alb']].concat([1, 2, 3].map((i) => ['Beurteilungsbeitrag', 'bb ' + i]))
         .map(([art, k]) => ({ art: art, spalte: k.toUpperCase(), x: genau(k + ' (x)'), von: genau(k + ' von'), bis: genau(k + ' bis') }))
         .filter((f) => f.x >= 0);
+      // Hauptfunktion (Seite 1) und weitere Funktionen im Beurteilungszeitraum
+      const funktionsSpalten = [['funktion', 'funktion von', 'funktion bis'], ['funktion 2', 'funktion 2 von', 'funktion 2 bis'],
+        ['funktion 3', 'funktion 3 von', 'funktion 3 bis']].map(([n, v, b]) => ({ name: genau(n), von: genau(v), bis: genau(b) }));
       for (const [k, v] of Object.entries(c)) {
         if (v < 0 && !['pdf', 'zug', 'geschlecht', 'amtsbez', 'funktion', 'koop', 'gespraech', 'sbh'].includes(k)) {
           warnungen.push('Blatt „' + name + '“: Spalte für „' + k + '“ nicht gefunden.');
         }
       }
       const personen = [];
-      for (let i = kopf + 1; i < z.length; i++) {
+      // kopf + 1 = Hinweiszeile direkt unter der Ueberschrift (frueher Kennziffern A01, A02, ...)
+      for (let i = kopf + 2; i < z.length; i++) {
         const r = z[i] || [];
         // Personenzeile = Name gefuellt; die Kennziffern-Zeile (A01, A02, ...) direkt
         // unter der Kopfzeile zaehlt nicht. Lfd.Nr. ist oft eine Formel und hat in
@@ -262,6 +265,9 @@
           ernennung: datum(wert('ernennung')),
           markiert: !leer(wert('pdf')),
           funktion: text(wert('funktion')),
+          funktionen: funktionsSpalten.map((f) => ({
+            name: text(f.name >= 0 ? r[f.name] : ''), von: f.von >= 0 ? datum(r[f.von]) : '', bis: f.bis >= 0 ? datum(r[f.bis]) : '',
+          })).filter((f) => !leer(f.name) || !leer(f.von) || !leer(f.bis)),
           koop: datumsliste(wert('koop')),
           gespraech: datum(wert('gespraech')),
           sbh: norm(wert('sbh')),
@@ -318,6 +324,23 @@
     return [mappe.einst.dienststelle, oe].filter((t) => !leer(t)).join(', ');
   }
 
+  function alsTag(t) {
+    const m = String(t).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    return m ? new Date(Date.UTC(+m[3], +m[2] - 1, +m[1])) : null;
+  }
+  /** Liegen von–bis mindestens 3 volle Monate im Beurteilungszeitraum (z.B. 01.01.–31.03.)? */
+  function dreiMonateImZeitraum(von, bis, zVon, zBis) {
+    const [a, b, za, zb] = [von, bis, zVon, zBis].map(alsTag);
+    if (!a || !b || !za || !zb) return true;
+    const start = a > za ? a : za;
+    const ende = b < zb ? b : zb;
+    // wie EDATE(start;3)-1 in Excel (Monatsende wird nicht ueberschritten)
+    const y = start.getUTCFullYear(), m = start.getUTCMonth() + 3;
+    const letzterTag = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    const grenze = new Date(Date.UTC(y, m, Math.min(start.getUTCDate(), letzterTag)) - 86400000);
+    return ende >= grenze;
+  }
+
   /** "TT.MM.JJJJ" -> sortierbare Zahl JJJJMMTT (unbekannt: 0). */
   function tagZahl(t) {
     const m = String(t).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
@@ -370,6 +393,25 @@
             ', die übrigen bitte im PDF ergänzen');
         }
         if (!leer(p.sbh) && !['ja', 'nein'].includes(p.sbh)) hinweise.push('Schwerbehinderung „' + p.sbh + '“ ist weder ja noch nein');
+        // Mehrere Funktionen: jede mit Zeitraum, Taetigkeiten je Funktion
+        let funktionsBloecke = null;
+        const weitere = p.funktionen.slice(1).filter((f) => !leer(f.name));
+        if (weitere.length) {
+          funktionsBloecke = [];
+          p.funktionen.forEach((f, i) => {
+            const bez = i === 0 ? 'Hauptfunktion' : 'Funktion ' + (i + 1);
+            if (leer(f.name)) {
+              if (i === 0) hinweise.push('weitere Funktion eingetragen, aber keine Hauptfunktion');
+              return;
+            }
+            const profil = mappe.funktionen[norm(f.name)] || null;
+            if (!profil && i > 0) hinweise.push(bez + ' „' + f.name + '“ steht nicht im Blatt „Funktionen“');
+            if (leer(f.von) || leer(f.bis)) hinweise.push(bez + ' „' + f.name + '“: Zeitraum von/bis fehlt');
+            else if (tagZahl(f.von) > tagZahl(f.bis)) hinweise.push(bez + ': „von“ liegt nach „bis“');
+            funktionsBloecke.push({ name: f.name, von: f.von, bis: f.bis, profil: profil });
+          });
+          funktionsBloecke.sort((x, y) => (tagZahl(x.von) || 99999999) - (tagZahl(y.von) || 99999999));
+        }
         const beruecksichtigt = [];
         for (const f of p.frueher) {
           if (!f.x) {
@@ -377,8 +419,15 @@
           } else if (leer(f.von) || leer(f.bis)) {
             hinweise.push(f.spalte + ': x gesetzt, aber „' + f.spalte + ' ' + (leer(f.von) ? 'von' : 'bis') +
               '“ fehlt – nicht eingetragen, bitte im PDF unter „Allgemeine Bemerkungen“ ergänzen');
+          } else if (tagZahl(f.von) > tagZahl(f.bis)) {
+            hinweise.push(f.spalte + ': „von“ (' + f.von + ') liegt nach „bis“ (' + f.bis + ') – nicht berücksichtigt');
+          } else if (!st.von || !st.bis) {
+            hinweise.push(f.spalte + ': Beurteilungszeitraum fehlt auf der Startseite – 3-Monats-Prüfung nicht möglich');
+            beruecksichtigt.push(f);
+          } else if (!dreiMonateImZeitraum(f.von, f.bis, st.von, st.bis)) {
+            hinweise.push(f.spalte + ' vom ' + f.von + ' bis ' + f.bis + ': weniger als 3 Monate im Beurteilungszeitraum (' +
+              st.von + ' – ' + st.bis + ') – nicht berücksichtigt');
           } else {
-            if (tagZahl(f.von) > tagZahl(f.bis)) hinweise.push(f.spalte + ': „von“ (' + f.von + ') liegt nach „bis“ (' + f.bis + ')');
             beruecksichtigt.push(f);
           }
         }
@@ -390,10 +439,10 @@
           stichtag: st.stichtag,
           von: st.von,
           bis: st.bis,
-          zweitNoten: st.zweitNoten,
           amtsbez: amtsbezeichnung(mappe, p, hinweise),
           dienststelle: dienststelle(mappe, p),
           funktion: funktion,
+          funktionsBloecke: funktionsBloecke,
           beruecksichtigt: beruecksichtigt,
           bemerkung: bemerkungText(beruecksichtigt),
           erst: beurteilerText(mappe, erstWahl, 'Erstbeurteilende/r', hinweise),
@@ -528,6 +577,27 @@
     return bloecke.join('\n\n');
   }
 
+  /**
+   * Mehrere Funktionen im Beurteilungszeitraum: je Funktion
+   * "Bezeichnung (Wertigkeit) vom … bis …" und ihre praegenden Taetigkeiten,
+   * Leerzeile zwischen den Funktionen.
+   */
+  function funktionenText(font, feld, bloecke) {
+    const breite = feldGeometrie(feld).breite;
+    const g = schriftgroesse(feld);
+    const einzug = breite - font.widthOfTextAtSize('- ', g);
+    return bloecke.map((b) => {
+      const w = b.profil && b.profil.wertigkeit ? ' (' + b.profil.wertigkeit + ')' : '';
+      const zeit = !leer(b.von) && !leer(b.bis) ? ' vom ' + b.von + ' bis ' + b.bis : '';
+      const zeilen = umbrechen(font, g, bereinige(font, b.name + w + zeit), breite);
+      for (const x of (b.profil ? b.profil.taetigkeiten : [])) {
+        umbrechen(font, g, bereinige(font, x).replace(/\n/g, ' '), einzug)
+          .forEach((z, i) => zeilen.push((i === 0 ? '- ' : '  ') + z));
+      }
+      return zeilen.join('\n');
+    }).join('\n\n');
+  }
+
   function fusszeile(a) {
     const p = a.person;
     let v = a.art.wert + ' für ' + p.name + ', ' + p.vorname + '; geb. ' + p.geb;
@@ -582,10 +652,16 @@
       setzeText(form, 'f.funktion.1', t(a.funktion.bezeichnung));
       if (a.funktion.wertigkeit) {
         setzeText(form, 'f.funktion.2', t('(' + a.funktion.wertigkeit + ')')); // Schreibweise der Profile
-        setzeText(form, 'f.wert.1', t(a.funktion.wertigkeit)); // Seite 2, Nr. 4.1.2 (schmales Feld)
+        // Seite 2, Nr. 4.1.2 (schmales Feld) – bei mehreren Funktionen frei, die Wertigkeit steht dann je Funktion im Text
+        if (!a.funktionsBloecke) setzeText(form, 'f.wert.1', t(a.funktion.wertigkeit));
       }
-      setzeText(form, 'f.taetigkeit.1', taetigkeitenText(courier, form.getTextField('f.taetigkeit.1'),
-        a.funktion.taetigkeiten));
+      if (!a.funktionsBloecke) {
+        setzeText(form, 'f.taetigkeit.1', taetigkeitenText(courier, form.getTextField('f.taetigkeit.1'),
+          a.funktion.taetigkeiten));
+      }
+    }
+    if (a.funktionsBloecke) {
+      setzeText(form, 'f.taetigkeit.1', funktionenText(courier, form.getTextField('f.taetigkeit.1'), a.funktionsBloecke));
     }
     p.koop.slice(0, KOOP_FELDER).forEach((d, i) => setzeText(form, 'f.koorperation.' + (i + 1), d));
     setzeText(form, 'f.gespraech.1', p.gespraech);
@@ -602,12 +678,11 @@
 
     for (const [k, [erst, zweit]] of Object.entries(NOTENFELDER)) {
       if (a.art.kurz === 'BB' && k === 'endnote') continue; // Beitrag hat keine Gesamtnote
-      setzeNote(form, erst, p.noten[k]);
-      if (a.zweitNoten && a.art.kurz !== 'BB') setzeNote(form, zweit, p.noten[k]);
+      setzeNote(form, erst, p.noten[k]); // nur Erstbeurteilende/r
+
     }
     if (a.art.kurz !== 'BB') {
       setzeNote(form, GESAMTBEWERTUNG[0], p.noten.endnote);
-      if (a.zweitNoten) setzeNote(form, GESAMTBEWERTUNG[1], p.noten.endnote);
     }
 
     // pdf-lib schreibt beim Erzeugen der Darstellung eine eigene Schriftangabe
@@ -662,7 +737,76 @@
     });
   }
 
-  async function fertigstellen(bytes, dateiname) {
+  // ------------------------------------------------------------------
+  // Plausibilitaet: passen Teilnoten und Befaehigung zur Endnote?
+  // ------------------------------------------------------------------
+  const LEISTUNGSFELDER = [];
+  for (let i = 1; i <= 45; i += 2) LEISTUNGSFELDER.push('f.dd.' + i); // Seite 3, Erstbeurteilende/r
+  const BEFAEHIGUNGSFELDER = [];
+  for (let i = 25; i <= 51; i += 2) BEFAEHIGUNGSFELDER.push('f.kk.' + i); // Seite 4, Erstbeurteilende/r
+  const BEFAEHIGUNG_STUFE = { Ja: 'A', 2: 'B', 3: 'C', 4: 'D' };
+  const ERWARTETE_BEFAEHIGUNG = { A1: 'A', A2: 'A', B1: 'B', B2: 'B', B3: 'C', C: 'D' };
+
+  function auswahl(form, name) {
+    try {
+      const v = form.getDropdown(name).getSelected()[0];
+      return NOTEN.includes(text(v).toUpperCase()) ? text(v).toUpperCase() : '';
+    } catch (e) { return ''; }
+  }
+  function ankreuzung(form, name) {
+    let feld;
+    try { feld = form.getField(name); } catch (e) { return ''; }
+    const v = feld.acroField.dict.get(PDFName.of('V'));
+    let wert = v ? v.toString().replace(/^\//, '') : '';
+    if (!wert || wert === 'Off') {
+      for (const w of feld.acroField.getWidgets()) {
+        const as = w.getAppearanceState && w.getAppearanceState();
+        if (as && as.toString() !== '/Off') wert = as.toString().replace(/^\//, '');
+      }
+    }
+    return BEFAEHIGUNG_STUFE[wert] || '';
+  }
+  function zaehle(werte) {
+    const n = {};
+    for (const w of werte) if (w) n[w] = (n[w] || 0) + 1;
+    return n;
+  }
+  function ueberwiegt(n, schluessel) {
+    const eigen = n[schluessel] || 0;
+    return eigen > 0 && Object.entries(n).every(([k, v]) => k === schluessel || v < eigen);
+  }
+  function aufzaehlung(n, reihenfolge) {
+    return reihenfolge.map((k) => k + ': ' + (n[k] || 0)).join(', ');
+  }
+
+  /** Liefert die Verstoesse (leer = plausibel). Ohne Endnote (Beurteilungsbeitrag) keine Pruefung. */
+  function plausibilitaet(form) {
+    const probleme = [];
+    const endnote = auswahl(form, NOTENFELDER.endnote[0]);
+    if (!endnote) return probleme;
+    const leistung = zaehle(LEISTUNGSFELDER.map((n) => auswahl(form, n)));
+    if (!Object.keys(leistung).length) {
+      probleme.push('Leistungsbeurteilung (Seite 3): keine Teilnoten vergeben.');
+    } else if (!ueberwiegt(leistung, endnote)) {
+      probleme.push('Leistungsbeurteilung (Seite 3): Die Endnote ' + endnote + ' muss unter den Teilnoten häufiger vergeben ' +
+        'sein als jede andere Note – vergeben sind ' + aufzaehlung(leistung, NOTEN) + '.');
+    }
+    const g = auswahl(form, GESAMTBEWERTUNG[0]);
+    if (g && g !== endnote) {
+      probleme.push('„G Gesamtbewertung“ (Seite 3) ist ' + g + ', die Gesamtnote (Seite 5) aber ' + endnote + '.');
+    }
+    const soll = ERWARTETE_BEFAEHIGUNG[endnote];
+    const bef = zaehle(BEFAEHIGUNGSFELDER.map((n) => ankreuzung(form, n)));
+    if (!Object.keys(bef).length) {
+      probleme.push('Befähigungsbeurteilung (Seite 4): keine Befähigungsmerkmale angekreuzt.');
+    } else if (!ueberwiegt(bef, soll)) {
+      probleme.push('Befähigungsbeurteilung (Seite 4): Bei der Endnote ' + endnote + ' müssen die meisten Kreuze bei ' + soll +
+        ' stehen – angekreuzt sind ' + aufzaehlung(bef, ['A', 'B', 'C', 'D']) + '.');
+    }
+    return probleme;
+  }
+
+  async function fertigstellen(bytes, dateiname, trotzdem) {
     let pdf;
     try {
       pdf = await PDFDocument.load(bytes);
@@ -686,6 +830,8 @@
     try { feld = form.getTextField(BEGRUENDUNG); } catch (e) {
       throw new Error('„' + dateiname + '“ ist kein Beurteilungsvordruck BPOL 4 00 069.');
     }
+    const probleme = plausibilitaet(form);
+    if (probleme.length && !trotzdem) return { blockiert: true, probleme: probleme };
     const courier = await pdf.embedFont(StandardFonts.Courier);
     const helv = await pdf.embedFont(StandardFonts.Helvetica);
     const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -770,6 +916,7 @@
 
     info.set(PDFName.of(FERTIG_MARKE), PDFString.of(new Date().toISOString()));
     const aus = await pdf.save({ updateFieldAppearances: false });
+    if (probleme.length) hinweise.push('Plausibilitätsprüfung bewusst übergangen: ' + probleme.join(' '));
     return { bytes: aus, seiten, hinweise };
   }
 
@@ -787,5 +934,6 @@
   }
 
 
-  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen, bemerkungText };
+  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen, bemerkungText, dreiMonateImZeitraum,
+    plausibilitaet };
 });

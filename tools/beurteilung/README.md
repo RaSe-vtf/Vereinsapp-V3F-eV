@@ -109,6 +109,27 @@ PHMZ), dahinter Startseite, Beurteiler, Funktionen, Einstellungen; die Datei
 öffnet mit der ersten Vergleichsgruppe. EPHKZ ist vorläufig als A13Z hinterlegt
 (Bezeichnung/Besoldungsgruppe vom Nutzer noch zu bestätigen).
 
+Spaltenfolge: Personalangaben, Funktion (Hauptfunktion, Seite 1) mit von/bis und
+Funktion 2/3 mit von/bis, Beteiligung, Schwerbehinderung, letzte RBU + Statusamt,
+RBU-Block (neue RBU vor den Teilnoten), ALB, BB, Subsidiärmerkmale, Teilzeit, PDF,
+befördert am. Bei mehreren Funktionen schreibt das Tool je Funktion „Bezeichnung
+(Wertigkeit) vom … bis …“ mit ihren Tätigkeiten in „prägende Tätigkeiten“ (Leerzeile
+dazwischen), Nr. 4.1.2 bleibt frei. ALB/BB zählen nur mit mindestens 3 Monaten im
+Beurteilungszeitraum (wie EDATE(Beginn;3)-1). Noten werden nur für die
+Erstbeurteilenden eingetragen.
+
+Bedienhilfen im Excel: Hinweiszeile unter der Überschrift (statt Kennziffern A01…),
+Auswahllisten mit Eingabehinweis je Spalte, Datumsprüfung, Rotmarkierung per
+bedingter Formatierung (fehlende RBU, ungültige Note, ALB/BB unvollständig oder
+< 3 Monate, fehlende Funktionsdaten, Text in Datumsspalten), fixierter Kopf (D14),
+Übersicht je Reiter auf der Startseite mit Sprunglink.
+
+„Fertigstellen“ prüft vorher die Plausibilität (`plausibilitaet`): Endnote muss unter
+den 23 Teilnoten der Erstbeurteilenden am häufigsten sein, Befähigung (14 Merkmale)
+mehrheitlich A/B/C/D passend zur Endnote (A1/A2 → A, B1/B2 → B, B3 → C, C → D),
+G Gesamtbewertung = Endnote. Bei Verstoß keine Endversion, nur über „Trotzdem
+fertigstellen“.
+
 Hinter „PDF“ steht „befördert am“. Excel-Funktionen (nicht in Beurteilung.html,
 das nur die PDF-Bögen erzeugt) laufen als Makros: `makros/Beurteilungs-Makros.txt`
 (ASCII, zum Einfügen in ein Modul; Umlaute in Meldungen über `{ae}` usw.) mit
