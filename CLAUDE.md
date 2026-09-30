@@ -1053,3 +1053,12 @@ Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
   - [x] Button "Personal abgleichen" – vom Nutzer ausdrücklich abgelehnt,
     nicht wieder vorschlagen; Abgleich bleibt Handarbeit über
     "Personaldatensätze".
+  - [x] Ebenfalls abgelehnt, nicht wieder vorschlagen: Aufteilung nach
+    Zügen, Monatsübersicht/Kalender, Druckansicht/PDF-Button, Frage an IT
+    nach ePlan-Export, Makro-Dauerlösung (vertrauenswürdiger Ort/.xlam).
+- Umgesetzt (Stand 30.09.2026): Reiter "Start" (Kurzanleitung, erster
+  Reiter); abgelaufene Einsätze in "Einsatz importieren" grau (keine
+  Löschabfrage, Entfernen nur von Hand); Wochenend-Entscheidungen fest an
+  Name ePlan + Freitag gespeichert (EinsatzDaten AT:AU, Buttons
+  EntscheidungJa/Nein/Loeschen, L27:L163 ist Formel); Grenzen-Warnungen in
+  der Stand-Prüfung (EinsatzDaten!A3).

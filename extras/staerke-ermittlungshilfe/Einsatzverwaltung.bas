@@ -8,6 +8,9 @@ Option Explicit
 '  - DoppelgliederungenEntscheiden : offene Doppelgliederungen abfragen
 '  - TabelleLeeren                 : Grunddaten + Wochenend-Entscheidungen leeren
 '  - GrunddatenAufbereiten         : eingefuegten ePlan-Text in Spalten verteilen
+'  - EntscheidungJa / EntscheidungNein / EntscheidungLoeschen
+'                                  : Wochenend-Pruefaelle entscheiden (gespeichert je
+'                                    Person + Freitag in EinsatzDaten AT:AU)
 '  Die Reiter sind geschuetzt (Blattschutz ohne Kennwort); die Makros heben
 '  den Schutz kurz auf und setzen ihn danach wieder.
 '  Die Zuordnung der Namen und das Setzen von E / EE im Reiter "Staerke"
@@ -23,6 +26,10 @@ Private Const L0 As Long = 38           ' Personenliste Zeilen 38..1037
 Private Const LN As Long = 1037
 Private Const QUELLE As String = "A1:AN600"
 Private Const KENNWORT As String = ""       ' Blattschutz-Kennwort (leer = ohne)
+Private Const WE0 As Long = 27          ' Wochenend-Liste Zeilen 27..163
+Private Const WEN As Long = 163
+Private Const S0 As Long = 10           ' Speicher Wochenend-Entscheidungen EinsatzDaten AT:AU, Zeilen 10..509
+Private Const SN As Long = 509
 
 ' ---------------------------------------------------------------------
 Public Sub EinsatzLaden()
@@ -299,16 +306,15 @@ End Sub
 
 ' ---------------------------------------------------------------------
 Public Sub TabelleLeeren()
-    If MsgBox("Grunddaten und die Wochenend-Entscheidungen wirklich leeren?" & vbCr & _
-              "(Geladene Einsaetze bleiben erhalten - dafuer gibt es ""Einsatz entfernen"".)", _
+    If MsgBox("Grunddaten wirklich leeren?" & vbCr & _
+              "(Geladene Einsaetze und Wochenend-Entscheidungen bleiben erhalten.)", _
               vbYesNo + vbQuestion, "Tabelle leeren") = vbNo Then Exit Sub
     With ThisWorkbook.Worksheets("Grunddaten")
         .Unprotect KENNWORT
-        .Range("E2:AQ300").ClearContents
-        .Range("E2:AQ300").NumberFormat = "General"
+        .Range("E2:AQ600").ClearContents
+        .Range("E2:AQ600").NumberFormat = "General"
         Schuetzen ThisWorkbook.Worksheets("Grunddaten")
     End With
-    ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende").Range("L27:L163").ClearContents
     ThisWorkbook.Worksheets("EinsatzDaten").Range("C3:D3").ClearContents
     MsgBox "Geleert. Jetzt die ePlan-Daten in die rote Zelle einfuegen" & vbCr & _
            "(Rechtsklick - Inhalte einfuegen - Text) und danach ""Grunddaten aufbereiten"" klicken.", _
@@ -329,6 +335,11 @@ Public Sub GrunddatenAufbereiten()
     Dim korrigiert As String, stand As String, korr As Boolean
 
     Set ws = ThisWorkbook.Worksheets("Grunddaten")
+    If Application.WorksheetFunction.CountA(ws.Range(ws.Cells(ZN + 1, C0), ws.Cells(600, CN))) > 0 Then
+        MsgBox "Die ePlan-Daten reichen ueber Zeile " & ZN & " hinaus." & vbCr & _
+               "Alles ab Zeile " & ZN + 1 & " wird NICHT ausgewertet - bitte melden, die Tabelle muss erweitert werden.", _
+               vbExclamation, "Grunddaten aufbereiten"
+    End If
     daten = ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).Value
     ReDim zeilen(1 To ZN - Z0 + 1)
     For r = 1 To ZN - Z0 + 1
@@ -387,6 +398,113 @@ Public Sub GrunddatenAufbereiten()
            IIf(korrigiert = "", "", vbCr & vbCr & "Korrigierte Zeilen:" & vbCr & korrigiert), _
            vbInformation, "Grunddaten aufbereiten"
 End Sub
+
+' ---------------------------------------------------------------------
+' Wochenend-Pruefaelle entscheiden: Zeile(n) in der Liste markieren, dann Button.
+' Die Entscheidung wird fest an Name ePlan + Freitag gespeichert (nicht an die Zeile).
+Public Sub EntscheidungJa()
+    EntscheidungSetzen "ja"
+End Sub
+
+Public Sub EntscheidungNein()
+    EntscheidungSetzen "nein"
+End Sub
+
+Public Sub EntscheidungLoeschen()
+    EntscheidungSetzen ""
+End Sub
+
+Private Sub EntscheidungSetzen(ByVal wert As String)
+    Dim ws As Worksheet, sp As Worksheet, bereich As Range, zelle As Range
+    Dim fr As Variant, schluessel As String, r As Long, k As Long
+    Dim anzahl As Long, namen As String
+
+    Set ws = ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende")
+    Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
+    fr = ws.Range("AI6").Value2
+    If VarType(fr) <> vbDouble Then
+        MsgBox "Bitte zuerst oben einen Freitag auswaehlen.", vbExclamation, "Entscheidung"
+        Exit Sub
+    End If
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Bitte zuerst eine oder mehrere Zeilen in der Liste markieren.", vbExclamation, "Entscheidung"
+        Exit Sub
+    End If
+    If Not Selection.Worksheet Is ws Then
+        MsgBox "Bitte die Zeilen im Reiter ""Verfuegbarkeit Wochenende"" markieren.", vbExclamation, "Entscheidung"
+        Exit Sub
+    End If
+    Set bereich = Intersect(Selection.EntireRow, ws.Range(ws.Cells(WE0, 1), ws.Cells(WEN, 1)))
+    If bereich Is Nothing Then
+        MsgBox "Bitte eine oder mehrere orange Zeilen (Prueffall) in der Liste markieren.", vbExclamation, "Entscheidung"
+        Exit Sub
+    End If
+
+    Application.ScreenUpdating = False
+    For Each zelle In bereich.Cells
+        r = zelle.Row
+        If CStr(ws.Cells(r, 11).Value) = "Pr" & ChrW(252) & "ffall" And Trim$(CStr(ws.Cells(r, 6).Value)) <> "" Then
+            schluessel = Trim$(CStr(ws.Cells(r, 6).Value)) & "|" & CStr(CLng(fr))
+            k = SpeicherZeile(sp, schluessel)
+            If k = 0 And wert <> "" Then
+                k = FreieSpeicherZeile(sp, CLng(fr))
+                If k = 0 Then
+                    Application.ScreenUpdating = True
+                    MsgBox "Der Speicher fuer Wochenend-Entscheidungen ist voll.", vbExclamation, "Entscheidung"
+                    Exit Sub
+                End If
+                sp.Cells(k, 46).Value = schluessel
+            End If
+            If k > 0 Then
+                If wert = "" Then
+                    sp.Range(sp.Cells(k, 46), sp.Cells(k, 47)).ClearContents
+                Else
+                    sp.Cells(k, 47).Value = wert
+                End If
+            End If
+            anzahl = anzahl + 1
+            namen = namen & "  - " & ws.Cells(r, 5).Value & vbCr
+        End If
+    Next zelle
+    Application.ScreenUpdating = True
+    Application.Calculate
+
+    If anzahl = 0 Then
+        MsgBox "In der Markierung ist kein Prueffall." & vbCr & _
+               "Bitte eine oder mehrere orange Zeilen markieren und dann klicken.", vbExclamation, "Entscheidung"
+    ElseIf anzahl > 1 Then
+        If wert = "" Then
+            MsgBox "Entscheidung geloescht fuer:" & vbCr & namen, vbInformation, "Entscheidung"
+        Else
+            MsgBox "Entscheidung """ & wert & """ gespeichert fuer:" & vbCr & namen, vbInformation, "Entscheidung"
+        End If
+    End If
+End Sub
+
+Private Function SpeicherZeile(ByVal sp As Worksheet, ByVal schluessel As String) As Long
+    Dim r As Long
+    For r = S0 To SN
+        If StrComp(CStr(sp.Cells(r, 46).Value), schluessel, vbTextCompare) = 0 Then SpeicherZeile = r: Exit Function
+    Next r
+End Function
+
+' Erste freie Speicherzeile; ist keine frei, werden Entscheidungen aelter als 60 Tage entfernt.
+Private Function FreieSpeicherZeile(ByVal sp As Worksheet, ByVal freitag As Long) As Long
+    Dim r As Long, t As String, p As Long
+    For r = S0 To SN
+        If Trim$(CStr(sp.Cells(r, 46).Value)) = "" Then FreieSpeicherZeile = r: Exit Function
+    Next r
+    For r = S0 To SN
+        t = CStr(sp.Cells(r, 46).Value)
+        p = InStrRev(t, "|")
+        If p > 0 Then
+            If Val(Mid$(t, p + 1)) < freitag - 60 Then sp.Range(sp.Cells(r, 46), sp.Cells(r, 47)).ClearContents
+        End If
+    Next r
+    For r = S0 To SN
+        If Trim$(CStr(sp.Cells(r, 46).Value)) = "" Then FreieSpeicherZeile = r: Exit Function
+    Next r
+End Function
 
 ' Zerlegt eine Zeile in Einzelwerte - egal ob noch als ein Text in Spalte E
 ' oder schon auf mehrere Spalten verteilt.
