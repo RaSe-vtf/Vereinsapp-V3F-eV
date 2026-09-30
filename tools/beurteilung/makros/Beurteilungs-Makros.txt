@@ -6,6 +6,9 @@ Option Explicit
 '   ListeLeeren                 - leert den aktuellen Reiter (Vergleichsgruppe)
 '   BefoerderungenUebernehmen   - verschiebt alle Personen mit Datum in
 '                                 "befoerdert am" in den naechsten Reiter
+'   AnsichtBenotung / AnsichtMitarbeiterdaten / AnsichtAlles
+'                               - blendet das jeweils andere Paeckchen der
+'                                 Tabelle aus bzw. alle Spalten wieder ein
 '
 ' Beide fragen vorher nach und legen vor jeder Aenderung automatisch eine
 ' Sicherungskopie im selben Ordner an (Makro-Aenderungen lassen sich in Excel
@@ -96,10 +99,14 @@ Private Function Spalte(ws As Worksheet, ByVal kopf As Long, ByVal muster As Str
     Spalte = 0
 End Function
 
-' Letzte Spalte der Tabelle ("befoerdert am", sonst "PDF")
+' Letzte Spalte der Tabelle: die am weitesten rechts stehende von "Bemerkungen",
+' "befoerdert am" und "PDF" (die Reihenfolge der Spalten kann sich aendern)
 Private Function Tabellenende(ws As Worksheet, ByVal kopf As Long) As Long
-    Tabellenende = Spalte(ws, kopf, "bef?rdert am*")
-    If Tabellenende = 0 Then Tabellenende = Spalte(ws, kopf, "pdf*")
+    Dim muster As Variant, c As Long
+    For Each muster In Array("bemerkungen", "bef?rdert am*", "pdf*")
+        c = Spalte(ws, kopf, CStr(muster))
+        If c > Tabellenende Then Tabellenende = c
+    Next muster
 End Function
 
 Private Sub Entsperren(ws As Worksheet)
@@ -428,4 +435,59 @@ Fehler:
         "Den vorherigen Stand enth{ae}lt die Sicherungskopie:" & vbLf & letzteSicherung & vbLf & _
         "Bitte diese Datei ohne Speichern schlie{ss}en und die Sicherungskopie verwenden."), vbCritical, _
         U("Bef{oe}rderungen {ue}bernehmen")
+End Sub
+
+' ==========================================================================
+' Knoepfe "Ansicht: Benotung", "Ansicht: Mitarbeiterdaten", "Ansicht: alle Spalten"
+' Nur Ein-/Ausblenden - es wird nichts geaendert oder geloescht.
+' ==========================================================================
+Private Sub Ansicht(ByVal was As String)
+    Dim ws As Worksheet, kopf As Long, breite As Long
+    Dim bVon As Long, bBis As Long, mVon As Long, mBis As Long
+    Set ws = ActiveSheet
+    kopf = KopfZeile(ws)
+    If kopf = 0 Then
+        MsgBox U("Bitte zuerst den Reiter einer Vergleichsgruppe ausw{ae}hlen (z.B. PM)."), vbExclamation, "Ansicht"
+        Exit Sub
+    End If
+    breite = Tabellenende(ws, kopf)
+    bVon = Spalte(ws, kopf, "letzte rbu")
+    bBis = Spalte(ws, kopf, "bb 3 bis")
+    mVon = Spalte(ws, kopf, "geb*")
+    mBis = Spalte(ws, kopf, "bemerkungen")
+    If bVon = 0 Or bBis = 0 Or mVon = 0 Or mBis = 0 Or bBis < bVon Or mBis < mVon Then
+        MsgBox U("Die Spalten dieses Reiters sind nicht im erwarteten Aufbau " & ChrW(8211) & _
+            " bitte die Noten{ue}bersicht neu aufbereiten lassen."), vbExclamation, "Ansicht"
+        Exit Sub
+    End If
+    On Error GoTo Fehler
+    Application.ScreenUpdating = False
+    Entsperren ws
+    ws.Range(ws.Cells(1, 1), ws.Cells(1, breite)).EntireColumn.Hidden = False
+    Select Case was
+        Case "benotung": ws.Range(ws.Cells(1, mVon), ws.Cells(1, mBis)).EntireColumn.Hidden = True
+        Case "daten": ws.Range(ws.Cells(1, bVon), ws.Cells(1, bBis)).EntireColumn.Hidden = True
+    End Select
+    Sperren ws
+    Application.ScreenUpdating = True
+    Exit Sub
+Fehler:
+    Dim fehlerText As String
+    fehlerText = Err.Description
+    On Error Resume Next
+    Sperren ws
+    Application.ScreenUpdating = True
+    MsgBox U("Die Ansicht konnte nicht umgeschaltet werden: " & fehlerText), vbExclamation, "Ansicht"
+End Sub
+
+Public Sub AnsichtBenotung()
+    Ansicht "benotung"
+End Sub
+
+Public Sub AnsichtMitarbeiterdaten()
+    Ansicht "daten"
+End Sub
+
+Public Sub AnsichtAlles()
+    Ansicht "alles"
 End Sub

@@ -39,6 +39,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 START = "Beurteilungen erstellen"
 BEURTEILER = "Beurteiler"
+SUBSIDIAER = "Subsidiärmerkmale"
 EINSTELLUNGEN = "Einstellungen"  # nur noch alte Dateien: wird gelesen und entfernt
 LETZTE_ZEILE = 200  # Reichweite der korrigierten Zaehlformeln
 
@@ -220,8 +221,9 @@ def berichtige_notenblatt(ws, protokoll):
     # Rechenhilfen ausgeblendet dahinter, zeichnen und alles ausser den
     # Eingabezellen sperren
     pos = positionen(ws, kopf)
-    breite = pos.get("befoerdert", pos["pdf"])  # letzte Spalte der Tabelle
+    breite = tabellenende(pos)  # letzte Spalte der Tabelle
     ende, rechen = vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll)
+    pos = {k: c for k, c in pos.items() if k not in SUBSIDIAER_ALT}  # stehen jetzt im eigenen Reiter
     gestalte_tabelle(ws, kopf, pos, breite, ende)
     faerbe_tabelle(ws, kopf, pos, breite, ende)
     bedienhilfen(ws, kopf, pos, breite, ende)
@@ -313,31 +315,14 @@ def ordne_tool_spalten(ws, kopf, sp, erste, protokoll):
 # im Vordruck vorkommt, danach die nur informatorischen Spalten, "PDF" zuletzt.
 # (Schluessel, Erkennung ueber die Kopfzeile)
 ZIELREIHENFOLGE = [
+    # links fixiert: Person und Steuerung
     ("lfdnr", lambda k: k == "lfd.nr."),
     ("name", lambda k: k == "name"),
     ("vorname", lambda k: k == "vorname"),
-    ("geb", lambda k: k.startswith("geb")),
     ("amtsbez", lambda k: k.startswith("amtsbez")),
-    ("geschlecht", lambda k: k == "geschlecht"),
-    ("ernennung", lambda k: k.startswith("datum der ernennung")),
-    ("zug", lambda k: k == "zug"),
     ("ausgenommen", lambda k: k.startswith("von der beurteilung ausgenommen")),
-    ("ausg_grund", lambda k: k.startswith("grund der ausnahme")),
-    ("funktion", lambda k: k == "funktion"),
-    ("f1_von", lambda k: k == "funktion von"),
-    ("f1_bis", lambda k: k == "funktion bis"),
-    ("f2", lambda k: k == "funktion 2"),
-    ("f2_von", lambda k: k == "funktion 2 von"),
-    ("f2_bis", lambda k: k == "funktion 2 bis"),
-    ("f3", lambda k: k == "funktion 3"),
-    ("f3_von", lambda k: k == "funktion 3 von"),
-    ("f3_bis", lambda k: k == "funktion 3 bis"),
-    ("fuehrung", lambda k: k.startswith("führungsaufgabe")),
-    ("koop", lambda k: k.startswith("kooperation")),
-    ("gespraech", lambda k: k.startswith("gespräch vor")),
-    ("sbh", lambda k: k.startswith("schwerbehind")),
-    ("sbh_einv", lambda k: k.startswith("einverständnis")),
-    ("sbh_gespr", lambda k: k.startswith("gespräch vertrauensperson")),
+    ("pdf", lambda k: k.startswith("pdf")),
+    # Paeckchen "Benotung"
     ("letzte_rbu", lambda k: k == "letzte rbu"),
     ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
     ("neue_rbu", lambda k: k == "neue rbu"),   # Gesamtnote vor den Teilnoten
@@ -356,25 +341,59 @@ ZIELREIHENFOLGE = [
     ("alb_n43", lambda k: k == "alb 4.3"),
 ] + [(f"bb{i}_{t}", (lambda n: (lambda k: k == n))(f"bb {i} " + ("(x)" if t == "x" else t)))
      for i in (1, 2, 3) for t in ("x", "von", "bis")] + [
+    # Paeckchen "Mitarbeiterdaten"
+    ("geb", lambda k: k.startswith("geb")),
+    ("geschlecht", lambda k: k == "geschlecht"),
+    ("zug", lambda k: k == "zug"),
+    ("ausg_grund", lambda k: k.startswith("grund der ausnahme")),
+    ("ernennung", lambda k: k.startswith("datum der ernennung")),
+    ("beginn", lambda k: k.startswith("beginn dienstzeit") or k.startswith("datum der verleihung")),
+    ("befoerdert", lambda k: k.startswith("befördert")),
+    ("funktion", lambda k: k == "funktion"),
+    ("f1_von", lambda k: k == "funktion von"),
+    ("f1_bis", lambda k: k == "funktion bis"),
+    ("f2", lambda k: k == "funktion 2"),
+    ("f2_von", lambda k: k == "funktion 2 von"),
+    ("f2_bis", lambda k: k == "funktion 2 bis"),
+    ("f3", lambda k: k == "funktion 3"),
+    ("f3_von", lambda k: k == "funktion 3 von"),
+    ("f3_bis", lambda k: k == "funktion 3 bis"),
+    ("fuehrung", lambda k: k.startswith("führungsaufgabe")),
+    ("koop", lambda k: k.startswith("kooperation")),
+    ("gespraech", lambda k: k.startswith("gespräch vor")),
+    ("sbh", lambda k: k.startswith("schwerbehind")),
+    ("sbh_einv", lambda k: k.startswith("einverständnis")),
+    ("sbh_gespr", lambda k: k.startswith("gespräch vertrauensperson")),
+    ("teilzeit", lambda k: k == "teilzeit"),
+    ("bemerkungen", lambda k: k == "bemerkungen"),
+    # frueher in der Tabelle, jetzt im Reiter "Subsidiärmerkmale": landen hinter
+    # der Tabelle und werden dort entfernt
     ("summe", lambda k: k == "summe"),
     ("monate", lambda k: k == "monate"),
-    ("beginn", lambda k: k.startswith("beginn dienstzeit") or k.startswith("datum der verleihung")),
     ("monate_halb", lambda k: k.startswith("monate (zur")),
     ("ges", lambda k: k == "ges."),
-    ("bemerkungen", lambda k: k == "bemerkungen"),
-    ("teilzeit", lambda k: k == "teilzeit"),
-    ("pdf", lambda k: k.startswith("pdf")),
-    ("befoerdert", lambda k: k.startswith("befördert")),
 ]
+SUBSIDIAER_ALT = ("summe", "monate", "monate_halb", "ges")
+FIXIERT = ("lfdnr", "name", "vorname", "amtsbez", "ausgenommen", "pdf")
+PAECKCHEN = [  # Band ueber den Gruppenueberschriften: Text, erste/letzte Spalte, Farbe
+    ("BENOTUNG", "letzte_rbu", "bb3_bis", "1F3864"),
+    ("MITARBEITERDATEN", "geb", "bemerkungen", "375623"),
+]
+
+
+def tabellenende(pos):
+    """Letzte Spalte der Tabelle (ohne die entfallenen Subsidiaer-Spalten)."""
+    return max(c for k, c in pos.items() if k not in SUBSIDIAER_ALT)
+
+
 GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
     ("Funktionen", "funktion", "fuehrung"),
     ("RBU", "neue_rbu", "n43"),
-    ("Subsidiärmerkmale ", "summe", "bemerkungen"),
     ("Anlassbeurteilung", "alb_x", "alb_n43"),
     ("Beurteilungsbeiträge", "bb1_x", "bb3_bis"),
     ("vorletzte Beurteilung", "letzte_rbu", "letzte_rbu_amt"),
 ]
-ALTE_GRUPPEN = ("letzte Beurteilung",)
+ALTE_GRUPPEN = ("letzte Beurteilung", "Subsidiärmerkmale ", "Subsidiärmerkmale")
 _REF = re.compile(r"^(\$?)([A-Z]{1,3})(\$?)(\d+)$")
 
 
@@ -539,6 +558,14 @@ def sortiere_tabelle(ws, kopf, protokoll):
                      + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, tabellenbreite + 1)))
 
 
+BREITEN = dict(
+    {k: 6 for k in ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "alb_n11", "alb_n2", "alb_n42", "alb_n43")},
+    ausgenommen=10,
+    **{k: 5 for k in ("pdf", "alb_x", "bb1_x", "bb2_x", "bb3_x", "geschlecht", "zug")},
+    **{k: 7 for k in ("letzte_rbu_amt", "alb_amt", "fuehrung", "sbh", "sbh_einv", "amtsbez")},
+    **{k: 10.5 for k in ("geb", "ernennung", "beginn", "befoerdert", "f1_von", "f1_bis", "f2_von", "f2_bis",
+                         "f3_von", "f3_bis", "gespraech", "sbh_gespr", "alb_von", "alb_bis", "bb1_von", "bb1_bis",
+                         "bb2_von", "bb2_bis", "bb3_von", "bb3_bis")})
 LINKSBUENDIG = ("name", "vorname", "ausg_grund", "funktion", "f2", "f3", "koop", "bemerkungen")
 ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
 
@@ -546,9 +573,14 @@ ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
 def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
     """Linien (duenn innen, kraeftig aussen/an Gruppengrenzen), Zeilenumbruch in allen
     Zellen und an den Inhalt angepasste Zeilenhoehen – nichts ragt in Nachbarzellen."""
-    grenzen = {pos[s] for s in ("name", "funktion", "koop", "letzte_rbu", "neue_rbu", "alb_x", "bb1_x", "summe",
-                                "teilzeit", "pdf")
+    grenzen = {pos[s] for s in ("name", "ausgenommen", "letzte_rbu", "neue_rbu", "alb_x", "bb1_x", "geb", "ernennung",
+                                "funktion", "koop", "sbh", "teilzeit")
                if s in pos}
+    # schmale Spalten: Noten, x-Spalten, Datum
+    for s_, w in BREITEN.items():
+        if s_ in pos and pos[s_] <= breite:
+            setze_spalte(ws, pos[s_], w, False)
+    ws.row_dimensions[kopf].height = 80
     ende = ende or letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
     links_spalten = {pos[s] for s in LINKSBUENDIG if s in pos}
     # Zahlenformat je Spalte festlegen (Datum bzw. Standard fuer Auswahlspalten)
@@ -655,21 +687,10 @@ def vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll):
 
     kuerzel = blattbasis(ws.title)
     G = L(pos["geschlecht"])
-    H1, H4 = L(hilfe["n11"]), L(hilfe["n43"])
-    E, B = L(pos["ernennung"]), L(pos["beginn"])
-    M, MH = L(pos["monate"]), L(pos["monate_halb"])
-
-    def monate(datum, r, faktor=""):
-        return (f'IFERROR(IF(OR({datum}{r}="",{ST}="",{datum}{r}>{ST}),"{KEIN_DATUM}",'
-                f'DATEDIF({datum}{r},{ST},"M"){faktor}),"{KEIN_DATUM}")')
-
+    # Summe, Monate usw. rechnet der Reiter "Subsidiärmerkmale" (baue_subsidiaer)
     formeln = {
         "lfdnr": lambda r: f"COUNTA(${N}${erste}:${N}{r})",
         "amtsbez": lambda r: f'"{kuerzel}"&IF({G}{r}="w","in","")',
-        "summe": lambda r: f'IF(COUNT({H1}{r}:{H4}{r})<4,"{KEIN_DATUM}",SUM({H1}{r}:{H4}{r}))',
-        "monate": lambda r: monate(E, r),
-        "monate_halb": lambda r: monate(B, r, "/2"),
-        "ges": lambda r: f'IF(COUNT({M}{r},{MH}{r})<2,"{KEIN_DATUM}",{M}{r}+{MH}{r})',
     }
     for k, c in hilfe.items():
         formeln[("hilfe", k)] = (lambda q: lambda r: f'IFERROR(VLOOKUP({q}{r},{TAB},2,FALSE),"")')(L(pos[k]))
@@ -721,7 +742,7 @@ def vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll):
     if geaendert:
         protokoll.append(f"{ws.title}: Tabelle für {PERSONEN_JE_BLATT} Personen (Zeilen {erste}-{ende}), "
                          f"{geaendert} abweichende Formeln vereinheitlicht")
-    return ende, {pos[k] for k in ("lfdnr", "amtsbez", "summe", "monate", "monate_halb", "ges")}
+    return ende, {pos[k] for k in RECHEN}
 
 
 def schuetze_notenblatt(ws, kopf, breite, ende, rechen):
@@ -786,11 +807,28 @@ def faerbe_tabelle(ws, kopf, pos, breite, ende):
             ws.cell(kopf - 1, c).fill = copy(fuellung)
     # Legende "Spalten mit Formeln hinterlegt" (hellgruen in der Ueberschrift):
     # auch Lfd.Nr. und Amtsbez. rechnen inzwischen selbst
-    vorlage = ws.cell(kopf, pos["summe"]).fill if "summe" in pos else None
+    vorlage = ws["A7"].fill  # Farbfeld der Legende "Spalten mit Formeln hinterlegt"
     if vorlage is not None and vorlage.fill_type == "solid":
         for k in ("lfdnr", "amtsbez"):
             if k in pos:
                 ws.cell(kopf, pos[k]).fill = copy(vorlage)
+    # Band "BENOTUNG" / "MITARBEITERDATEN" ueber den Gruppenueberschriften
+    band = kopf - 2
+    for m in list(ws.merged_cells.ranges):
+        if m.min_row == band:
+            ws.unmerge_cells(str(m))
+    for c in range(1, breite + 1):
+        ws.cell(band, c).value = None
+        ws.cell(band, c).fill = PatternFill(fill_type=None)
+    for text, von, bis, farbe in PAECKCHEN:
+        if von in pos and bis in pos:
+            ws.cell(band, pos[von], text)
+            for c in range(pos[von], pos[bis] + 1):
+                ws.cell(band, c).fill = PatternFill("solid", fgColor=farbe)
+            ws.cell(band, pos[von]).font = Font(bold=True, color="FFFFFF", size=11)
+            ws.cell(band, pos[von]).alignment = Alignment(horizontal="center", vertical="center")
+            ws.merge_cells(start_row=band, start_column=pos[von], end_row=band, end_column=pos[bis])
+    ws.row_dimensions[band].height = 20
     for m in ws.merged_cells.ranges:
         if m.min_row == kopf - 1 and m.max_row == kopf - 1:
             z = ws.cell(m.min_row, m.min_col)
@@ -886,7 +924,7 @@ def ergaenze_reiter(wb, notenblaetter, kette, protokoll):
         ws.sheet_view.zoomScale = quelle.sheet_view.zoomScale
         kopf = kopfzeile(ws)
         pos = positionen(ws, kopf)
-        breite = pos.get("befoerdert", pos["pdf"])
+        breite = tabellenende(pos)
         for r in range(kopf + 2, kopf + 2 + PERSONEN_JE_BLATT):
             for c in range(1, breite + 1):
                 z = ws.cell(r, c)
@@ -919,7 +957,7 @@ NOTEN_SPALTEN = ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "al
 DATUM_SPALTEN = ("geb", "ernennung", "f1_von", "f1_bis", "f2_von", "f2_bis", "f3_von", "f3_bis", "gespraech", "sbh_gespr",
                  "alb_von", "alb_bis", "bb1_von", "bb1_bis", "bb2_von", "bb2_bis", "bb3_von", "bb3_bis",
                  "beginn", "befoerdert")
-RECHEN = ("lfdnr", "amtsbez", "summe", "monate", "monate_halb", "ges")
+RECHEN = ("lfdnr", "amtsbez")
 AMTS_LISTE = '"' + ",".join(k for e in AMTSBEZEICHNUNGEN for k in (e[0], e[0] + "in")) + '"'
 # Schluessel: (Hinweiszeile, Titel Eingabehinweis, Text Eingabehinweis)
 HILFE = {
@@ -999,7 +1037,9 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
     # Hinweiszeile unter der Kopfzeile (statt der alten Kennziffern A01, A02, ...)
     for c in range(1, breite + 1):
         k = schluessel.get(c)
-        text = "rechnet selbst" if k in RECHEN else (hilfe.get(k, ("",))[0] if k else None)
+        # nur ueber Rechenspalten ein Text: Excel schlaegt beim Tippen sonst die
+        # Hinweise als AutoVervollstaendigen vor (aus "A1" wird "A1 … C")
+        text = "rechnet selbst" if k in RECHEN else None
         z = ws.cell(kopf + 1, c)
         if k is None and not re.fullmatch(r"A\d{2}", str(z.value or "")):
             continue
@@ -1039,11 +1079,14 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
         dv.showErrorMessage = dv.type is not None
         dv.errorStyle = "stop"
         dv.errorTitle = "Ungültige Eingabe"
-        dv.showInputMessage = bool(text)
+        dv.showInputMessage = False  # keine Hinweisfenster beim Anklicken (stoeren beim Arbeiten)
         dv.promptTitle = titel[:32]
         dv.prompt = text[:255]
         dv.add(bereich)
         ws.add_data_validation(dv)
+
+    for dv in ws.data_validations.dataValidation:  # auch alte Auswahllisten ohne Hinweisfenster
+        dv.showInputMessage = False
 
     # Rotmarkierung (Zeilen ohne Namen bleiben unauffaellig)
     N = f"${L(pos['name'])}"
@@ -1088,7 +1131,7 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
                                   FormulaRule(formula=[f'AND({N}{erste}<>"",{AUS}="x")'], **GRAU))
 
     # Kopf und Namen beim Blaettern stehen lassen
-    ws.freeze_panes = f"{L(pos['vorname'] + 1)}{erste}"
+    ws.freeze_panes = f"{L(pos['pdf'] + 1)}{erste}"
 
 
 def entferne_externe_verknuepfungen(wb, protokoll):
@@ -1385,21 +1428,92 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
     return ws
 
 
+def baue_subsidiaer(wb, notenblaetter, infos):
+    """Reiter "Subsidiärmerkmale" ganz am Ende: rechnet je Vergleichsgruppe Summe
+    der Teilnoten, Monate im Statusamt, Monate Dienstzeit (zur Haelfte), ges. und
+    die Reihenfolge bei gleicher Gesamtnote (hoehere Summe vor, bei gleicher Summe
+    hoeheres ges.). Nur Formeln, vollstaendig gesperrt."""
+    ws = wb.create_sheet(SUBSIDIAER)
+    ws.sheet_view.showGridLines = False
+    zelle(ws, "A1", "Subsidiärmerkmale", TITEL)
+    zelle(ws, "A2", "Rechnet selbst aus den Vergleichsgruppen (Stichtag des jeweiligen Reiters) – nur bei Bedarf, z.B. vor "
+                    "Beförderungen. Reihenfolge bei gleicher Gesamtnote: höhere Summe der Teilnoten zuerst, bei gleicher "
+                    "Summe höheres „ges.“. Ausgenommene zählen nicht mit. „n.N.“ = Angabe fehlt.", HINWEIS)
+    # "Nr." statt "Lfd.Nr.": dieser Reiter darf nicht als Notenblatt erkannt werden
+    kopf = ["Nr.", "Name", "Vorname", "Gesamtnote (neue RBU)", "Summe Teilnoten", "Monate im Statusamt",
+            "Monate Dienstzeit (zur Hälfte)", "ges.", "Reihenfolge bei gleicher Note"]
+    mitte = Alignment(horizontal="center", vertical="center")
+    r = 4
+    for blatt in notenblaetter:
+        i = infos.get(blatt)
+        if not i:
+            continue
+        q = f"'{blatt}'!"
+        zelle(ws, f"A{r}", blatt, ABSCHNITT)
+        r += 1
+        for c, t in enumerate(kopf, 1):
+            zelle(ws, f"{get_column_letter(c)}{r}", t, FETT, KOPF, rahmen=True,
+                  align=Alignment(horizontal="center", vertical="center", wrap_text=True))
+        ws.row_dimensions[r].height = 30
+        oben = r + 1
+        unten = r + PERSONEN_JE_BLATT
+        noten = f"{q}${i['rbu']}${i['erste']}:${i['rbu']}${i['ende']}"
+        aus = f"{q}${i['aus']}${i['erste']}:${i['aus']}${i['ende']}"
+        summen, gesamt = f"$E${oben}:$E${unten}", f"$H${oben}:$H${unten}"
+        for k in range(PERSONEN_JE_BLATT):
+            z, zq = oben + k, i["erste"] + k
+            nm = f"{q}${i['name']}{zq}"
+            leer_wenn = lambda f: f'=IF({nm}="","",{f})'
+
+            def monate(spalte, faktor=""):
+                d, st = f"{q}${spalte}{zq}", f"{q}{i['stichtag']}"
+                return leer_wenn(f'IFERROR(IF(OR({d}="",{st}="",{d}>{st}),"{KEIN_DATUM}",'
+                                 f'DATEDIF({d},{st},"M"){faktor}),"{KEIN_DATUM}")')
+            punkte = f"{q}${i['punkte'][0]}{zq}:${i['punkte'][1]}{zq}"
+            werte = [
+                leer_wenn(f"{q}${i['lfd']}{zq}"),
+                leer_wenn(nm),
+                leer_wenn(f"{q}${i['vorname']}{zq}"),
+                leer_wenn(f'IF({q}${i["aus"]}{zq}="x","ausgenommen",IF({q}${i["rbu"]}{zq}="","–",{q}${i["rbu"]}{zq}))'),
+                leer_wenn(f'IF(COUNT({punkte})<4,"{KEIN_DATUM}",SUM({punkte}))'),
+                monate(i["ernennung"]),
+                monate(i["beginn"], "/2"),
+                leer_wenn(f'IF(COUNT(F{z},G{z})<2,"{KEIN_DATUM}",F{z}+G{z})'),
+                (f'=IF(OR({nm}="",{q}${i["aus"]}{zq}="x",{q}${i["rbu"]}{zq}="",NOT(ISNUMBER(E{z})),'
+                 f'NOT(ISNUMBER(H{z}))),"",1+COUNTIFS({noten},{q}${i["rbu"]}{zq},{summen},">"&E{z},{aus},"<>x")'
+                 f'+COUNTIFS({noten},{q}${i["rbu"]}{zq},{summen},E{z},{gesamt},">"&H{z},{aus},"<>x"))'),
+            ]
+            for c, f in enumerate(werte, 1):
+                zelle(ws, f"{get_column_letter(c)}{z}", f, rahmen=True,
+                      align=None if c in (2, 3) else mitte)
+        r = unten + 2
+    for col, b in zip("ABCDEFGHI", (7, 18, 14, 12, 11, 11, 13, 9, 13)):
+        ws.column_dimensions[col].width = b
+    ws.freeze_panes = "A4"
+    alles_sperren(ws)
+    erlaube(ws)
+    return ws
+
+
 # --------------------------------------------------------------------------
 # Knoepfe fuer die Makros (Beurteilungs-Makros.txt) auf jedem Notenblatt.
 # openpyxl kann keine Formen schreiben, daher direkt ins gespeicherte XML.
 # --------------------------------------------------------------------------
-KNOEPFE = [  # Text, Makro, Spalte (0-basiert), Zeile von/bis (0-basiert), Farbe
-    ("Beförderungen übernehmen", "BefoerderungenUebernehmen", 20, 0, 2, "1F3864"),  # eine Spalte Abstand zum Stichtag
-    ("Liste leeren", "ListeLeeren", 20, 3, 5, "A61C1C"),
+KNOEPFE = [  # Text, Makro, Spalte (0-basiert), Zeile von/bis (0-basiert), Farbe, Breite in Spalten
+    ("Beförderungen übernehmen", "BefoerderungenUebernehmen", 20, 0, 2, "1F3864", 6),  # eine Spalte Abstand zum Stichtag
+    ("Liste leeren", "ListeLeeren", 20, 3, 5, "A61C1C", 6),
+    # Ansicht: nur ein Paeckchen zeigen
+    ("Ansicht: Benotung", "AnsichtBenotung", 27, 0, 1, "2F5597", 6),
+    ("Ansicht: Mitarbeiterdaten", "AnsichtMitarbeiterdaten", 27, 2, 3, "375623", 6),
+    ("Ansicht: alle Spalten", "AnsichtAlles", 27, 4, 5, "595959", 6),
 ]
 _NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
 
-def _knopf_xml(nr, text, makro, spalte, von, bis, farbe):
+def _knopf_xml(nr, text, makro, spalte, von, bis, farbe, breite=6):
     return (f'<xdr:twoCellAnchor editAs="absolute">'
             f'<xdr:from><xdr:col>{spalte}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{von}</xdr:row><xdr:rowOff>30000</xdr:rowOff></xdr:from>'
-            f'<xdr:to><xdr:col>{spalte + 6}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{bis}</xdr:row><xdr:rowOff>120000</xdr:rowOff></xdr:to>'
+            f'<xdr:to><xdr:col>{spalte + breite}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{bis}</xdr:row><xdr:rowOff>120000</xdr:rowOff></xdr:to>'
             f'<xdr:sp macro="[0]!{makro}" textlink="">'
             f'<xdr:nvSpPr><xdr:cNvPr id="{nr + 1}" name="Knopf {makro}"/><xdr:cNvSpPr/></xdr:nvSpPr>'
             f'<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>'
@@ -1475,7 +1589,7 @@ def main(quelle, ziel, vorlage=None):
     _, alt_beurt_z = alte_werte(von(BEURTEILER), BEURTEILER)
     alt_einst, alt_einst_z = alte_werte(von(EINSTELLUNGEN), EINSTELLUNGEN)
     alt_funkt_z = alte_zeilen(von(FUNKTIONEN), FUNKTIONEN, 2 + TAETIGKEITEN)
-    for name in (START, BEURTEILER, EINSTELLUNGEN, FUNKTIONEN):
+    for name in (START, BEURTEILER, EINSTELLUNGEN, FUNKTIONEN, SUBSIDIAER):
         if name in wb.sheetnames:
             del wb[name]
 
@@ -1509,13 +1623,19 @@ def main(quelle, ziel, vorlage=None):
     for ws in notenblaetter:
         kopf = kopfzeile(ws)
         pos = positionen(ws, kopf)
-        infos[ws.title] = dict(erste=kopf + 2, ende=kopf + 1 + PERSONEN_JE_BLATT, name=get_column_letter(pos["name"]),
-                               rbu=get_column_letter(pos["neue_rbu"]), pdf=get_column_letter(pos["pdf"]),
-                               aus=get_column_letter(pos["ausgenommen"]))
+        L = get_column_letter
+        punkte = [c for c in range(1, ws.max_column + 1) if norm(ws.cell(kopf, c).value).startswith("punkte ")]
+        stichtag = next(z.column + 1 for z in ws[2] if norm(z.value).startswith("stichtag"))
+        infos[ws.title] = dict(erste=kopf + 2, ende=kopf + 1 + PERSONEN_JE_BLATT, name=L(pos["name"]),
+                               rbu=L(pos["neue_rbu"]), pdf=L(pos["pdf"]), aus=L(pos["ausgenommen"]),
+                               lfd=L(pos["lfdnr"]), vorname=L(pos["vorname"]), ernennung=L(pos["ernennung"]),
+                               beginn=L(pos["beginn"]), punkte=(L(punkte[0]), L(punkte[3])),
+                               stichtag=f"${L(stichtag)}$2")
     baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z, infos,
                     alt_einst, alt_einst_z)
     baue_beurteiler(wb, alt_beurt_z)
     baue_funktionen(wb, alt_funkt_z)
+    baue_subsidiaer(wb, [ws.title for ws in notenblaetter], infos)
     wb.save(ziel)
     knoepfe_einfuegen(ziel, [ws.title for ws in notenblaetter])
     print("\n".join(protokoll))
