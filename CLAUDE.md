@@ -1042,3 +1042,14 @@ Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
 - Nutzer arbeitet unter Excel für Windows; die Datei nicht auf dem Mac
   speichern lassen (zerstört ActiveX/Makros).
 - Auslieferung dieses Nebenprojekts als .xlsm (nicht als vereinsapp.zip).
+- Merkliste (Nutzer meldet sich, nicht von selbst anstoßen):
+  - [ ] **Urlaubsampel** – eigener Arbeitsbereich, bewusst zurückgestellt.
+    Je Tag und Funktion genehmigte EU/DA gegen die Vorhalteplanung
+    (Stand 31.03.23: ZF 3, TF 6, Bearbeiter 4, PVB 16 gleichzeitig) mit
+    Ampel + Antragsprüfung; ersetzt Schritte A–C der Anleitung
+    "Aktualisierung" (Filter EU/DA setzen und durchzählen). Offene Fragen:
+    welche Kürzel zählen (EU, DA, AEU, ZU?), welche Funktionen, Grenze je
+    Hundertschaft oder je Zug.
+  - [x] Button "Personal abgleichen" – vom Nutzer ausdrücklich abgelehnt,
+    nicht wieder vorschlagen; Abgleich bleibt Handarbeit über
+    "Personaldatensätze".
