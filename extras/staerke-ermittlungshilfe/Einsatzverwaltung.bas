@@ -112,6 +112,7 @@ Public Sub EinsatzLaden()
         ws.Range(ws.Cells(r, 4), ws.Cells(r, 5)).ClearContents
     End If
     ws.Cells(r, 6).Value = "ja"
+    ws.Rows(r).AutoFit                          ' Datei-/Einsatzname vollstaendig anzeigen
 
     Application.Calculate
     ws.Activate
@@ -206,6 +207,7 @@ Public Sub EinsatzEntfernen()
 
     ' Platz leeren
     ws.Range(ws.Cells(r, 2), ws.Cells(r, 6)).ClearContents
+    ws.Rows(r).AutoFit
 
     Application.ScreenUpdating = True
     Application.Calculate
