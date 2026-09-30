@@ -280,6 +280,9 @@
           zug: wert('zug'),
           ernennung: datum(wert('ernennung')),
           markiert: !leer(wert('pdf')),
+          // "von der Beurteilung ausgenommen" (x) mit optionalem Grund
+          ausgenommen: genau('von der beurteilung ausgenommen') >= 0 && !leer(r[genau('von der beurteilung ausgenommen')]),
+          ausnahmeGrund: genau('grund der ausnahme') >= 0 ? text(r[genau('grund der ausnahme')]) : '',
           funktion: text(wert('funktion')),
           funktionen: funktionsSpalten.map((f) => ({
             name: text(f.name >= 0 ? r[f.name] : ''), von: f.von >= 0 ? datum(r[f.von]) : '', bis: f.bis >= 0 ? datum(r[f.bis]) : '',
@@ -400,9 +403,11 @@
     const st = mappe.start;
     const liste = [];
     const uebersprungen = [];
+    const ausgenommen = [];
     for (const bl of mappe.notenblaetter) {
       if (st.blaetter[norm(bl.name)] === false) continue;
       for (const p of bl.personen) {
+        if (p.ausgenommen) { ausgenommen.push(p); continue; } // kein PDF, auch nicht bei PDF-Markierung
         if (st.nurMarkierte && !p.markiert) continue;
         if (st.ohneNoteUeberspringen && leer(p.noten.endnote)) {
           if (!st.nurMarkierte) { uebersprungen.push(p); continue; }
@@ -493,7 +498,7 @@
         });
       }
     }
-    return { liste, uebersprungen };
+    return { liste, uebersprungen, ausgenommen };
   }
 
   // ------------------------------------------------------------------

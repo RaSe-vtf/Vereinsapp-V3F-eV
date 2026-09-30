@@ -115,7 +115,8 @@ PHMZ), dahinter Startseite, Beurteiler, Funktionen, Einstellungen; die Datei
 öffnet mit der ersten Vergleichsgruppe. EPHKZ ist vorläufig als A13Z hinterlegt
 (Bezeichnung/Besoldungsgruppe vom Nutzer noch zu bestätigen).
 
-Spaltenfolge: Personalangaben, Funktion (Hauptfunktion, Seite 1) mit von/bis und
+Spaltenfolge: Personalangaben, „von der Beurteilung ausgenommen“ (x) + „Grund der
+Ausnahme“, Funktion (Hauptfunktion, Seite 1) mit von/bis und
 Funktion 2/3 mit von/bis, Beteiligung, Schwerbehinderung, letzte RBU + Statusamt,
 RBU-Block (neue RBU vor den Teilnoten), ALB, BB, Subsidiärmerkmale, Teilzeit, PDF,
 befördert am. Bei mehreren Funktionen schreibt das Tool je Funktion „Bezeichnung
@@ -134,6 +135,12 @@ f.dd.29–40 gesperrt), im gD beurteilt; Spalte „Führungsaufgabe“ ja/nein �
 Schwerbehinderung ja: Einverständnis (f.kk.einverstaendnis) und Gesprächsdatum
 (f.gespraech_schwerbehindert) aus den Spalten dahinter. Noten werden nur für die
 Erstbeurteilenden eingetragen.
+Ausgenommene (x): kein PDF (auch nicht bei PDF-Markierung), zählen nicht bei
+„Anzahl PVB“/Notenquote (COUNTIFS …,"<>x") und nicht bei „Personen“ der
+Startseiten-Übersicht (eigene Spalte „ausgenommen“), keine Rotmarkierung (jede
+Regel mit `AND($I14<>"x",…)`), Zeile grau; Beurteilung.html listet sie mit Grund.
+Die Makros brauchen dafür keine Änderung (Beförderung übernimmt die Spalten nicht,
+„Liste leeren“ leert sie mit).
 
 Bedienhilfen im Excel: Hinweiszeile unter der Überschrift (statt Kennziffern A01…),
 Auswahllisten mit Eingabehinweis je Spalte, Datumsprüfung, Rotmarkierung per

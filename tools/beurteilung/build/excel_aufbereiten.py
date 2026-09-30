@@ -231,6 +231,8 @@ def berichtige_notenblatt(ws, protokoll):
 NOTENLISTE = '"A1,A2,B1,B2,B3,C"'
 TOOL_SPALTEN = [
     # Titel, Hinweis (Zeile unter der Kopfzeile), Breite, Zahlenformat, Auswahlliste
+    ("von der Beurteilung ausgenommen", "x = ausgenommen", 13, None, '"x"'),
+    ("Grund der Ausnahme", "z.B. Elternzeit", 22, None, None),
     ("Funktion", "Hauptfunktion (Dienstposten)", 26, None, f"={FUNKTIONEN}!$A$4:$A$103"),
     ("Funktion von", "TT.MM.JJJJ", 12, DATUM, None),
     ("Funktion bis", "TT.MM.JJJJ", 12, DATUM, None),
@@ -261,7 +263,7 @@ TOOL_SPALTEN = [
     ("PDF", "x = erstellen", 11, None, '"x"'),
     ("befördert am", "TT.MM.JJJJ", 13, DATUM, None),
 ]
-MITTIG = {"pdf", "schwerbehinderung", "alb (x)", "bb 1 (x)", "bb 2 (x)", "bb 3 (x)",
+MITTIG = {"pdf", "von der beurteilung ausgenommen", "schwerbehinderung", "alb (x)", "bb 1 (x)", "bb 2 (x)", "bb 3 (x)",
           "alb 1.1", "alb 2", "alb 4.2", "alb 4.3", "alb gesamtnote"}
 
 
@@ -319,6 +321,8 @@ ZIELREIHENFOLGE = [
     ("geschlecht", lambda k: k == "geschlecht"),
     ("ernennung", lambda k: k.startswith("datum der ernennung")),
     ("zug", lambda k: k == "zug"),
+    ("ausgenommen", lambda k: k.startswith("von der beurteilung ausgenommen")),
+    ("ausg_grund", lambda k: k.startswith("grund der ausnahme")),
     ("funktion", lambda k: k == "funktion"),
     ("f1_von", lambda k: k == "funktion von"),
     ("f1_bis", lambda k: k == "funktion bis"),
@@ -470,7 +474,9 @@ def sortiere_tabelle(ws, kopf, protokoll):
         inhalt = {}
         for c in range(1, breite + 1):
             z = ws.cell(r, c)
-            inhalt[c] = (z.value, z._style, z.comment, z.hyperlink)
+            # Stil kopieren: das Schreiben eines Datums setzt sonst im selben
+            # Stilobjekt das Zahlenformat einer anderen Spalte um
+            inhalt[c] = (z.value, copy(z._style), z.comment, z.hyperlink)
         for c, (wert, stil, kommentar, link) in inhalt.items():
             z = ws.cell(r, zuordnung[c])
             z.value, z._style = wert, copy(stil)
@@ -533,7 +539,7 @@ def sortiere_tabelle(ws, kopf, protokoll):
                      + ", ".join(str(ws.cell(kopf, c).value).replace("\n", " ").strip() for c in range(1, tabellenbreite + 1)))
 
 
-LINKSBUENDIG = ("name", "vorname", "funktion", "koop", "bemerkungen")
+LINKSBUENDIG = ("name", "vorname", "ausg_grund", "funktion", "f2", "f3", "koop", "bemerkungen")
 ZEILE_PT = 13.0  # Hoehe je Textzeile (Arial 10)
 
 
@@ -545,6 +551,10 @@ def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
                if s in pos}
     ende = ende or letzte_tabellenzeile(ws, kopf, {"name": pos["name"]})
     links_spalten = {pos[s] for s in LINKSBUENDIG if s in pos}
+    # Zahlenformat je Spalte festlegen (Datum bzw. Standard fuer Auswahlspalten)
+    formate = {pos[s]: DATUM for s in DATUM_SPALTEN if s in pos}
+    formate.update({pos[s]: "General" for s in NOTEN_SPALTEN + ("pdf", "ausgenommen", "alb_x", "bb1_x", "bb2_x", "bb3_x")
+                    if s in pos})
     for r in range(kopf, ende + 1):
         for c in range(1, breite + 1):
             z = ws.cell(r, c)
@@ -554,6 +564,8 @@ def gestalte_tabelle(ws, kopf, pos, breite, ende=None):
             unten = Side(style="medium") if r in (kopf, ende) else DUENN_SCHWARZ
             z.border = Border(left=links, right=rechts, top=oben, bottom=unten)
             if r >= kopf + 2:
+                if c in formate:
+                    z.number_format = formate[c]
                 al = copy(z.alignment)
                 horizontal = "left" if c in links_spalten else al.horizontal
                 z.alignment = Alignment(horizontal=horizontal, vertical="center", wrap_text=True,
@@ -680,15 +692,16 @@ def vereinheitliche_tabelle(ws, kopf, pos, breite, protokoll):
                 z.value = neu
 
     # Statistik oben auf genau die Tabellenzeilen
-    NOTE = L(pos["neue_rbu"])
+    # (von der Beurteilung Ausgenommene zaehlen nicht mit – auch nicht fuer die Notenquote)
+    NOTE, AUS = L(pos["neue_rbu"]), L(pos["ausgenommen"])
     for r in (2, 3):
         for c in range(1, 11):
             z = ws.cell(r, c)
-            v = str(z.value or "")
-            if v.upper().startswith("=COUNTA("):
-                z.value = f"=COUNTA({N}{erste}:{N}{ende})"
-            elif v.upper().startswith("=COUNTIF("):
-                z.value = f"=COUNTIF(${NOTE}${erste}:${NOTE}${ende},{L(c)}$1)"
+            v = str(z.value or "").upper()
+            if v.startswith("=COUNTA(") or v.startswith(f"=COUNTIFS({N}{erste}:"):
+                z.value = f'=COUNTIFS({N}{erste}:{N}{ende},"<>",{AUS}{erste}:{AUS}{ende},"<>x")'
+            elif v.startswith("=COUNTIF(") or v.startswith(f"=COUNTIFS(${NOTE}$"):
+                z.value = f'=COUNTIFS(${NOTE}${erste}:${NOTE}${ende},{L(c)}$1,${AUS}${erste}:${AUS}${ende},"<>x")'
 
     # Amtsbezeichnung ist jetzt berechnet: keine Auswahlliste mehr, Geschlecht m/w
     amt = pos["amtsbez"]
@@ -900,6 +913,7 @@ def ergaenze_reiter(wb, notenblaetter, kette, protokoll):
 START_ZEITRAUM = (f"'{START}'!$B$8", f"'{START}'!$B$9")   # Beurteilungszeitraum von/bis
 START_ART = f"'{START}'!$B$5"
 ROT = dict(fill=PatternFill(bgColor="FFC7CE"), font=Font(color="9C0006"))
+GRAU = dict(fill=PatternFill(bgColor="D9D9D9"), font=Font(color="7F7F7F"))
 NOTEN_SPALTEN = ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "alb_n11", "alb_n2", "alb_n42", "alb_n43")
 DATUM_SPALTEN = ("geb", "ernennung", "f1_von", "f1_bis", "f2_von", "f2_bis", "f3_von", "f3_bis", "gespraech", "sbh_gespr",
                  "alb_von", "alb_bis", "bb1_von", "bb1_bis", "bb2_von", "bb2_bis", "bb3_von", "bb3_bis",
@@ -914,6 +928,8 @@ HILFE = {
     "geschlecht": ("m / w", "Geschlecht", "m oder w – bei w wird die weibliche Amtsbezeichnung verwendet."),
     "ernennung": ("TT.MM.JJJJ", "Datum der Ernennung", "Ernennung im jetzigen Statusamt (TT.MM.JJJJ)."),
     "zug": ("z.B. 1", "Zug", "Zug der Person – daraus werden Organisationseinheit und ggf. eigene Beurteilende."),
+    "ausgenommen": ("x = ausgenommen", "Ausgenommen", "x = diese Person wird in dieser Runde nicht beurteilt: kein PDF, zählt nicht für die Notenquote, keine Rotmarkierung."),
+    "ausg_grund": ("z.B. Elternzeit", "Grund der Ausnahme", "Freier Text, z.B. Elternzeit, Freistellung, Abordnung – erscheint im Ergebnis von Beurteilung.html."),
     "funktion": ("Hauptfunktion (Dienstposten)", "Hauptfunktion", "Dienstposten aus der Liste (Blatt Funktionen). Steht auf Seite 1 des Vordrucks."),
     "f1_von": ("TT.MM.JJJJ", "Hauptfunktion von", "Nur nötig, wenn weitere Funktionen eingetragen sind."),
     "f1_bis": ("TT.MM.JJJJ", "Hauptfunktion bis", "Nur nötig, wenn weitere Funktionen eingetragen sind."),
@@ -1005,7 +1021,7 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
         elif k in DATUM_SPALTEN:
             dv = DataValidation(type="date", operator="between", formula1="1", formula2="73050",
                                 error="Bitte ein Datum im Format TT.MM.JJJJ eintragen.")
-        elif k in ("pdf", "alb_x", "bb1_x", "bb2_x", "bb3_x"):
+        elif k in ("pdf", "ausgenommen", "alb_x", "bb1_x", "bb2_x", "bb3_x"):
             dv = DataValidation(type="list", formula1=listen["x"], error="Bitte x eintragen oder leer lassen.")
         elif k in ("funktion", "f2", "f3"):
             dv = DataValidation(type="list", formula1=listen["funktion"],
@@ -1031,9 +1047,11 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
     # Rotmarkierung (Zeilen ohne Namen bleiben unauffaellig)
     N = f"${L(pos['name'])}"
     zv, zb = START_ZEITRAUM
+    AUS = f"${L(pos['ausgenommen'])}{erste}"
 
-    def regel(von, bis, formel):
-        ws.conditional_formatting.add(f"{L(von)}{erste}:{L(bis)}{ende}", FormulaRule(formula=[formel], **ROT))
+    def regel(von, bis, formel):  # nicht bei von der Beurteilung Ausgenommenen
+        ws.conditional_formatting.add(f"{L(von)}{erste}:{L(bis)}{ende}",
+                                      FormulaRule(formula=[f'AND({AUS}<>"x",{formel})'], **ROT))
 
     if "neue_rbu" in pos:
         q = f"{L(pos['neue_rbu'])}{erste}"
@@ -1063,6 +1081,10 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
         if k in pos and pos[k] <= breite:
             z = f"{L(pos[k])}{erste}"
             regel(pos[k], pos[k], f'AND({z}<>"",NOT(ISNUMBER({z})))')
+
+    # Ausgenommene Personen: ganze Zeile grau
+    ws.conditional_formatting.add(f"A{erste}:{L(breite)}{ende}",
+                                  FormulaRule(formula=[f'AND({N}{erste}<>"",{AUS}="x")'], **GRAU))
 
     # Kopf und Namen beim Blaettern stehen lassen
     ws.freeze_panes = f"{L(pos['vorname'] + 1)}{erste}"
@@ -1290,7 +1312,7 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
     r = 15
     zelle(ws, f"A{r}", "Blatt", FETT, KOPF, rahmen=True)
     zelle(ws, f"B{r}", "einbeziehen", FETT, KOPF, rahmen=True)
-    for col, t in zip("CDEF", ("Personen", "mit neuer RBU", "ohne neue RBU", "PDF markiert")):
+    for col, t in zip("CDEFG", ("Personen", "mit neuer RBU", "ohne neue RBU", "PDF markiert", "ausgenommen")):
         zelle(ws, f"{col}{r}", t, FETT, KOPF, rahmen=True, align=Alignment(horizontal="center"))
     alt_bl = {norm(z[0]): z[1] for z in tabelle(alt_zeilen, "blatt", "einbeziehen")}
     for name in notenblaetter:
@@ -1304,14 +1326,17 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
             b = f"'{name}'!${i['name']}${i['erste']}:${i['name']}${i['ende']}"
             q = f"'{name}'!${i['rbu']}${i['erste']}:${i['rbu']}${i['ende']}"
             p = f"'{name}'!${i['pdf']}${i['erste']}:${i['pdf']}${i['ende']}"
+            x = f"'{name}'!${i['aus']}${i['erste']}:${i['aus']}${i['ende']}"
             mitte = Alignment(horizontal="center")
-            zelle(ws, f"C{r}", f"=COUNTA({b})", rahmen=True, align=mitte)
-            zelle(ws, f"D{r}", f'=COUNTIFS({b},"<>",{q},"<>")', rahmen=True, align=mitte)
+            # Personen = zu beurteilen (ohne Ausgenommene)
+            zelle(ws, f"C{r}", f'=COUNTIFS({b},"<>",{x},"<>x")', rahmen=True, align=mitte)
+            zelle(ws, f"D{r}", f'=COUNTIFS({b},"<>",{q},"<>",{x},"<>x")', rahmen=True, align=mitte)
             zelle(ws, f"E{r}", f"=C{r}-D{r}", rahmen=True, align=mitte)
-            zelle(ws, f"F{r}", f'=COUNTIFS({b},"<>",{p},"<>")', rahmen=True, align=mitte)
+            zelle(ws, f"F{r}", f'=COUNTIFS({b},"<>",{p},"<>",{x},"<>x")', rahmen=True, align=mitte)
+            zelle(ws, f"G{r}", f'=COUNTIFS({b},"<>",{x},"x")', rahmen=True, align=mitte)
         zelle(ws, f"B{r}", alt_bl.get(norm(name), "ja"), fill=EINGABE, rahmen=True)
         liste(ws, f"B{r}", ["ja", "nein"])
-    zelle(ws, f"A{r + 1}", "Klick auf den Blattnamen springt in den Reiter. „ohne neue RBU“ > 0: dort fehlt noch eine Gesamtnote.",
+    zelle(ws, f"A{r + 1}", "Klick auf den Blattnamen springt in den Reiter. „ohne neue RBU“ > 0: dort fehlt noch eine Gesamtnote. Ausgenommene zählen nicht bei den Personen.",
           HINWEIS)
     r += 1
 
@@ -1356,7 +1381,7 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 34
     ws.column_dimensions["C"].width = 34
-    for col in "DEF":
+    for col in "DEFG":
         ws.column_dimensions[col].width = 15
     # "ohne neue RBU" rot, solange noch Gesamtnoten fehlen
     ws.conditional_formatting.add(f"E16:E{15 + len(notenblaetter)}", FormulaRule(formula=["E16>0"], **ROT))
@@ -1489,7 +1514,8 @@ def main(quelle, ziel, vorlage=None):
         kopf = kopfzeile(ws)
         pos = positionen(ws, kopf)
         infos[ws.title] = dict(erste=kopf + 2, ende=kopf + 1 + PERSONEN_JE_BLATT, name=get_column_letter(pos["name"]),
-                               rbu=get_column_letter(pos["neue_rbu"]), pdf=get_column_letter(pos["pdf"]))
+                               rbu=get_column_letter(pos["neue_rbu"]), pdf=get_column_letter(pos["pdf"]),
+                               aus=get_column_letter(pos["ausgenommen"]))
     baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z, infos)
     baue_beurteiler(wb, alt_beurt_z)
     baue_funktionen(wb, alt_funkt_z)

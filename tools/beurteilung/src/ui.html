@@ -255,9 +255,9 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     for (const d of dateien) {
       try {
         const mappe = E.leseArbeitsmappe(await lies(d, ['.xlsx', '.xlsm']), d.name);
-        const { liste, uebersprungen } = E.auftraege(mappe);
+        const { liste, uebersprungen, ausgenommen } = E.auftraege(mappe);
         alle.push(...liste);
-        inhalt.push(uebersicht(mappe, liste, uebersprungen));
+        inhalt.push(uebersicht(mappe, liste, uebersprungen, ausgenommen));
       } catch (e) {
         inhalt.push(meldung('fehler', e.message));
       }
@@ -272,7 +272,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
     ziel.append(knopf);
   }
 
-  function uebersicht(mappe, liste, uebersprungen) {
+  function uebersicht(mappe, liste, uebersprungen, ausgenommen) {
     const st = mappe.start;
     const box = el('div');
     box.append(el('div', { class: 'eckdaten' },
@@ -287,6 +287,13 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
       box.append(el('details', null,
         el('summary', null, uebersprungen.length + ' Mitarbeiter ohne neue Note übersprungen'),
         el('div', null, uebersprungen.map((p) => p.name + ', ' + p.vorname + ' (' + p.blatt + ')').join(' · '))));
+    }
+    if (ausgenommen && ausgenommen.length) {
+      box.append(el('details', null,
+        el('summary', null, ausgenommen.length === 1 ? '1 Person von der Beurteilung ausgenommen'
+          : ausgenommen.length + ' Personen von der Beurteilung ausgenommen'),
+        el('div', null, ausgenommen.map((p) => p.name + ', ' + p.vorname + ' (' + p.blatt + ')' +
+          (p.ausnahmeGrund ? ' – ' + p.ausnahmeGrund : '')).join(' · '))));
     }
     if (liste.length) {
       const zeilen = liste.map((a) => el('tr', null,
