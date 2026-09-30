@@ -122,8 +122,8 @@
     <h2><span class="nr">2</span> Beurteilung fertigstellen</h2>
     <p>Die von den Beurteilenden ausgefüllte PDF hier hineinziehen. Ist die Begründung der Gesamtnote länger als das
        Feld, wird sie auf Fortsetzungsseiten direkt hinter Seite 5 weitergeführt. Zu lange Texte in anderen Feldern
-       werden gemeldet. Vorher wird geprüft, ob Teilnoten und Befähigung zur Endnote passen – sonst gibt es einen
-       deutlichen Hinweis und keine Endversion.</p>
+       werden gemeldet. Vorher wird geprüft, ob Beurteilungszeitraum, Teilnoten und Befähigung zur Endnote passen – sonst
+       gibt es einen deutlichen Hinweis und keine Endversion. Erst die fertiggestellte Datei ist ohne Wasserzeichen „ENTWURF“.</p>
     <label class="ablage" id="ablage-pdf">
       <input type="file" id="datei-pdf" accept=".pdf" multiple>
       <strong>Ausgefüllte Beurteilung(en) (.pdf) hier ablegen</strong><br>oder klicken zum Auswählen
@@ -355,18 +355,23 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
         const name = E.dateinamensteil(d.name.replace(/\.pdf$/i, '')) + '_fertig.pdf';
         if (r.blockiert) {
           // Plausibilitaet verletzt: keine Endversion, nur bewusst per Knopf
-          const knopf = el('button', { type: 'button', class: 'trotzdem' }, 'Trotzdem fertigstellen');
+          const knopf = el('button', { type: 'button', class: 'trotzdem' }, 'Als Ausnahme trotzdem erstellen …');
           const box = el('div', { class: 'plausi' },
             el('strong', null, '✖ „' + d.name + '“: So funktioniert das nicht – die Beurteilung ist nicht schlüssig.'),
             el('ul', null, r.probleme.map((t) => el('li', null, t))),
-            el('div', null, 'Bitte die Noten bzw. Kreuze im PDF prüfen, speichern und erneut hineinziehen. ' +
-              'Es wurde keine Endversion erstellt.'),
+            el('div', null, 'Bitte die Angaben im PDF prüfen, speichern und erneut hineinziehen. ' +
+              'Es wurde keine Endversion erstellt – die Datei trägt weiter das Wasserzeichen „ENTWURF“.'),
             knopf);
           knopf.addEventListener('click', async () => {
+            const frage = '„' + d.name + '“ verstößt gegen die Plausibilitätsprüfung:\n\n' +
+              r.probleme.map((t) => '• ' + t).join('\n\n') +
+              '\n\nSoll die Beurteilung trotzdem als Ausnahme fertiggestellt werden?';
+            if (!window.confirm(frage)) return;
             knopf.disabled = true;
             try {
               const f = await E.fertigstellen(daten, d.name, true);
-              box.append(meldung('warn', 'Endversion trotz Plausibilitätsverstoß erstellt: ' + name), herunterladen(f.bytes, name, 'application/pdf'));
+              box.append(meldung('warn', 'Als Ausnahme fertiggestellt (Verstöße bewusst übergangen): ' + name),
+                herunterladen(f.bytes, name, 'application/pdf'));
             } catch (e) {
               box.append(meldung('fehler', e.message));
             }

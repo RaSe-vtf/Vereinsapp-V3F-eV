@@ -22,6 +22,8 @@
   const INNENABSTAND = 2;
   const BEGRUENDUNG = 'f.begruend.1';
   const FERTIG_MARKE = 'BeurteilungFertiggestellt';
+  const ENTWURF_MARKE = 'BeurteilungEntwurf'; // Info-Eintrag + Markierung im Seiteninhalt
+  const ENTWURF_FUSS = ' – ENTWURF';
 
   // Notenfelder im Vordruck: [Erstbeurteilende/r, Zweitbeurteilende/r]
   const NOTENFELDER = {
@@ -162,9 +164,9 @@
     }
     if (!start.von || !start.bis) warnungen.push('Beurteilungszeitraum (von/bis) ist auf der Startseite nicht ausgefüllt.');
     const warnungenRot = [];
-    if (art.kurz === 'RBU' && start.von && start.bis && !zweiJahre(start.von, start.bis)) {
-      warnungenRot.push('Achtung: Der Beurteilungszeitraum einer Regelbeurteilung muss genau 2 Jahre umfassen ' +
-        '(z.B. 01.10.2025 – 30.09.2027) – eingetragen ist ' + start.von + ' – ' + start.bis + '. Bitte auf der Startseite prüfen.');
+    if (art.kurz === 'RBU' && start.von && start.bis && !rbuZeitraumOk(start.von, start.bis)) {
+      warnungenRot.push('Achtung: ' + RBU_ZEITRAUM_TEXT + ' – eingetragen ist ' + start.von + ' – ' + start.bis +
+        '. Bitte auf der Startseite prüfen.');
     }
     if (art.kurz === 'RBU' && !start.stichtag) warnungen.push('Stichtag ist nicht ausgefüllt.');
 
@@ -338,13 +340,19 @@
     return [mappe.einst.dienststelle, oe].filter((t) => !leer(t)).join(', ');
   }
 
-  /** bis = von + 2 Jahre - 1 Tag (wie EDATE(von;24)-1) */
-  function zweiJahre(von, bis) {
+  /** Tag vor "Datum + n Monate" (wie EDATE(datum;n)-1 in Excel) */
+  function monateSpaeter(a, n) {
+    const y = a.getUTCFullYear(), m = a.getUTCMonth() + n;
+    const letzterTag = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m, Math.min(a.getUTCDate(), letzterTag)) - 86400000);
+  }
+  const RBU_ZEITRAUM_TEXT = 'Der Beurteilungszeitraum einer Regelbeurteilung muss mindestens 6 Monate und höchstens ' +
+    '2 Jahre umfassen (z.B. 01.10.2025 – 31.03.2026 bis 01.10.2025 – 30.09.2027)';
+  /** RBU: mindestens 6 Monate, hoechstens 2 Jahre */
+  function rbuZeitraumOk(von, bis) {
     const a = alsTag(von), b = alsTag(bis);
     if (!a || !b) return true;
-    const y = a.getUTCFullYear() + 2, m = a.getUTCMonth();
-    const letzterTag = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-    return b.getTime() === Date.UTC(y, m, Math.min(a.getUTCDate(), letzterTag)) - 86400000;
+    return b >= monateSpaeter(a, 6) && b <= monateSpaeter(a, 24);
   }
   function alsTag(t) {
     const m = String(t).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
@@ -677,7 +685,7 @@
     setzeText(form, 'f.dienststelle.1', t(a.dienststelle));
     setzeText(form, 'f.erstbeurt.1', t(a.erst));
     setzeText(form, 'f.zweitbeurt.1', t(a.zweit));
-    setzeText(form, 'h.fusszeile', t(fusszeile(a)));
+    setzeText(form, 'h.fusszeile', t(fusszeile(a) + ENTWURF_FUSS));
 
     if (a.funktion) {
       setzeText(form, 'f.funktion.1', t(a.funktion.bezeichnung));
@@ -743,6 +751,7 @@
     for (const f of GEAENDERT.get(form) || []) f.updateAppearances(courier);
     stelleDAwieder(daSicherung);
     pdf.setTitle('Dienstliche Beurteilung ' + p.name + ', ' + p.vorname);
+    await wasserzeichen(pdf);
     return pdf.save({ updateFieldAppearances: false });
   }
 
@@ -786,6 +795,68 @@
       liste.push(ops.endText(), ops.endMarkedContent(), ops.popGraphicsState());
       return liste;
     });
+  }
+
+  // ------------------------------------------------------------------
+  // Wasserzeichen "ENTWURF": fest im Seiteninhalt (kein Kommentar/Feld),
+  // entfernt erst "Fertigstellen"
+  // ------------------------------------------------------------------
+  async function wasserzeichen(pdf) {
+    const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const refs = [];
+    for (const seite of pdf.getPages()) {
+      const { width, height } = seite.getSize();
+      seite.pushOperators(PDFLib.beginMarkedContent(ENTWURF_MARKE));
+      const gross = 120;
+      const w = font.widthOfTextAtSize('ENTWURF', gross);
+      const winkel = 55 * Math.PI / 180;
+      const x = width / 2 - (w / 2) * Math.cos(winkel) + (gross / 3) * Math.sin(winkel);
+      const y = height / 2 - (w / 2) * Math.sin(winkel) - (gross / 3) * Math.cos(winkel);
+      seite.drawText('ENTWURF', { x, y, size: gross, font, color: rgb(0.55, 0.55, 0.55), opacity: 0.22, rotate: PDFLib.degrees(55) });
+      const klein = 'noch nicht fertiggestellt – bitte in Beurteilung.html „Beurteilung fertigstellen“';
+      seite.drawText(klein, { x: 57, y: height - 30, size: 8, font, color: rgb(0.6, 0.1, 0.1), opacity: 0.7 });
+      seite.pushOperators(PDFLib.endMarkedContent());
+      if (seite.contentStreamRef) refs.push(seite.contentStreamRef);
+    }
+    pdf.getInfoDict().set(PDFName.of(ENTWURF_MARKE), pdf.context.obj(refs));
+  }
+
+  /** Entfernt das Wasserzeichen; true, wenn die Datei ein Entwurf des Tools war. */
+  function entferneWasserzeichen(pdf) {
+    const info = pdf.getInfoDict();
+    const eintrag = info.lookup(PDFName.of(ENTWURF_MARKE));
+    const bekannt = new Set();
+    if (eintrag instanceof PDFLib.PDFArray) for (let i = 0; i < eintrag.size(); i++) bekannt.add(eintrag.get(i).toString());
+    const marke = new RegExp('/' + ENTWURF_MARKE + '\\s+BMC[\\s\\S]*?EMC', 'g');
+    let gefunden = false;
+    for (const seite of pdf.getPages()) {
+      let inhalt = seite.node.get(PDFName.of('Contents'));
+      if (!inhalt) continue;
+      if (!(pdf.context.lookup(inhalt) instanceof PDFLib.PDFArray)) {
+        inhalt = pdf.context.obj([inhalt]);
+        seite.node.set(PDFName.of('Contents'), inhalt);
+      } else {
+        inhalt = pdf.context.lookup(inhalt);
+      }
+      for (let i = inhalt.size() - 1; i >= 0; i--) {
+        const ref = inhalt.get(i);
+        if (bekannt.has(ref.toString())) { inhalt.remove(i); gefunden = true; continue; }
+        const strom = pdf.context.lookup(ref);
+        if (!(strom instanceof PDFLib.PDFRawStream)) continue;
+        let txtStrom;
+        try { txtStrom = Array.from(PDFLib.decodePDFRawStream(strom).decode(), (c) => String.fromCharCode(c)).join(''); } catch (e) { continue; }
+        if (txtStrom.indexOf('/' + ENTWURF_MARKE) < 0) continue;
+        gefunden = true;
+        const rest = txtStrom.replace(marke, '');
+        if (/^[\s qQ]*$/.test(rest)) inhalt.remove(i);
+        else {
+          const bytes = Uint8Array.from(rest, (c) => c.charCodeAt(0) & 0xff);
+          inhalt.set(i, pdf.context.register(pdf.context.flateStream(bytes)));
+        }
+      }
+    }
+    info.delete(PDFName.of(ENTWURF_MARKE));
+    return gefunden || eintrag !== undefined;
   }
 
   // ------------------------------------------------------------------
@@ -833,6 +904,12 @@
   /** Liefert die Verstoesse (leer = plausibel). Ohne Endnote (Beurteilungsbeitrag) keine Pruefung. */
   function plausibilitaet(form) {
     const probleme = [];
+    const txt = (n) => { try { return text(form.getTextField(n).getText()); } catch (e) { return ''; } };
+    let art = '';
+    try { const v = form.getField('f.kk.0').acroField.dict.get(PDFName.of('V')); art = v ? v.toString() : ''; } catch (e) { /* - */ }
+    if (art === '/Regelbeurteilung' && txt('f.von.1') && txt('f.bis.1') && !rbuZeitraumOk(txt('f.von.1'), txt('f.bis.1'))) {
+      probleme.push(RBU_ZEITRAUM_TEXT + ' – im PDF steht ' + txt('f.von.1') + ' – ' + txt('f.bis.1') + '.');
+    }
     const endnote = auswahl(form, NOTENFELDER.endnote[0]);
     if (!endnote) return probleme;
     const leistung = zaehle(LEISTUNGSFELDER.map((n) => auswahl(form, n)));
@@ -850,6 +927,12 @@
     const bef = zaehle(BEFAEHIGUNGSFELDER.map((n) => ankreuzung(form, n)));
     if (!Object.keys(bef).length) {
       probleme.push('Befähigungsbeurteilung (Seite 4): keine Befähigungsmerkmale angekreuzt.');
+    } else if (endnote === 'C') {
+      // C: Mehrheit bei C oder D, und mehr als drei D
+      if (!(ueberwiegt(bef, 'C') || ueberwiegt(bef, 'D')) || (bef.D || 0) < 4) {
+        probleme.push('Befähigungsbeurteilung (Seite 4): Bei der Endnote C müssen die meisten Kreuze bei C oder D stehen und ' +
+          'mindestens 4 bei D – angekreuzt sind ' + aufzaehlung(bef, ['A', 'B', 'C', 'D']) + '.');
+      }
     } else if (!ueberwiegt(bef, soll)) {
       probleme.push('Befähigungsbeurteilung (Seite 4): Bei der Endnote ' + endnote + ' müssen die meisten Kreuze bei ' + soll +
         ' stehen – angekreuzt sind ' + aufzaehlung(bef, ['A', 'B', 'C', 'D']) + '.');
@@ -887,6 +970,21 @@
     const helv = await pdf.embedFont(StandardFonts.Helvetica);
     const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
     const hinweise = [];
+
+    // Entwurf -> Endversion: Wasserzeichen und "– ENTWURF" in der Fusszeile entfernen
+    if (!entferneWasserzeichen(pdf)) {
+      hinweise.push('Hinweis: Diese PDF trägt kein Entwurfskennzeichen – stammt sie aus Beurteilung.html?');
+    }
+    try {
+      const fz = form.getTextField('h.fusszeile');
+      const alt = fz.getText() || '';
+      if (alt.endsWith(ENTWURF_FUSS)) {
+        const da = sichereDA(form);
+        fz.setText(alt.slice(0, -ENTWURF_FUSS.length));
+        fz.updateAppearances(courier);
+        stelleDAwieder(da);
+      }
+    } catch (e) { /* Vordruck ohne Fusszeile */ }
 
     // Andere Felder pruefen (werden nicht veraendert, nur gemeldet)
     for (const f of form.getFields()) {

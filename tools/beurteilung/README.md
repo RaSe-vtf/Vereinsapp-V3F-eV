@@ -116,7 +116,13 @@ befördert am. Bei mehreren Funktionen schreibt das Tool je Funktion „Bezeichn
 (Wertigkeit) vom … bis …“ mit ihren Tätigkeiten in „prägende Tätigkeiten“ (Leerzeile
 dazwischen), Nr. 4.1.2 bleibt frei. ALB zählen nur mit mindestens 6, BB mit mindestens 3
 Monaten im Beurteilungszeitraum (wie EDATE(Beginn;n)-1). Bei einer RBU muss der
-Beurteilungszeitraum genau 2 Jahre umfassen (rote Warnung, kein Abbruch).
+Beurteilungszeitraum mindestens 6 Monate und höchstens 2 Jahre umfassen (rote Warnung beim
+Erzeugen, Plausibilitätsverstoß beim Fertigstellen).
+Entwürfe tragen ein Wasserzeichen „ENTWURF“ als eigener, mit `/BeurteilungEntwurf BMC … EMC`
+markierter Seiteninhalt (Referenzen zusätzlich im Info-Eintrag `BeurteilungEntwurf`) und
+„– ENTWURF“ in der Fußzeile; „Fertigstellen“ entfernt beides (auch nach Neuspeichern durch
+andere Programme über die Markierung). Befähigung bei Endnote C: Mehrheit bei C oder D und
+mindestens 4 D. Ausnahmen nur über Rückfrage mit Liste der Verstöße.
 Punkt 5 „Führung“ (5.1–5.6) wird im mD gestrichen (striche.15–20 mit Strichlinie,
 f.dd.29–40 gesperrt), im gD beurteilt; Spalte „Führungsaufgabe“ ja/nein überstimmt.
 Schwerbehinderung ja: Einverständnis (f.kk.einverstaendnis) und Gesprächsdatum

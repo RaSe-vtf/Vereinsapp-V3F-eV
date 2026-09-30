@@ -1268,9 +1268,10 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
         zelle(ws, f"A{r}", label)
         zelle(ws, f"B{r}", v, fill=EINGABE, fmt=fmt, rahmen=True, align=Alignment(horizontal="left"))
     liste(ws, "B5", ["Regelbeurteilung", "Anlassbeurteilung", "Beurteilungsbeitrag"])
-    zelle(ws, "C8", "Regelbeurteilung: genau 2 Jahre, z.B. 01.10.2025 – 30.09.2027", HINWEIS)
+    zelle(ws, "C8", "Regelbeurteilung: mindestens 6 Monate, höchstens 2 Jahre (z.B. 01.10.2025 – 30.09.2027)", HINWEIS)
     ws.conditional_formatting.add("B8:B9", FormulaRule(
-        formula=['AND($B$5="Regelbeurteilung",$B$8<>"",$B$9<>"",$B$9<>EDATE($B$8,24)-1)'], **ROT))
+        formula=['AND($B$5="Regelbeurteilung",$B$8<>"",$B$9<>"",'
+                 'OR($B$9<EDATE($B$8,6)-1,$B$9>EDATE($B$8,24)-1))'], **ROT))
 
     zelle(ws, "A11", "2  Mitarbeiter", ABSCHNITT)
     optionen = [
