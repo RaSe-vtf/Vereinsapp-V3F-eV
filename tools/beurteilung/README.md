@@ -128,7 +128,9 @@ Beurteilungszeitraum mindestens 6 Monate und höchstens 2 Jahre umfassen (rote W
 Erzeugen, Plausibilitätsverstoß beim Fertigstellen).
 Entwürfe tragen ein Wasserzeichen „ENTWURF“ als eigener, mit `/BeurteilungEntwurf BMC … EMC`
 markierter Seiteninhalt (Referenzen zusätzlich im Info-Eintrag `BeurteilungEntwurf`) und
-„– ENTWURF“ in der Fußzeile; „Fertigstellen“ entfernt beides (auch nach Neuspeichern durch
+„– ENTWURF“ in der Fußzeile, auf Seite 1 zusätzlich die Kurzanleitung „So geht es weiter“
+(ausfüllen, Strg+S, in Beurteilung.html fertigstellen – dieselbe steht im Tool nach dem
+Erzeugen); „Fertigstellen“ entfernt alles (auch nach Neuspeichern durch
 andere Programme über die Markierung). Befähigung bei Endnote C: Mehrheit bei C oder D und
 mindestens 4 D. Ausnahmen nur über Rückfrage mit Liste der Verstöße.
 Punkt 5 „Führung“ (5.1–5.6) wird im mD gestrichen (striche.15–20 mit Strichlinie,

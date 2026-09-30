@@ -821,8 +821,9 @@
   // ------------------------------------------------------------------
   async function wasserzeichen(pdf) {
     const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const normal = await pdf.embedFont(StandardFonts.Helvetica);
     const refs = [];
-    for (const seite of pdf.getPages()) {
+    for (const [nr, seite] of pdf.getPages().entries()) {
       const { width, height } = seite.getSize();
       seite.pushOperators(PDFLib.beginMarkedContent(ENTWURF_MARKE));
       const gross = 120;
@@ -831,8 +832,18 @@
       const x = width / 2 - (w / 2) * Math.cos(winkel) + (gross / 3) * Math.sin(winkel);
       const y = height / 2 - (w / 2) * Math.sin(winkel) - (gross / 3) * Math.cos(winkel);
       seite.drawText('ENTWURF', { x, y, size: gross, font, color: rgb(0.55, 0.55, 0.55), opacity: 0.22, rotate: PDFLib.degrees(55) });
-      const klein = 'noch nicht fertiggestellt – bitte in Beurteilung.html „Beurteilung fertigstellen“';
-      seite.drawText(klein, { x: 57, y: height - 30, size: 8, font, color: rgb(0.6, 0.1, 0.1), opacity: 0.7 });
+      const rot = rgb(0.6, 0.1, 0.1);
+      if (nr === 0) { // Seite 1: kurze Anleitung, wie es weitergeht
+        seite.drawText('ENTWURF – noch nicht fertiggestellt. So geht es weiter:',
+          { x: 57, y: height - 22, size: 8, font, color: rot, opacity: 0.8 });
+        seite.drawText('1. In Adobe Acrobat Reader oder PDF-XChange ausfüllen (nicht im Browser)   2. Strg+S speichern, dann schließen',
+          { x: 57, y: height - 31, size: 7, font: normal, color: rot, opacity: 0.8 });
+        seite.drawText('3. Gespeicherte Datei in Beurteilung.html unter „2 Beurteilung fertigstellen“ hineinziehen – erst dann ist sie fertig',
+          { x: 57, y: height - 39, size: 7, font: normal, color: rot, opacity: 0.8 });
+      } else {
+        const klein = 'noch nicht fertiggestellt – bitte in Beurteilung.html „Beurteilung fertigstellen“';
+        seite.drawText(klein, { x: 57, y: height - 30, size: 8, font, color: rot, opacity: 0.7 });
+      }
       seite.pushOperators(PDFLib.endMarkedContent());
       if (seite.contentStreamRef) refs.push(seite.contentStreamRef);
     }

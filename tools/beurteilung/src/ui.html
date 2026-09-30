@@ -54,6 +54,9 @@
   button:disabled { opacity: .5; cursor: default; }
   .plausi { border: 2px solid var(--fehler); background: var(--fehler-bg); color: var(--fehler); border-radius: 8px;
             padding: 12px 14px; margin: 10px 0; font-size: 14px; }
+  .weiter { border: 1px solid var(--akzent); border-radius: 8px; padding: 10px 14px; margin: 10px 0; font-size: 14px; }
+  .weiter ol { margin: 6px 0 4px 20px; padding: 0; }
+  .weiter li { margin: 3px 0; }
   .plausi ul { margin: 6px 0 8px 18px; padding: 0; }
   .plausi button.trotzdem { background: var(--karte); color: var(--fehler); border: 1px solid var(--fehler); margin-top: 8px; }
   details { margin-top: 8px; font-size: 14px; }
@@ -341,12 +344,28 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
       knopf.textContent = 'Fertig – liegt im Download-Ordner';
       const alterLink = knopf.parentNode.querySelector('a.nachladen');
       if (alterLink) alterLink.replaceWith(link); else knopf.after(link);
+      if (!knopf.parentNode.querySelector('.weiter')) link.after(soGehtEsWeiter(auftraege.length > 1));
     } catch (e) {
       knopf.parentNode.append(meldung('fehler', 'Fehler beim Erzeugen: ' + e.message));
       knopf.textContent = alt;
     } finally {
       setTimeout(() => { knopf.disabled = false; knopf.textContent = alt; }, 2500);
     }
+  }
+
+  function soGehtEsWeiter(zip) {
+    return el('div', { class: 'weiter' },
+      el('strong', null, 'So geht es weiter'),
+      el('ol', null,
+        zip ? el('li', null, 'ZIP-Datei aus dem Download-Ordner entpacken und die Bögen in einem Ordner ablegen.')
+          : el('li', null, 'Die PDF aus dem Download-Ordner in einem Ordner ablegen.'),
+        el('li', null, 'PDF mit ', el('b', null, 'Adobe Acrobat Reader'), ' oder ', el('b', null, 'PDF-XChange'),
+          ' öffnen (Rechtsklick → Öffnen mit) – nicht im Browser – und alles ausfüllen.'),
+        el('li', null, el('b', null, 'Strg+S'), ' speichern, dann schließen. Ohne Speichern gehen die Eintragungen verloren.'),
+        el('li', null, 'Die gespeicherte PDF hier unter ', el('b', null, '„2 Beurteilung fertigstellen“'),
+          ' hineinziehen – es entsteht „…_fertig.pdf“, die endgültige Beurteilung.')),
+      el('div', null, 'Die Eintragungen werden erst übernommen, wenn Sie die gespeicherte PDF unter 2 hineinziehen – '
+        + 'Schließen allein übernimmt nichts.'));
   }
 
   // ---------------------------------------------------------------- Schritt 2
