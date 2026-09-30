@@ -302,7 +302,12 @@ Public Sub TabelleLeeren()
     If MsgBox("Grunddaten und die Wochenend-Entscheidungen wirklich leeren?" & vbCr & _
               "(Geladene Einsaetze bleiben erhalten - dafuer gibt es ""Einsatz entfernen"".)", _
               vbYesNo + vbQuestion, "Tabelle leeren") = vbNo Then Exit Sub
-    ThisWorkbook.Worksheets("Grunddaten").Range("E2:AQ300").ClearContents
+    With ThisWorkbook.Worksheets("Grunddaten")
+        .Unprotect KENNWORT
+        .Range("E2:AQ300").ClearContents
+        .Range("E2:AQ300").NumberFormat = "General"
+        Schuetzen ThisWorkbook.Worksheets("Grunddaten")
+    End With
     ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende").Range("L27:L163").ClearContents
     ThisWorkbook.Worksheets("EinsatzDaten").Range("C3:D3").ClearContents
     MsgBox "Geleert. Jetzt die ePlan-Daten in die rote Zelle einfuegen" & vbCr & _
@@ -365,6 +370,7 @@ Public Sub GrunddatenAufbereiten()
     Application.ScreenUpdating = False
     ws.Unprotect KENNWORT
     ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).ClearContents
+    ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).NumberFormat = "General"
     ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).Value = aus
     Schuetzen ws
     With ThisWorkbook.Worksheets("EinsatzDaten")
