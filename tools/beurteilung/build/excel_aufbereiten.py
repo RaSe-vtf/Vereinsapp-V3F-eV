@@ -1,7 +1,7 @@
 """Bereitet eine Notenuebersicht fuer das Beurteilungs-Tool auf.
 
-Ergaenzt drei Blaetter ("Beurteilungen erstellen", "Beurteiler",
-"Einstellungen"), eine Markier-Spalte "PDF" auf jedem Notenblatt und
+Ergaenzt die Blaetter "Beurteilungen erstellen" (mit Dienststelle, Organisations-
+einheit je Zug und Amtsbezeichnungen), "Beurteiler" und "Funktionen", eine Markier-Spalte "PDF" auf jedem Notenblatt und
 berichtigt bekannte Fehler der Notenuebersicht:
   * Zaehlformeln oben (Anzahl PVB, Notenverteilung) erfassen alle Zeilen,
   * #DIV/0! in der Prozentzeile, wenn noch keine Noten vergeben sind,
@@ -20,8 +20,8 @@ Datei, werden vorhandene Einstellungen/Beurteiler uebernommen.
 
 Aufruf: python3 excel_aufbereiten.py <notenuebersicht.xlsx> <ziel.xlsx> [--vorlage <alt.xlsx>]
   --vorlage: fehlen der Datei die Tool-Blaetter (z.B. Rohfassung), werden
-             Startseite, Beurteiler, Funktionen und Einstellungen aus dieser
-             frueher aufbereiteten Datei uebernommen.
+             Startseite, Beurteiler, Funktionen (und ein altes Blatt
+             "Einstellungen") aus dieser frueher aufbereiteten Datei uebernommen.
 """
 import re
 import sys
@@ -39,13 +39,13 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 START = "Beurteilungen erstellen"
 BEURTEILER = "Beurteiler"
-EINSTELLUNGEN = "Einstellungen"
+EINSTELLUNGEN = "Einstellungen"  # nur noch alte Dateien: wird gelesen und entfernt
 LETZTE_ZEILE = 200  # Reichweite der korrigierten Zaehlformeln
 
 # Kuerzel, Amtsbezeichnung maennlich/weiblich, Besoldungsgruppe.
 # Ins PDF kommt z.B. "Polizeiobermeister (A8)"; das "Z" der Besoldungsgruppe
 # kennzeichnet die Amtszulage. Vom Nutzer als endgueltig bestaetigt – wird bei
-# jedem Aufbereiten fest geschrieben und im Blatt "Einstellungen" gesperrt.
+# jedem Aufbereiten fest geschrieben und auf der Startseite gesperrt.
 AMTSBEZEICHNUNGEN = [
     ("PM", "Polizeimeister", "Polizeimeisterin", "A7"),
     ("POM", "Polizeiobermeister", "Polizeiobermeisterin", "A8"),
@@ -912,6 +912,7 @@ def ergaenze_reiter(wb, notenblaetter, kette, protokoll):
 # --------------------------------------------------------------------------
 START_ZEITRAUM = (f"'{START}'!$B$8", f"'{START}'!$B$9")   # Beurteilungszeitraum von/bis
 START_ART = f"'{START}'!$B$5"
+BLATT_KOPF = 16  # Kopfzeile der Uebersicht "Blatt | einbeziehen | Personen ..." auf der Startseite
 ROT = dict(fill=PatternFill(bgColor="FFC7CE"), font=Font(color="9C0006"))
 GRAU = dict(fill=PatternFill(bgColor="D9D9D9"), font=Font(color="7F7F7F"))
 NOTEN_SPALTEN = ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "alb_n11", "alb_n2", "alb_n42", "alb_n43")
@@ -1214,54 +1215,10 @@ def sperre_ausser_eingabe(ws):
     erlaube(ws)
 
 
-def baue_einstellungen(wb, zuege, alt_werte, alt_zeilen):
-    ws = wb.create_sheet(EINSTELLUNGEN)
-    zelle(ws, "A1", "Einstellungen", TITEL)
-    zelle(ws, "A2", "Feste Angaben, die für alle Beurteilungen gelten. Gelb = Eingabefeld, grau = fest (Blatt ist ohne Kennwort geschützt).", HINWEIS)
-
-    zelle(ws, "A4", "Dienststelle", FETT)
-    zelle(ws, "B4", alt_werte.get("dienststelle"), fill=EINGABE, rahmen=True)
-    zelle(ws, "C4", "z.B. Bundespolizeiabteilung …, 3. Einsatzhundertschaft – wird mit der Organisationseinheit "
-                    "des Zuges (Tabelle darunter) zu „Dienststelle, Organisationseinheit“ zusammengesetzt.", HINWEIS)
-
-    zelle(ws, "A6", "Organisationseinheit je Zug", ABSCHNITT)
-    zelle(ws, "A7", "Zug", FETT, KOPF, rahmen=True)
-    zelle(ws, "B7", "Organisationseinheit", FETT, KOPF, rahmen=True)
-    alt_oe = {norm(z[0]): z[1] for z in tabelle(alt_zeilen, "zug", "organisationseinheit")}
-    r = 8
-    for zug in zuege:
-        anzeige = "(ohne Zug)" if zug in (None, "") else zug
-        vorschlag = alt_oe.get(norm(anzeige))
-        if vorschlag is None:
-            vorschlag = "" if zug in (None, "") else (f"{zug}. Zug" if isinstance(zug, (int, float)) else str(zug))
-        zelle(ws, f"A{r}", anzeige, rahmen=True)
-        zelle(ws, f"B{r}", vorschlag, fill=EINGABE, rahmen=True)
-        r += 1
-    for _ in range(4):  # Reserve fuer neue Zuege
-        zelle(ws, f"A{r}", None, fill=EINGABE, rahmen=True)
-        zelle(ws, f"B{r}", None, fill=EINGABE, rahmen=True)
-        r += 1
-
-    r += 1
-    zelle(ws, f"A{r}", "Amtsbezeichnungen (Statusamt)", ABSCHNITT)
-    r += 1
-    for i, t in enumerate(["Kürzel", "Amtsbezeichnung (männlich)", "Amtsbezeichnung (weiblich)", "Besoldungsgruppe"]):
-        zelle(ws, f"{get_column_letter(i + 1)}{r}", t, FETT, KOPF, rahmen=True)
-    r += 1
-    for eintrag in AMTSBEZEICHNUNGEN:
-        for col, v in zip("ABCD", eintrag):
-            zelle(ws, f"{col}{r}", v, fill=FEST, rahmen=True)
-        r += 1
-    zelle(ws, f"A{r}", "Ins PDF kommt „Amtsbezeichnung (Besoldungsgruppe)“, z.B. „Polizeiobermeister (A8)“. "
-                       "Die weibliche Form wird genommen, wenn Geschlecht = w ist oder das Kürzel auf „in“ endet (z.B. POMin). "
-                       "Ist die Amtsbezeichnung leer, gilt der Blattname (z.B. PM). Die Tabelle ist fest und gesperrt.", HINWEIS)
-    for col, b in zip("ABCD", (26, 40, 40, 18)):
-        ws.column_dimensions[col].width = b
-    sperre_ausser_eingabe(ws)
-    return ws
-
-
-def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, infos=None):
+def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, infos=None, alt_einst=None, alt_einst_z=()):
+    """Startseite mit allem, was vor dem Erzeugen einzustellen ist – auch Dienststelle,
+    Organisationseinheit je Zug und die (festen) Amtsbezeichnungen, die frueher im
+    eigenen Blatt "Einstellungen" standen."""
     ws = wb.create_sheet(START, len(notenblaetter))  # hinter die Vergleichsgruppen
     ws.sheet_view.showGridLines = False
     for w in wb.worksheets:
@@ -1290,12 +1247,18 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
         zelle(ws, f"A{r}", label)
         zelle(ws, f"B{r}", v, fill=EINGABE, fmt=fmt, rahmen=True, align=Alignment(horizontal="left"))
     liste(ws, "B5", ["Regelbeurteilung", "Anlassbeurteilung", "Beurteilungsbeitrag"])
+    # Dienststelle (frueher Blatt "Einstellungen")
+    dienststelle = (alt_einst or {}).get("dienststelle") or alt_werte.get("dienststelle")
+    zelle(ws, "A10", "Dienststelle")
+    zelle(ws, "B10", dienststelle, fill=EINGABE, rahmen=True, align=Alignment(horizontal="left"))
+    zelle(ws, "C10", "z.B. Bundespolizeiabteilung …, 3. Einsatzhundertschaft – wird mit der Organisationseinheit "
+                     "des Zuges (Abschnitt 3) zu „Dienststelle, Organisationseinheit“ zusammengesetzt.", HINWEIS)
     zelle(ws, "C8", "Regelbeurteilung: mindestens 6 Monate, höchstens 2 Jahre (z.B. 01.10.2025 – 30.09.2027)", HINWEIS)
     ws.conditional_formatting.add("B8:B9", FormulaRule(
         formula=['AND($B$5="Regelbeurteilung",$B$8<>"",$B$9<>"",'
                  'OR($B$9<EDATE($B$8,6)-1,$B$9>EDATE($B$8,24)-1))'], **ROT))
 
-    zelle(ws, "A11", "2  Mitarbeiter", ABSCHNITT)
+    zelle(ws, "A12", "2  Mitarbeiter", ABSCHNITT)
     optionen = [
         ("Auswahl", wert("Auswahl", "alle Mitarbeiter"), ["alle Mitarbeiter", "nur markierte Mitarbeiter"],
          "„nur markierte“ = auf den Notenblättern in Spalte „PDF“ ein x setzen"),
@@ -1303,13 +1266,13 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
          "Spalte „neue RBU“ leer -> keine Beurteilung erzeugen"),
     ]
     for i, (label, v, werte, hinweis) in enumerate(optionen):
-        r = 12 + i
+        r = 13 + i
         zelle(ws, f"A{r}", label)
         zelle(ws, f"B{r}", v, fill=EINGABE, rahmen=True)
         zelle(ws, f"C{r}", hinweis, HINWEIS)
         liste(ws, f"B{r}", werte)
 
-    r = 15
+    r = BLATT_KOPF
     zelle(ws, f"A{r}", "Blatt", FETT, KOPF, rahmen=True)
     zelle(ws, f"B{r}", "einbeziehen", FETT, KOPF, rahmen=True)
     for col, t in zip("CDEFG", ("Personen", "mit neuer RBU", "ohne neue RBU", "PDF markiert", "ausgenommen")):
@@ -1353,22 +1316,40 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
     zelle(ws, f"C{r - 1}", "Auswahl aus Blatt „Beurteiler“ – gilt für alle, soweit unten je Zug nichts anderes steht", HINWEIS)
 
     r += 2
-    zelle(ws, f"A{r}", "Zug", FETT, KOPF, rahmen=True)
-    zelle(ws, f"B{r}", "Erstbeurteilende/r (abweichend)", FETT, KOPF, rahmen=True)
-    zelle(ws, f"C{r}", "Zweitbeurteilende/r (abweichend)", FETT, KOPF, rahmen=True)
-    alt_zug = {norm(z[0]): z for z in tabelle(alt_zeilen, "zug", "erstbeurteilende")}
-    for zug in [z for z in zuege if z not in (None, "")]:
+    for col, t in zip("ABCD", ("Zug", "Organisationseinheit", "Erstbeurteilende/r (abweichend)",
+                               "Zweitbeurteilende/r (abweichend)")):
+        zelle(ws, f"{col}{r}", t, FETT, KOPF, rahmen=True)
+    zelle(ws, f"E{r}", "Organisationseinheit: z.B. „1. Zug“; Beurteilende nur eintragen, wenn sie für den Zug abweichen",
+          HINWEIS)
+    # bisherige Angaben: Organisationseinheit aus dem alten Blatt "Einstellungen" bzw. der
+    # Startseite, abweichende Beurteilende aus der alten (Zug | Erst | Zweit) oder neuen Tabelle
+    alt_oe = {norm(z[0]): z[1] for z in tabelle(list(alt_einst_z), "zug", "organisationseinheit")}
+    alt_bt = {norm(z[0]): (z[1], z[2]) for z in tabelle(alt_zeilen, "zug", "erstbeurteilende")}
+    for z in tabelle(alt_zeilen, "zug", "organisationseinheit"):
+        alt_oe.setdefault(norm(z[0]), z[1])
+        alt_bt.setdefault(norm(z[0]), (z[2], z[3]))
+    for zug in [z for z in zuege if z not in (None, "")] + [None]:
+        anzeige = "(ohne Zug)" if zug is None else zug
+        oe = alt_oe.get(norm(anzeige))
+        if oe is None:
+            oe = "" if zug is None else (f"{zug}. Zug" if isinstance(zug, (int, float)) else str(zug))
+        erst, zweit = alt_bt.get(norm(anzeige), (None, None))
         r += 1
-        alt = alt_zug.get(norm(zug), [None, None, None])
-        zelle(ws, f"A{r}", zug, rahmen=True, align=Alignment(horizontal="left"))
-        for col, v in (("B", alt[1]), ("C", alt[2])):
+        zelle(ws, f"A{r}", anzeige, rahmen=True, align=Alignment(horizontal="left"))
+        zelle(ws, f"B{r}", oe, fill=EINGABE, rahmen=True)
+        for col, v in (("C", erst), ("D", zweit)):
             zelle(ws, f"{col}{r}", v, fill=EINGABE, rahmen=True)
             dv = DataValidation(type="list", formula1=auswahl, allow_blank=True)
             dv.add(f"{col}{r}")
             ws.add_data_validation(dv)
-    if not any(z not in (None, "") for z in zuege):
+    for _ in range(4):  # Reserve fuer neue Zuege
         r += 1
-        zelle(ws, f"A{r}", "(keine Züge in den Notenblättern eingetragen)", HINWEIS)
+        for col in "ABCD":
+            zelle(ws, f"{col}{r}", None, fill=EINGABE, rahmen=True)
+        for col in "CD":
+            dv = DataValidation(type="list", formula1=auswahl, allow_blank=True)
+            dv.add(f"{col}{r}")
+            ws.add_data_validation(dv)
 
     r += 2
     zelle(ws, f"A{r}", "4  PDFs erzeugen", ABSCHNITT)
@@ -1378,13 +1359,28 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
                            "hineinziehen. Solange die Datei in Excel offen ist, ist sie im Browser grau und nicht auswählbar.",
           HINWEIS)
 
+    r += 4
+    zelle(ws, f"A{r}", "5  Amtsbezeichnungen (fest)", ABSCHNITT)
+    r += 1
+    for col, t in zip("ABCD", ("Kürzel", "Amtsbezeichnung (männlich)", "Amtsbezeichnung (weiblich)", "Besoldungsgruppe")):
+        zelle(ws, f"{col}{r}", t, FETT, KOPF, rahmen=True)
+    for eintrag in AMTSBEZEICHNUNGEN:
+        r += 1
+        for col, v in zip("ABCD", eintrag):
+            zelle(ws, f"{col}{r}", v, fill=FEST, rahmen=True)
+    zelle(ws, f"A{r + 1}", "Ins PDF kommt „Amtsbezeichnung (Besoldungsgruppe)“, z.B. „Polizeiobermeister (A8)“. "
+                           "Die weibliche Form wird genommen, wenn Geschlecht = w ist oder das Kürzel auf „in“ endet "
+                           "(z.B. POMin). Die Tabelle ist fest und gesperrt.", HINWEIS)
+
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 34
     ws.column_dimensions["C"].width = 34
-    for col in "DEFG":
+    ws.column_dimensions["D"].width = 34
+    for col in "EFG":
         ws.column_dimensions[col].width = 15
     # "ohne neue RBU" rot, solange noch Gesamtnoten fehlen
-    ws.conditional_formatting.add(f"E16:E{15 + len(notenblaetter)}", FormulaRule(formula=["E16>0"], **ROT))
+    e = BLATT_KOPF + 1
+    ws.conditional_formatting.add(f"E{e}:E{BLATT_KOPF + len(notenblaetter)}", FormulaRule(formula=[f"E{e}>0"], **ROT))
     sperre_ausser_eingabe(ws)
     return ws
 
@@ -1516,10 +1512,10 @@ def main(quelle, ziel, vorlage=None):
         infos[ws.title] = dict(erste=kopf + 2, ende=kopf + 1 + PERSONEN_JE_BLATT, name=get_column_letter(pos["name"]),
                                rbu=get_column_letter(pos["neue_rbu"]), pdf=get_column_letter(pos["pdf"]),
                                aus=get_column_letter(pos["ausgenommen"]))
-    baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z, infos)
+    baue_startseite(wb, [ws.title for ws in notenblaetter], zuege, stichtag, alt_start, alt_start_z, infos,
+                    alt_einst, alt_einst_z)
     baue_beurteiler(wb, alt_beurt_z)
     baue_funktionen(wb, alt_funkt_z)
-    baue_einstellungen(wb, zuege, alt_einst, alt_einst_z)
     wb.save(ziel)
     knoepfe_einfuegen(ziel, [ws.title for ws in notenblaetter])
     print("\n".join(protokoll))

@@ -162,6 +162,9 @@
       zuege: {},
     };
     for (const z of tabelle(sz, 'blatt', 'einbeziehen')) start.blaetter[norm(z[0])] = norm(z[1]) !== 'nein';
+    // Zug | Organisationseinheit | Erst- | Zweitbeurteilende/r (abweichend); aeltere Dateien: Zug | Erst | Zweit
+    const zugTabelle = tabelle(sz, 'zug', 'organisationseinheit');
+    for (const z of zugTabelle) start.zuege[norm(z[0])] = { erst: text(z[2]), zweit: text(z[3]) };
     for (const z of tabelle(sz, 'zug', 'erstbeurteilende')) {
       start.zuege[norm(z[0])] = { erst: text(z[1]), zweit: text(z[2]) };
     }
@@ -197,7 +200,13 @@
     }
 
     // Einstellungen
-    const einst = { dienststelle: '', oe: {}, amt: {} };
+    // Dienststelle, Organisationseinheit je Zug und Amtsbezeichnungen stehen auf der
+    // Startseite; aeltere Dateien haben dafuer ein eigenes Blatt "Einstellungen".
+    const einst = { dienststelle: text(s['dienststelle']), oe: {}, amt: {} };
+    for (const z of zugTabelle) einst.oe[norm(z[0])] = text(z[1]);
+    for (const z of tabelle(sz, 'kürzel', 'amtsbezeichnung')) {
+      if (!leer(z[0])) einst.amt[norm(z[0])] = { m: text(z[1]), w: text(z[2]), bg: text(z[3]) };
+    }
     if (blatt[EINSTELLUNGEN]) {
       const ez = zeilenVon(wb.Sheets[blatt[EINSTELLUNGEN]]);
       einst.dienststelle = text(beschriftungen(ez)['dienststelle']);
@@ -332,7 +341,7 @@
     if (/Z$/.test(blattK) && blattK.slice(0, -1) === basis && norm(blattK) in mappe.einst.amt) basis = blattK;
     const eintrag = mappe.einst.amt[norm(basis)];
     if (!eintrag) {
-      hinweise.push('Amtsbezeichnung „' + kuerzel + '“ fehlt in „Einstellungen“ – Kürzel wird eingetragen.');
+      hinweise.push('Amtsbezeichnung „' + kuerzel + '“ fehlt unter „Amtsbezeichnungen“ (Blatt „Beurteilungen erstellen“) – Kürzel wird eingetragen.');
       return kuerzel;
     }
     const bez = (weiblich ? eintrag.w : eintrag.m) || eintrag.m || kuerzel;
@@ -413,7 +422,7 @@
           if (!st.nurMarkierte) { uebersprungen.push(p); continue; }
         }
         const hinweise = [];
-        const zugWahl = st.zuege[norm(p.zug)] || {};
+        const zugWahl = st.zuege[leer(p.zug) ? '(ohne zug)' : norm(p.zug)] || {};
         const erstWahl = zugWahl.erst || st.erst;
         const zweitWahl = zugWahl.zweit || st.zweit;
         if (leer(erstWahl)) hinweise.push('keine/n Erstbeurteilende/n ausgewählt');

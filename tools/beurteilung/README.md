@@ -52,8 +52,8 @@ Alles bleibt im PDF von den Beurteilenden änderbar.
 Form im PDF: „Polizeiobermeister (A8)“. Diese Werte sind endgültig und
 sollen nicht mehr geändert werden. Sie stehen in `AMTSBEZEICHNUNGEN`
 (`build/excel_aufbereiten.py`), werden bei jedem Aufbereiten fest geschrieben
-und sind im Blatt „Einstellungen“ grau und per Blattschutz (ohne Kennwort)
-gesperrt.
+und stehen im Blatt „Beurteilungen erstellen“ (Abschnitt 5) grau und per
+Blattschutz (ohne Kennwort) gesperrt.
 
 ## Änderungen am Vordruck (bewusst nur diese)
 
@@ -103,15 +103,16 @@ gelbe Felder der Tool-Blätter); Spaltenbreite, Zeilenhöhe, Formatieren und Fil
 bleiben erlaubt.
 
 `excel_aufbereiten.py` ist wiederholbar: über eine schon aufbereitete Datei
-laufen gelassen, bleiben Startseite, Beurteiler, Funktionen und Einstellungen
-erhalten. Kommt eine Rohfassung ohne diese Blätter, übernimmt `--vorlage` sie
+laufen gelassen, bleiben Startseite, Beurteiler und Funktionen erhalten
+(ein altes Blatt „Einstellungen“ wird in die Startseite übernommen und entfernt). Kommt eine Rohfassung ohne diese Blätter, übernimmt `--vorlage` sie
 aus einer früher aufbereiteten Datei.
 Neue Personen, Zeilen oder Notenblätter erkennt das Tool ohnehin selbst
 (Spalten werden über die Überschriften gefunden).
 
 Reiter: vorn die Vergleichsgruppen (gD: PK, POK, PHK, PHKZ, EPHK, EPHKZ – fehlende
 Reiter der Kette werden als leere Kopie des vorigen angelegt; mD: PM, POM, PHM,
-PHMZ), dahinter Startseite, Beurteiler, Funktionen, Einstellungen; die Datei
+PHMZ), dahinter Startseite (mit Dienststelle, Organisationseinheit je Zug in der
+Zug-Tabelle und den festen Amtsbezeichnungen), Beurteiler, Funktionen; die Datei
 öffnet mit der ersten Vergleichsgruppe. EPHKZ ist vorläufig als A13Z hinterlegt
 (Bezeichnung/Besoldungsgruppe vom Nutzer noch zu bestätigen).
 
