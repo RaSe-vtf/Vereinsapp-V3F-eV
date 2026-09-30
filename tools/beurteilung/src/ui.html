@@ -281,6 +281,7 @@ const VORDRUCK_B64 = "/*VORDRUCK*/";
       st.stichtag ? el('div', null, el('span', null, 'Stichtag: '), st.stichtag) : null,
       el('div', null, el('span', null, 'Zeitraum: '), (st.von || '?') + ' – ' + (st.bis || '?')),
       el('div', null, el('span', null, 'Beurteilungen: '), String(liste.length))));
+    for (const w of mappe.warnungenRot || []) box.append(meldung('fehler', w));
     for (const w of mappe.warnungen) box.append(meldung('warn', w));
     if (uebersprungen.length) {
       box.append(el('details', null,

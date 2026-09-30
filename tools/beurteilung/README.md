@@ -114,8 +114,13 @@ Funktion 2/3 mit von/bis, Beteiligung, Schwerbehinderung, letzte RBU + Statusamt
 RBU-Block (neue RBU vor den Teilnoten), ALB, BB, Subsidiärmerkmale, Teilzeit, PDF,
 befördert am. Bei mehreren Funktionen schreibt das Tool je Funktion „Bezeichnung
 (Wertigkeit) vom … bis …“ mit ihren Tätigkeiten in „prägende Tätigkeiten“ (Leerzeile
-dazwischen), Nr. 4.1.2 bleibt frei. ALB/BB zählen nur mit mindestens 3 Monaten im
-Beurteilungszeitraum (wie EDATE(Beginn;3)-1). Noten werden nur für die
+dazwischen), Nr. 4.1.2 bleibt frei. ALB zählen nur mit mindestens 6, BB mit mindestens 3
+Monaten im Beurteilungszeitraum (wie EDATE(Beginn;n)-1). Bei einer RBU muss der
+Beurteilungszeitraum genau 2 Jahre umfassen (rote Warnung, kein Abbruch).
+Punkt 5 „Führung“ (5.1–5.6) wird im mD gestrichen (striche.15–20 mit Strichlinie,
+f.dd.29–40 gesperrt), im gD beurteilt; Spalte „Führungsaufgabe“ ja/nein überstimmt.
+Schwerbehinderung ja: Einverständnis (f.kk.einverstaendnis) und Gesprächsdatum
+(f.gespraech_schwerbehindert) aus den Spalten dahinter. Noten werden nur für die
 Erstbeurteilenden eingetragen.
 
 Bedienhilfen im Excel: Hinweiszeile unter der Überschrift (statt Kennziffern A01…),

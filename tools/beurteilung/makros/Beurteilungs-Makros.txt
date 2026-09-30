@@ -325,7 +325,7 @@ Public Sub BefoerderungenUebernehmen()
         Exit Sub
     End If
 
-    meldung = "Sollen diese " & IIf(n = 1, "Person", n & " Personen") & " von """ & ws.Name & """ nach """ & zielName & _
+    meldung = IIf(n = 1, "Soll diese Person", "Sollen diese " & n & " Personen") & " von """ & ws.Name & """ nach """ & zielName & _
         """ verschoben werden?" & vbLf & vbLf & liste & vbLf & _
         "Im neuen Reiter: Datum der Ernennung = Bef{oe}rderungsdatum, letzte RBU = bisherige neue RBU. " & _
         "Teilnoten, neue RBU, ALB/BB, Kooperationsgespr{ae}che und Bemerkungen bleiben leer." & vbLf & _
@@ -357,7 +357,7 @@ Public Sub BefoerderungenUebernehmen()
         Next rr
 
         ' Stammdaten uebernehmen
-        For Each muster In Array("name", "vorname", "geb*", "geschlecht", "zug", "funktion", "schwerbehind*", "teilzeit")
+        For Each muster In Array("name", "vorname", "geb*", "geschlecht", "zug", "funktion", "f?hrungsaufgabe*", "schwerbehind*", "teilzeit")
             qc = Spalte(ws, kopf, CStr(muster))
             zc = Spalte(zs, zKopf, CStr(muster))
             If qc > 0 And zc > 0 Then

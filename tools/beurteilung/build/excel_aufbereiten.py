@@ -242,7 +242,10 @@ TOOL_SPALTEN = [
     ("Funktion 3 bis", "TT.MM.JJJJ", 12, DATUM, None),
     ("Kooperationsgespräche", "TT.MM.JJJJ; TT.MM.JJJJ", 24, "@", None),
     ("Gespräch vor Beurteilung", "TT.MM.JJJJ", 13, DATUM, None),
+    ("Führungsaufgabe", "ja / nein", 13, None, '"ja,nein"'),
     ("Schwerbehinderung", "ja / nein", 16, None, '"ja,nein"'),
+    ("Einverständnis Gespräch Vertrauensperson", "ja / nein", 16, None, '"ja,nein"'),
+    ("Gespräch Vertrauensperson am", "TT.MM.JJJJ", 14, DATUM, None),
     ("ALB (x)", "x = vorhanden", 9, None, '"x"'),
     ("ALB von", "TT.MM.JJJJ", 12, DATUM, None),
     ("ALB bis", "TT.MM.JJJJ", 12, DATUM, None),
@@ -325,9 +328,12 @@ ZIELREIHENFOLGE = [
     ("f3", lambda k: k == "funktion 3"),
     ("f3_von", lambda k: k == "funktion 3 von"),
     ("f3_bis", lambda k: k == "funktion 3 bis"),
+    ("fuehrung", lambda k: k.startswith("führungsaufgabe")),
     ("koop", lambda k: k.startswith("kooperation")),
     ("gespraech", lambda k: k.startswith("gespräch vor")),
     ("sbh", lambda k: k.startswith("schwerbehind")),
+    ("sbh_einv", lambda k: k.startswith("einverständnis")),
+    ("sbh_gespr", lambda k: k.startswith("gespräch vertrauensperson")),
     ("letzte_rbu", lambda k: k == "letzte rbu"),
     ("letzte_rbu_amt", None),     # "im Statusamt eines" rechts neben "letzte RBU"
     ("neue_rbu", lambda k: k == "neue rbu"),   # Gesamtnote vor den Teilnoten
@@ -357,7 +363,7 @@ ZIELREIHENFOLGE = [
     ("befoerdert", lambda k: k.startswith("befördert")),
 ]
 GRUPPEN_UEBERSCHRIFTEN = [  # Zeile ueber der Kopfzeile: Text, erste und letzte Spalte (Schluessel)
-    ("Funktionen", "funktion", "f3_bis"),
+    ("Funktionen", "funktion", "fuehrung"),
     ("RBU", "neue_rbu", "n43"),
     ("Subsidiärmerkmale ", "summe", "bemerkungen"),
     ("Anlassbeurteilung", "alb_x", "alb_n43"),
@@ -895,7 +901,7 @@ START_ZEITRAUM = (f"'{START}'!$B$8", f"'{START}'!$B$9")   # Beurteilungszeitraum
 START_ART = f"'{START}'!$B$5"
 ROT = dict(fill=PatternFill(bgColor="FFC7CE"), font=Font(color="9C0006"))
 NOTEN_SPALTEN = ("letzte_rbu", "neue_rbu", "n11", "n2", "n42", "n43", "alb", "alb_n11", "alb_n2", "alb_n42", "alb_n43")
-DATUM_SPALTEN = ("geb", "ernennung", "f1_von", "f1_bis", "f2_von", "f2_bis", "f3_von", "f3_bis", "gespraech",
+DATUM_SPALTEN = ("geb", "ernennung", "f1_von", "f1_bis", "f2_von", "f2_bis", "f3_von", "f3_bis", "gespraech", "sbh_gespr",
                  "alb_von", "alb_bis", "bb1_von", "bb1_bis", "bb2_von", "bb2_bis", "bb3_von", "bb3_bis",
                  "beginn", "befoerdert")
 RECHEN = ("lfdnr", "amtsbez", "summe", "monate", "monate_halb", "ges")
@@ -919,7 +925,10 @@ HILFE = {
     "f3_bis": ("TT.MM.JJJJ", "Funktion 3 bis", "Datum TT.MM.JJJJ"),
     "koop": ("TT.MM.JJJJ; TT.MM.JJJJ", "Kooperationsgespräche", "Ein oder mehrere Daten, mit Semikolon getrennt (bis 6 passen in den Vordruck)."),
     "gespraech": ("TT.MM.JJJJ", "Gespräch vor Beurteilung", "Datum TT.MM.JJJJ"),
-    "sbh": ("ja / nein", "Schwerbehinderung", "ja oder nein"),
+    "sbh": ("ja / nein", "Schwerbehinderung", "ja oder nein – bei ja auch Einverständnis und ggf. Gesprächsdatum eintragen."),
+    "sbh_einv": ("ja / nein", "Einverständnis", "Nur bei Schwerbehinderung: Einverständnis für das Gespräch mit der Vertrauensperson (ja/nein)."),
+    "sbh_gespr": ("TT.MM.JJJJ", "Gespräch Vertrauensperson", "Nur bei Einverständnis ja: Datum des Gesprächs mit der Vertrauensperson."),
+    "fuehrung": ("", "Führungsaufgabe", ""),  # Text je Laufbahn, siehe bedienhilfen
     "letzte_rbu": ("A1 … C", "Letzte RBU", "Endnote der letzten Regelbeurteilung (wird bei Beförderung automatisch gesetzt)."),
     "letzte_rbu_amt": ("z.B. POM", "Statusamt der letzten RBU", "Kürzel des damaligen Statusamts."),
     "neue_rbu": ("A1 … C", "Gesamtnote (neue RBU)", "Gesamtnote der aktuellen Beurteilung – kommt ins PDF (Seite 3 und 5)."),
@@ -927,7 +936,7 @@ HILFE = {
     "n2": ("A1 … C", "Teilnote 2", "Fachwissen – kommt ins PDF."),
     "n42": ("A1 … C", "Teilnote 4.2", "Zuverlässigkeit – kommt ins PDF."),
     "n43": ("A1 … C", "Teilnote 4.3", "Zusammenarbeit – kommt ins PDF."),
-    "alb_x": ("x = vorhanden", "Anlassbeurteilung", "x und Zeitraum eintragen – mind. 3 Monate im Beurteilungszeitraum, sonst wird sie nicht berücksichtigt."),
+    "alb_x": ("x = vorhanden", "Anlassbeurteilung", "x und Zeitraum eintragen – mind. 6 Monate im Beurteilungszeitraum, sonst wird sie nicht berücksichtigt."),
     "alb_von": ("TT.MM.JJJJ", "Anlassbeurteilung von", "Datum TT.MM.JJJJ"),
     "alb_bis": ("TT.MM.JJJJ", "Anlassbeurteilung bis", "Datum TT.MM.JJJJ"),
     "alb": ("A1 … C", "ALB Gesamtnote", "Nur zur Information."),
@@ -964,11 +973,16 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
     L = get_column_letter
     erste = kopf + 2
     schluessel = {c: k for k, c in pos.items()}
+    ist_gd = blattbasis(ws.title) in KETTE_GD
+    hilfe = dict(HILFE)
+    hilfe["fuehrung"] = (("leer = ja" if ist_gd else "leer = nein"), "Führungsaufgabe",
+                         "gD: Punkt 5 „Führung“ wird beurteilt – nur bei nein wird er gestrichen." if ist_gd else
+                         "mD: Punkt 5 „Führung“ wird im Vordruck gestrichen – nur bei ja (Ausnahme) wird er beurteilt.")
 
     # Hinweiszeile unter der Kopfzeile (statt der alten Kennziffern A01, A02, ...)
     for c in range(1, breite + 1):
         k = schluessel.get(c)
-        text = "rechnet selbst" if k in RECHEN else (HILFE.get(k, ("",))[0] if k else None)
+        text = "rechnet selbst" if k in RECHEN else (hilfe.get(k, ("",))[0] if k else None)
         z = ws.cell(kopf + 1, c)
         if k is None and not re.fullmatch(r"A\d{2}", str(z.value or "")):
             continue
@@ -982,9 +996,9 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
             ws.data_validations.dataValidation.remove(dv)
     listen = {"x": '"x"', "note": NOTENLISTE, "funktion": f"={FUNKTIONEN}!$A$4:$A$103"}
     for k, c in pos.items():
-        if c > breite or k in RECHEN or k not in HILFE:
+        if c > breite or k in RECHEN or k not in hilfe:
             continue
-        _, titel, text = HILFE[k]
+        _, titel, text = hilfe[k]
         bereich = f"{L(c)}{erste}:{L(c)}{ende}"
         if k in NOTEN_SPALTEN:
             dv = DataValidation(type="list", formula1=NOTENLISTE, error="Bitte eine Notenstufe aus der Liste wählen: A1, A2, B1, B2, B3 oder C.")
@@ -996,7 +1010,7 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
         elif k in ("funktion", "f2", "f3"):
             dv = DataValidation(type="list", formula1=listen["funktion"],
                                 error="Bitte eine Funktion aus der Liste wählen (neue Funktionen im Blatt „Funktionen“ ergänzen).")
-        elif k == "sbh":
+        elif k in ("sbh", "sbh_einv", "fuehrung"):
             dv = DataValidation(type="list", formula1='"ja,nein"', error="Bitte ja oder nein wählen.")
         elif k == "geschlecht":
             dv = DataValidation(type="list", formula1='"m,w"', error="Bitte m oder w wählen.")
@@ -1029,17 +1043,22 @@ def bedienhilfen(ws, kopf, pos, breite, ende):
             z = f"{L(pos[k])}{erste}"
             regel(pos[k], pos[k], f'AND({z}<>"",NOT(OR({z}="A1",{z}="A2",{z}="B1",{z}="B2",{z}="B3",{z}="C")))')
     for x, v, b in [("alb_x", "alb_von", "alb_bis")] + [(f"bb{i}_x", f"bb{i}_von", f"bb{i}_bis") for i in (1, 2, 3)]:
+        monate = 6 if x == "alb_x" else 3  # Mindestdauer im Beurteilungszeitraum: ALB 6, BB 3 Monate
         if all(k in pos for k in (x, v, b)):
             X, V, B = (f"${L(pos[k])}{erste}" for k in (x, v, b))
             ende_im = f'IF({zb}="",{B},MIN({B},{zb}))'
             regel(pos[x], pos[b],
                   f'OR(AND({X}<>"",OR({V}="",{B}="")),AND({X}="",OR({V}<>"",{B}<>"")),'
-                  f'AND({X}<>"",{V}<>"",{B}<>"",{ende_im}<EDATE(MAX({V},{zv}),3)-1))')
+                  f'AND({X}<>"",{V}<>"",{B}<>"",{ende_im}<EDATE(MAX({V},{zv}),{monate})-1))')
     if all(k in pos for k in ("funktion", "f1_von", "f1_bis", "f2", "f3")):
         F1, F2, F3 = (f"${L(pos[k])}{erste}" for k in ("funktion", "f2", "f3"))
         for f, v, b in (("funktion", "f1_von", "f1_bis"), ("f2", "f2_von", "f2_bis"), ("f3", "f3_von", "f3_bis")):
             F, V, B = (f"${L(pos[k])}{erste}" for k in (f, v, b))
             regel(pos[v], pos[b], f'AND({F}<>"",OR({F2}<>"",{F3}<>""),OR({V}="",{B}=""))')
+    if all(k in pos for k in ("sbh", "sbh_einv", "sbh_gespr")):
+        SB, EI, GE = (f"${L(pos[k])}{erste}" for k in ("sbh", "sbh_einv", "sbh_gespr"))
+        regel(pos["sbh_einv"], pos["sbh_einv"], f'AND({N}{erste}<>"",{SB}="ja",{EI}="")')
+        regel(pos["sbh_gespr"], pos["sbh_gespr"], f'AND({N}{erste}<>"",{EI}="ja",{GE}="")')
     for k in DATUM_SPALTEN:
         if k in pos and pos[k] <= breite:
             z = f"{L(pos[k])}{erste}"
@@ -1249,6 +1268,9 @@ def baue_startseite(wb, notenblaetter, zuege, stichtag, alt_werte, alt_zeilen, i
         zelle(ws, f"A{r}", label)
         zelle(ws, f"B{r}", v, fill=EINGABE, fmt=fmt, rahmen=True, align=Alignment(horizontal="left"))
     liste(ws, "B5", ["Regelbeurteilung", "Anlassbeurteilung", "Beurteilungsbeitrag"])
+    zelle(ws, "C8", "Regelbeurteilung: genau 2 Jahre, z.B. 01.10.2025 – 30.09.2027", HINWEIS)
+    ws.conditional_formatting.add("B8:B9", FormulaRule(
+        formula=['AND($B$5="Regelbeurteilung",$B$8<>"",$B$9<>"",$B$9<>EDATE($B$8,24)-1)'], **ROT))
 
     zelle(ws, "A11", "2  Mitarbeiter", ABSCHNITT)
     optionen = [

@@ -46,6 +46,12 @@
     beurteilungsbeitrag: { wert: 'Beurteilungsbeitrag', kurz: 'BB' },
   };
   const NOTEN = ['A1', 'A2', 'B1', 'B2', 'B3', 'C'];
+  const GD_BLAETTER = ['PK', 'POK', 'PHK', 'PHKZ', 'EPHK', 'EPHKZ'];
+  // Punkt 5 "Fuehrung" (5.1–5.6): Streich-Felder und Notenfelder (Erst-/Zweitbeurteilende/r)
+  const FUEHRUNG_STRICHE = [15, 16, 17, 18, 19, 20];
+  const FUEHRUNG_NOTEN = [];
+  for (let i = 29; i <= 40; i++) FUEHRUNG_NOTEN.push('f.dd.' + i);
+  const STRICH = '-----------------------------------'; // wie das Skript des Vordrucks (strich)
 
   // ------------------------------------------------------------------
   // Hilfen
@@ -155,6 +161,11 @@
       start.zuege[norm(z[0])] = { erst: text(z[1]), zweit: text(z[2]) };
     }
     if (!start.von || !start.bis) warnungen.push('Beurteilungszeitraum (von/bis) ist auf der Startseite nicht ausgefüllt.');
+    const warnungenRot = [];
+    if (art.kurz === 'RBU' && start.von && start.bis && !zweiJahre(start.von, start.bis)) {
+      warnungenRot.push('Achtung: Der Beurteilungszeitraum einer Regelbeurteilung muss genau 2 Jahre umfassen ' +
+        '(z.B. 01.10.2025 – 30.09.2027) – eingetragen ist ' + start.von + ' – ' + start.bis + '. Bitte auf der Startseite prüfen.');
+    }
     if (art.kurz === 'RBU' && !start.stichtag) warnungen.push('Stichtag ist nicht ausgefüllt.');
 
     // Beurteiler
@@ -271,6 +282,9 @@
           koop: datumsliste(wert('koop')),
           gespraech: datum(wert('gespraech')),
           sbh: norm(wert('sbh')),
+          sbhEinv: norm(genau('einverständnis gespräch vertrauensperson') >= 0 ? r[genau('einverständnis gespräch vertrauensperson')] : ''),
+          sbhGespraech: genau('gespräch vertrauensperson am') >= 0 ? datum(r[genau('gespräch vertrauensperson am')]) : '',
+          fuehrung: norm(genau('führungsaufgabe') >= 0 ? r[genau('führungsaufgabe')] : ''),
           frueher: frueher.map((f) => ({
             art: f.art, spalte: f.spalte, x: !leer(r[f.x]), von: f.von >= 0 ? datum(r[f.von]) : '', bis: f.bis >= 0 ? datum(r[f.bis]) : '',
           })).filter((f) => f.x || f.von || f.bis),
@@ -284,7 +298,7 @@
       notenblaetter.push({ name: name, personen: personen });
     }
     if (!notenblaetter.length) throw new Error('„' + dateiname + '“: keine Notenblätter gefunden.');
-    return { dateiname, start, beurteiler, einst, funktionen, notenblaetter, warnungen };
+    return { dateiname, start, beurteiler, einst, funktionen, notenblaetter, warnungen, warnungenRot };
   }
 
   // ------------------------------------------------------------------
@@ -324,18 +338,26 @@
     return [mappe.einst.dienststelle, oe].filter((t) => !leer(t)).join(', ');
   }
 
+  /** bis = von + 2 Jahre - 1 Tag (wie EDATE(von;24)-1) */
+  function zweiJahre(von, bis) {
+    const a = alsTag(von), b = alsTag(bis);
+    if (!a || !b) return true;
+    const y = a.getUTCFullYear() + 2, m = a.getUTCMonth();
+    const letzterTag = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return b.getTime() === Date.UTC(y, m, Math.min(a.getUTCDate(), letzterTag)) - 86400000;
+  }
   function alsTag(t) {
     const m = String(t).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     return m ? new Date(Date.UTC(+m[3], +m[2] - 1, +m[1])) : null;
   }
-  /** Liegen von–bis mindestens 3 volle Monate im Beurteilungszeitraum (z.B. 01.01.–31.03.)? */
-  function dreiMonateImZeitraum(von, bis, zVon, zBis) {
+  /** Liegen von–bis mindestens `monate` volle Monate im Beurteilungszeitraum (z.B. 3 Monate: 01.01.–31.03.)? */
+  function monateImZeitraum(von, bis, zVon, zBis, monate) {
     const [a, b, za, zb] = [von, bis, zVon, zBis].map(alsTag);
     if (!a || !b || !za || !zb) return true;
     const start = a > za ? a : za;
     const ende = b < zb ? b : zb;
     // wie EDATE(start;3)-1 in Excel (Monatsende wird nicht ueberschritten)
-    const y = start.getUTCFullYear(), m = start.getUTCMonth() + 3;
+    const y = start.getUTCFullYear(), m = start.getUTCMonth() + monate;
     const letzterTag = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
     const grenze = new Date(Date.UTC(y, m, Math.min(start.getUTCDate(), letzterTag)) - 86400000);
     return ende >= grenze;
@@ -393,6 +415,13 @@
             ', die übrigen bitte im PDF ergänzen');
         }
         if (!leer(p.sbh) && !['ja', 'nein'].includes(p.sbh)) hinweise.push('Schwerbehinderung „' + p.sbh + '“ ist weder ja noch nein');
+        if (p.sbh === 'ja') {
+          if (!['ja', 'nein'].includes(p.sbhEinv)) hinweise.push('Schwerbehinderung: Einverständnis für das Gespräch mit der Vertrauensperson fehlt');
+          else if (p.sbhEinv === 'ja' && leer(p.sbhGespraech)) hinweise.push('Schwerbehinderung: Datum des Gesprächs mit der Vertrauensperson fehlt');
+        }
+        // Punkt 5 "Fuehrung": mD gestrichen, gD beurteilt – Ausnahme ueber Spalte "Führungsaufgabe"
+        const gd = GD_BLAETTER.includes(blattbasis(p.blatt).toUpperCase());
+        const fuehrungStreichen = p.fuehrung === 'ja' ? false : p.fuehrung === 'nein' ? true : !gd;
         // Mehrere Funktionen: jede mit Zeitraum, Taetigkeiten je Funktion
         let funktionsBloecke = null;
         const weitere = p.funktionen.slice(1).filter((f) => !leer(f.name));
@@ -422,10 +451,11 @@
           } else if (tagZahl(f.von) > tagZahl(f.bis)) {
             hinweise.push(f.spalte + ': „von“ (' + f.von + ') liegt nach „bis“ (' + f.bis + ') – nicht berücksichtigt');
           } else if (!st.von || !st.bis) {
-            hinweise.push(f.spalte + ': Beurteilungszeitraum fehlt auf der Startseite – 3-Monats-Prüfung nicht möglich');
+            hinweise.push(f.spalte + ': Beurteilungszeitraum fehlt auf der Startseite – Prüfung der Mindestdauer nicht möglich');
             beruecksichtigt.push(f);
-          } else if (!dreiMonateImZeitraum(f.von, f.bis, st.von, st.bis)) {
-            hinweise.push(f.spalte + ' vom ' + f.von + ' bis ' + f.bis + ': weniger als 3 Monate im Beurteilungszeitraum (' +
+          } else if (!monateImZeitraum(f.von, f.bis, st.von, st.bis, f.art === 'Anlassbeurteilung' ? 6 : 3)) {
+            hinweise.push(f.spalte + ' vom ' + f.von + ' bis ' + f.bis + ': weniger als ' +
+              (f.art === 'Anlassbeurteilung' ? 6 : 3) + ' Monate im Beurteilungszeitraum (' +
               st.von + ' – ' + st.bis + ') – nicht berücksichtigt');
           } else {
             beruecksichtigt.push(f);
@@ -443,6 +473,7 @@
           dienststelle: dienststelle(mappe, p),
           funktion: funktion,
           funktionsBloecke: funktionsBloecke,
+          fuehrungStreichen: fuehrungStreichen,
           beruecksichtigt: beruecksichtigt,
           bemerkung: bemerkungText(beruecksichtigt),
           erst: beurteilerText(mappe, erstWahl, 'Erstbeurteilende/r', hinweise),
@@ -673,9 +704,29 @@
       // Einverstaendnis und Gespraech mit der Vertrauensperson gesperrt
       setzeAnkreuz(form, 'f.kk.schwerbehindert', p.sbh === 'ja' ? 'Ja' : 'Nein');
       const einv = form.getField('f.kk.einverstaendnis');
-      if (p.sbh === 'ja') einv.disableReadOnly(); else einv.enableReadOnly();
+      const gespr = form.getTextField('f.gespraech_schwerbehindert');
+      if (p.sbh === 'ja') {
+        einv.disableReadOnly();
+        if (p.sbhEinv === 'ja' || p.sbhEinv === 'nein') setzeAnkreuz(form, 'f.kk.einverstaendnis', p.sbhEinv === 'ja' ? 'Ja' : 'Nein');
+        if (p.sbhEinv === 'ja') {
+          gespr.disableReadOnly();
+          setzeText(form, 'f.gespraech_schwerbehindert', p.sbhGespraech);
+        } else if (p.sbhEinv === 'nein') {
+          gespr.enableReadOnly();
+        }
+      } else {
+        einv.enableReadOnly();
+        gespr.enableReadOnly();
+      }
     }
 
+    if (a.fuehrungStreichen) {
+      // wie ein Klick auf die Streich-Knoepfe 5.1–5.6: Zeile durchgestrichen, Noten leer und gesperrt
+      for (const n of FUEHRUNG_STRICHE) setzeText(form, 'striche.' + n, STRICH);
+      for (const n of FUEHRUNG_NOTEN) {
+        try { form.getDropdown(n).enableReadOnly(); } catch (e) { /* Feld fehlt */ }
+      }
+    }
     for (const [k, [erst, zweit]] of Object.entries(NOTENFELDER)) {
       if (a.art.kurz === 'BB' && k === 'endnote') continue; // Beitrag hat keine Gesamtnote
       setzeNote(form, erst, p.noten[k]); // nur Erstbeurteilende/r
@@ -934,6 +985,6 @@
   }
 
 
-  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen, bemerkungText, dreiMonateImZeitraum,
+  return { leseArbeitsmappe, auftraege, erzeugePdf, fertigstellen, dateiname, dateinamensteil, datum, umbrechen, bemerkungText, monateImZeitraum,
     plausibilitaet };
 });
