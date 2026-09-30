@@ -7,6 +7,7 @@ Option Explicit
 '  - EinsatzEntfernen              : einen geladenen Einsatz wieder entfernen
 '  - DoppelgliederungenEntscheiden : offene Doppelgliederungen abfragen
 '  - TabelleLeeren                 : Grunddaten + Wochenend-Entscheidungen leeren
+'  - GrunddatenAufbereiten         : eingefuegten ePlan-Text in Spalten verteilen
 '  Die Reiter sind geschuetzt (Blattschutz ohne Kennwort); die Makros heben
 '  den Schutz kurz auf und setzen ihn danach wieder.
 '  Die Zuordnung der Namen und das Setzen von E / EE im Reiter "Staerke"
@@ -303,8 +304,185 @@ Public Sub TabelleLeeren()
               vbYesNo + vbQuestion, "Tabelle leeren") = vbNo Then Exit Sub
     ThisWorkbook.Worksheets("Grunddaten").Range("E2:AQ300").ClearContents
     ThisWorkbook.Worksheets("Verf" & ChrW(252) & "gbarkeit Wochenende").Range("L27:L163").ClearContents
-    MsgBox "Geleert. Jetzt die neuen ePlan-Daten einfuegen.", vbInformation, "Tabelle leeren"
+    ThisWorkbook.Worksheets("EinsatzDaten").Range("C3:D3").ClearContents
+    MsgBox "Geleert. Jetzt die ePlan-Daten in die rote Zelle einfuegen" & vbCr & _
+           "(Rechtsklick - Inhalte einfuegen - Text) und danach ""Grunddaten aufbereiten"" klicken.", _
+           vbInformation, "Tabelle leeren"
 End Sub
+
+' ---------------------------------------------------------------------
+' Verteilt den aus der ePlan-Druckansicht eingefuegten Text (eine Zeile je Zelle
+' in Spalte E) auf die Spalten E:AQ - ersetzt "Daten - Text in Spalten".
+' Personenzeilen werden geradegezogen: Amtsbez. | Initial | Name | Tage...
+' (Zusaetze wie "m.Z." fallen weg, Namen mit Leerzeichen bleiben zusammen).
+' Bereits aufgeteilte Zeilen werden ebenfalls geprueft und korrigiert.
+Public Sub GrunddatenAufbereiten()
+    Const Z0 As Long = 2, ZN As Long = 300, C0 As Long = 5, CN As Long = 43
+    Dim ws As Worksheet, daten As Variant, aus() As Variant
+    Dim zeilen() As Variant, t As Variant, werte As Variant
+    Dim r As Long, i As Long, tage As Long, personen As Long, anz As Long
+    Dim korrigiert As String, stand As String, korr As Boolean
+
+    Set ws = ThisWorkbook.Worksheets("Grunddaten")
+    daten = ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).Value
+    ReDim zeilen(1 To ZN - Z0 + 1)
+    For r = 1 To ZN - Z0 + 1
+        zeilen(r) = ZeileTokens(daten, r)
+    Next r
+
+    ' Anzahl Tage aus der Zeile "1 2 3 ... 31"
+    tage = 31
+    For r = 1 To ZN - Z0 + 1
+        If IstTageszeile(zeilen(r)) Then tage = UBound(zeilen(r)) + 1: Exit For
+    Next r
+
+    ReDim aus(1 To ZN - Z0 + 1, 1 To CN - C0 + 1)
+    For r = 1 To ZN - Z0 + 1
+        t = zeilen(r)
+        If IsArray(t) Then
+            werte = Personenzeile(t, tage, korr)
+            If IsArray(werte) Then
+                personen = personen + 1
+                If korr Then korrigiert = korrigiert & "  - " & werte(2) & vbCr
+            Else
+                werte = t
+                If stand = "" Then stand = EPlanStand(t)
+            End If
+            anz = UBound(werte) + 1
+            If anz > CN - C0 + 1 Then anz = CN - C0 + 1
+            For i = 0 To anz - 1
+                aus(r, i + 1) = AlsWert(CStr(werte(i)))
+            Next i
+        End If
+    Next r
+
+    If personen = 0 Then
+        MsgBox "Es wurden keine Personenzeilen erkannt." & vbCr & _
+               "Bitte pruefen, ob die ePlan-Daten in die rote Zelle (E2) eingefuegt wurden.", vbExclamation, "Grunddaten aufbereiten"
+        Exit Sub
+    End If
+
+    Application.ScreenUpdating = False
+    ws.Unprotect KENNWORT
+    ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).ClearContents
+    ws.Range(ws.Cells(Z0, C0), ws.Cells(ZN, CN)).Value = aus
+    Schuetzen ws
+    With ThisWorkbook.Worksheets("EinsatzDaten")
+        .Range("C3").Value = "'" & stand
+        .Range("D3").Value = "'" & Format(Now, "dd.mm.yyyy hh:nn")
+    End With
+    Application.ScreenUpdating = True
+    Application.Calculate
+
+    MsgBox "Grunddaten aufbereitet." & vbCr & vbCr & _
+           "Personenzeilen: " & personen & vbCr & _
+           "Tage im Monat: " & tage & vbCr & _
+           "ePlan-Stand: " & IIf(stand = "", "nicht gefunden", stand) & _
+           IIf(korrigiert = "", "", vbCr & vbCr & "Korrigierte Zeilen:" & vbCr & korrigiert), _
+           vbInformation, "Grunddaten aufbereiten"
+End Sub
+
+' Zerlegt eine Zeile in Einzelwerte - egal ob noch als ein Text in Spalte E
+' oder schon auf mehrere Spalten verteilt.
+Private Function ZeileTokens(ByVal daten As Variant, ByVal r As Long) As Variant
+    Dim c As Long, v As Variant, s As String, anzahl As Long, einzeln As String
+    For c = 1 To UBound(daten, 2)
+        v = daten(r, c)
+        If Not IsError(v) And Not IsEmpty(v) Then
+            If Trim$(CStr(v)) <> "" Then
+                anzahl = anzahl + 1
+                If VarType(v) = vbDate Then
+                    If Year(v) = 1900 Then
+                        einzeln = CStr(Day(v))
+                    ElseIf Int(CDbl(v)) = 0 Then
+                        einzeln = Format(v, "hh:nn:ss")
+                    Else
+                        einzeln = Format(v, "dd.mm.yyyy")
+                    End If
+                ElseIf VarType(v) = vbDouble Then
+                    If v = Int(v) Then einzeln = CStr(CLng(v)) Else einzeln = CStr(v)
+                Else
+                    einzeln = CStr(v)
+                End If
+                s = s & " " & einzeln
+            End If
+        End If
+    Next c
+    s = Replace(Replace(s, Chr(160), " "), vbTab, " ")
+    s = Application.WorksheetFunction.Trim(s)
+    If s = "" Then ZeileTokens = Empty Else ZeileTokens = Split(s, " ")
+End Function
+
+Private Function IstTageszeile(ByVal t As Variant) As Boolean
+    Dim i As Long
+    If Not IsArray(t) Then Exit Function
+    If UBound(t) < 27 Then Exit Function
+    For i = 0 To UBound(t)
+        If Not NurZiffern(CStr(t(i))) Then Exit Function
+        If CLng(t(i)) <> i + 1 Then Exit Function
+    Next i
+    IstTageszeile = True
+End Function
+
+' Personenzeile: Amtsbez. ... Initial Name ... + genau "tage" Tageskuerzel am Ende
+Private Function Personenzeile(ByVal t As Variant, ByVal tage As Long, ByRef korr As Boolean) As Variant
+    Dim n As Long, i As Long, k As Long, pos As Long, nm As String, erg() As String
+    korr = False
+    n = UBound(t) + 1
+    If n < tage + 3 Then Exit Function
+    For i = n - tage To n - 1
+        If CStr(t(i)) Like "*#*" Then Exit Function
+    Next i
+    For i = 1 To n - tage - 2
+        If IstInitial(CStr(t(i))) Then pos = i: Exit For
+    Next i
+    If pos = 0 Then Exit Function
+    For i = pos + 1 To n - tage - 1
+        nm = nm & IIf(nm = "", "", " ") & t(i)
+    Next i
+    ReDim erg(0 To tage + 2)
+    erg(0) = t(0): erg(1) = t(pos): erg(2) = nm
+    k = 3
+    For i = n - tage To n - 1
+        erg(k) = t(i): k = k + 1
+    Next i
+    korr = (pos <> 1) Or (n - tage - 1 - pos <> 1)
+    Personenzeile = erg
+End Function
+
+Private Function IstInitial(ByVal s As String) As Boolean
+    IstInitial = (s Like "[A-Za-z]." Or s Like "[A-Za-z][A-Za-z]." Or _
+                  (Len(s) = 2 And Right$(s, 1) = "." And Not Left$(s, 1) Like "[0-9.]"))
+End Function
+
+Private Function NurZiffern(ByVal s As String) As Boolean
+    NurZiffern = (Len(s) > 0 And Len(s) <= 9 And Not s Like "*[!0-9]*")
+End Function
+
+' Zahlen als Zahl, alles andere als Text (z. B. "3." nicht in 3 umwandeln lassen)
+Private Function AlsWert(ByVal s As String) As Variant
+    If NurZiffern(s) Then
+        AlsWert = CLng(s)
+    ElseIf s Like "*#*" Then
+        AlsWert = "'" & s
+    Else
+        AlsWert = s
+    End If
+End Function
+
+' "Stand: 30. September 2026 06:59:06 MESZ" -> "30.09.2026 06:59"
+Private Function EPlanStand(ByVal t As Variant) As String
+    Dim monate As Variant, m As Long, i As Long
+    If UBound(t) < 4 Then Exit Function
+    If CStr(t(0)) <> "Stand:" Then Exit Function
+    monate = Array("Januar", "Februar", "M" & ChrW(228) & "rz", "April", "Mai", "Juni", "Juli", _
+                   "August", "September", "Oktober", "November", "Dezember")
+    For i = 0 To 11
+        If StrComp(CStr(t(2)), monate(i), vbTextCompare) = 0 Then m = i + 1
+    Next i
+    If m = 0 Or Not NurZiffern(Replace(CStr(t(1)), ".", "")) Then Exit Function
+    EPlanStand = Format(Val(t(1)), "00") & "." & Format(m, "00") & "." & t(3) & " " & Left$(CStr(t(4)), 5)
+End Function
 
 ' =====================================================================
 '  Hilfsfunktionen
