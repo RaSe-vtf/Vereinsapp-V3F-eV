@@ -773,7 +773,8 @@ End Function
 '  - GliederungErstellen      : Kopie der Gliederungsvorlage fuellen
 '  - GliederungAlsEinsatz     : zugewiesene Mitarbeiter als E eintragen
 '  - NeuePlanung              : alle Zuweisungen loeschen
-'  Liste: G = Zug, H = Einsatz-Funktion, I = Trupp (1-6).
+'  Liste: G = Einheit (Hu-FGr / 1.-4. Zug; FhrGr wird vorbelegt),
+'         H = Einsatz-Funktion (Liste passt zur Einheit), I = Trupp (1-6).
 '  Speicher: EinsatzDaten AW:AZ (Name ePlan | Funktion | Zug | Trupp),
 '  Zeilen 10..509; BB25:BB161 = zuletzt angezeigte Namen.
 ' =====================================================================
@@ -784,7 +785,7 @@ End Function
 ' Auswahl in G:I der Liste wurde geaendert -> an die Person speichern
 Public Sub GliederungEingabe(ByVal Target As Range)
     Dim ws As Worksheet, sp As Worksheet, bereich As Range, z As Range
-    Dim r As Long, k As Long, nm As String
+    Dim r As Long, k As Long, nm As String, einh As String, fk As String
     Set ws = Target.Worksheet
     Set bereich = Intersect(Target, ws.Range(ws.Cells(V0, 7), ws.Cells(VN, 9)))
     If bereich Is Nothing Then Exit Sub
@@ -797,21 +798,32 @@ Public Sub GliederungEingabe(ByVal Target As Range)
         If nm = "" Then
             z.ClearContents
         Else
-            k = GliedZeile(sp, nm, Trim$(CStr(z.Value)) <> "")
-            If k > 0 Then
-                sp.Cells(k, Choose(z.Column - 6, 51, 50, 52)).Value = z.Value
-                ' Zug gewaehlt, noch keine Funktion -> Grundfunktion vorschlagen
-                If z.Column = 7 And Trim$(CStr(z.Value)) <> "" And Trim$(CStr(ws.Cells(r, 8).Value)) = "" Then
-                    ws.Cells(r, 8).Value = GrundVorschlag(CStr(ws.Cells(r, 2).Value))
+            einh = Trim$(CStr(ws.Cells(r, 7).Value))
+            fk = Trim$(CStr(ws.Cells(r, 8).Value))
+            If z.Column = 7 Then
+                ' Einheit gewechselt: unpassende Funktion ersetzen bzw. Grundfunktion vorschlagen
+                If einh = "Hu-FGr" Then
+                    If fk <> "" And Not IstFGrFunktion(fk) Then ws.Cells(r, 8).ClearContents
+                ElseIf einh <> "" Then
+                    If fk = "" Or IstFGrFunktion(fk) Then ws.Cells(r, 8).Value = GrundVorschlag(CStr(ws.Cells(r, 2).Value))
+                End If
+            End If
+            fk = Trim$(CStr(ws.Cells(r, 8).Value))
+            ' Trupp nur bei TF / PVB
+            If fk <> "TF" And fk <> "PVB" Then ws.Cells(r, 9).ClearContents
+            ' Einheit zur Funktion passend setzen, falls leer
+            If einh = "" And IstFGrFunktion(fk) Then ws.Cells(r, 7).Value = "Hu-FGr"
+            einh = Trim$(CStr(ws.Cells(r, 7).Value))
+            If fk = "" And Trim$(CStr(ws.Cells(r, 9).Value)) = "" And (einh = "" Or einh = "Hu-FGr") Then
+                ' nichts zugewiesen (Hu-FGr allein zaehlt nicht)
+                k = GliedZeile(sp, nm, False)
+                If k > 0 Then sp.Range(sp.Cells(k, 49), sp.Cells(k, 52)).ClearContents
+            Else
+                k = GliedZeile(sp, nm, True)
+                If k > 0 Then
                     sp.Cells(k, 50).Value = ws.Cells(r, 8).Value
-                End If
-                ' Trupp nur bei TF / PVB
-                If z.Column = 8 And CStr(z.Value) <> "TF" And CStr(z.Value) <> "PVB" And Trim$(CStr(ws.Cells(r, 9).Value)) <> "" Then
-                    ws.Cells(r, 9).ClearContents
-                    sp.Cells(k, 52).ClearContents
-                End If
-                If Trim$(CStr(sp.Cells(k, 50).Value) & CStr(sp.Cells(k, 51).Value) & CStr(sp.Cells(k, 52).Value)) = "" Then
-                    sp.Range(sp.Cells(k, 49), sp.Cells(k, 52)).ClearContents
+                    sp.Cells(k, 51).Value = ws.Cells(r, 7).Value
+                    sp.Cells(k, 52).Value = ws.Cells(r, 9).Value
                 End If
             End If
             sp.Cells(r, 54).Value = nm
@@ -824,12 +836,13 @@ End Sub
 ' Liste hat sich umsortiert -> Auswahl wieder an die richtigen Personen schreiben
 Public Sub GliederungAnzeigen()
     Dim ws As Worksheet, sp As Worksheet, namen As Variant, snap As Variant
-    Dim i As Long, n As Long, geaendert As Boolean, d As Object, nm As String, aus() As Variant, w As Variant
+    Dim i As Long, n As Long, geaendert As Boolean, d As Object, nm As String, aus() As Variant, w As Variant, teil As Variant
     If mAnzeige Then Exit Sub
     Set ws = BlattV()
     Set sp = ThisWorkbook.Worksheets("EinsatzDaten")
     n = VN - V0 + 1
     namen = ws.Range(ws.Cells(V0, 6), ws.Cells(VN, 6)).Value
+    teil = ws.Range(ws.Cells(V0, 3), ws.Cells(VN, 3)).Value
     snap = sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).Value
     For i = 1 To n
         If CStr(namen(i, 1)) <> CStr(snap(i, 1)) Then geaendert = True: Exit For
@@ -846,6 +859,8 @@ Public Sub GliederungAnzeigen()
             If d.Exists(nm) Then
                 w = d(nm)
                 aus(i, 1) = w(2): aus(i, 2) = w(1): aus(i, 3) = w(3)
+            ElseIf Trim$(CStr(teil(i, 1))) = "FhrGr" Then
+                aus(i, 1) = "Hu-FGr"
             End If
         End If
     Next i
@@ -866,9 +881,10 @@ Public Sub NeuePlanung()
     sp.Range(sp.Cells(GS0, 49), sp.Cells(GSN, 52)).ClearContents
     ws.Range(ws.Cells(V0, 7), ws.Cells(VN, 9)).ClearContents
     ws.Range("H6:K9").ClearContents
-    sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).Value = ws.Range(ws.Cells(V0, 6), ws.Cells(VN, 6)).Value
+    sp.Range(sp.Cells(V0, 54), sp.Cells(VN, 54)).ClearContents
     sp.Range("BD4").ClearContents
     Application.EnableEvents = True
+    GliederungAnzeigen
     MsgBox "Neue Planung begonnen - alle Zuweisungen sind geloescht.", vbInformation, "Neue Planung"
 End Sub
 
@@ -1160,18 +1176,24 @@ Private Function GliedPersonen(ByVal sp As Worksheet, ByVal ws As Worksheet, ByV
             key = "": besch = f
             Select Case f
                 Case "HF", "sHF", "KF HF", "F" & ChrW(252) & "hrer BefKw", "Bearb BefKw", "BDE-TF", "BDE-Bearb"
+                    If zg <> "" And zg <> "Hu-FGr" Then
+                        fehler = fehler & "  - " & nach & ": " & f & " gehoert zur Hu-FGr, nicht zum " & zg & vbCr
+                    End If
                     key = f
                     besch = f & " (Hu-F" & ChrW(252) & "hrungsgruppe)"
                 Case "ZF", "sZF", "KF Zug", "Bearb Zugtrupp", "BAT-TF", "BAT-Bearb", "TF", "PVB"
-                    If zuege = 1 Then
-                        If zg <> "" And zg <> "1" Then
-                            fehler = fehler & "  - " & nach & ": Zug " & zg & " gibt es bei 1 E-Zug nicht" & vbCr
+                    If zg = "Hu-FGr" Then
+                        fehler = fehler & "  - " & nach & ": " & f & " ist eine Zug-Funktion - bitte einen Zug als Einheit waehlen" & vbCr
+                        zn = 1
+                    ElseIf zuege = 1 Then
+                        If zg <> "" And Val(zg) <> 1 Then
+                            fehler = fehler & "  - " & nach & ": " & zg & " gibt es bei 1 E-Zug nicht" & vbCr
                         End If
                         zn = 1
                     Else
                         zn = Val(zg)
                         If zn < 1 Or zn > zuege Then
-                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt der Zug (1-" & zuege & ")" & vbCr
+                            fehler = fehler & "  - " & nach & ": bei " & f & " fehlt die Einheit (1. bis " & zuege & ". Zug)" & vbCr
                         End If
                     End If
                     If f = "TF" Or f = "PVB" Then
@@ -1244,6 +1266,13 @@ Private Function VorlageName(ByVal vdat As Variant, ByVal nach As String, ByVal 
         If Trim$(CStr(vdat(x, 7))) = hu & "." Then auswahl.Add x
     Next x
     If auswahl.Count = 1 Then VorlageName = Trim$(CStr(vdat(auswahl(1), 1)))
+End Function
+
+Private Function IstFGrFunktion(ByVal f As String) As Boolean
+    Select Case f
+        Case "HF", "sHF", "KF HF", "F" & ChrW(252) & "hrer BefKw", "Bearb BefKw", "BDE-TF", "BDE-Bearb"
+            IstFGrFunktion = True
+    End Select
 End Function
 
 ' Grundfunktion aus der Liste (Spalte B) -> Vorschlag fuer die Einsatz-Funktion

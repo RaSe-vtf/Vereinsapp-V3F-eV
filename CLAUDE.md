@@ -1063,7 +1063,9 @@ Excel-Arbeitsmappe "Stärke-Ermittlungshilfe_3.Hu_Gliederung…xlsm"
   EntscheidungJa/Nein/Loeschen, L27:L163 ist Formel); Grenzen-Warnungen in
   der Stand-Prüfung (EinsatzDaten!A3).
 - Einsatzgliederung (Stand 30.09.2026): In "Verfügbarkeit" je Mitarbeiter
-  G = Zug, H = Einsatz-Funktion, I = Trupp 1–6 (G25:I161, Speicher
+  G = Einheit (Hu-FGr / 1.–4. Zug; Teileinheit FhrGr wird mit Hu-FGr
+  vorbelegt, zählt aber erst mit Funktion), H = Einsatz-Funktion (Liste
+  abhängig von der Einheit, Listen in Verfügbarkeit AE/AF), I = Trupp 1–6 (G25:I161, Speicher
   EinsatzDaten AW:AZ = Name ePlan | Funktion | Zug | Trupp, an die Person
   gebunden über Blatt-Code Worksheet_Change/Calculate →
   `extras/staerke-ermittlungshilfe/Blatt_Verfuegbarkeit.txt`). Zugwahl
