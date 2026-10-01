@@ -1544,3 +1544,150 @@ function protokolliereFinanzLoeschung(PDO $pdo, int $mitgliedId, string $quelle,
         'grund' => $grund,
     ]);
 }
+
+/**
+ * Schlaegt Zuordnungen zwischen noch nicht zugeordneten Belegen und noch
+ * unbelegten Ausgaben (Kontobewegungen mit betrag < 0) vor, wenn der
+ * Betrag (zwingend) und - falls beim Beleg angegeben - das Datum
+ * (innerhalb von 10 Tagen) uebereinstimmen. Mehrdeutige Treffer (mehr als
+ * eine moegliche passende Ausgabe) werden nicht vorgeschlagen, sondern
+ * bleiben der manuellen Zuordnung in vereinskonto.php ueberlassen.
+ */
+function findeBelegVorschlaege(PDO $pdo): array
+{
+    $belege = $pdo->query(
+        'SELECT * FROM belege WHERE kontobewegung_id IS NULL AND betrag IS NOT NULL ORDER BY hochgeladen_am'
+    )->fetchAll();
+    if (empty($belege)) {
+        return [];
+    }
+
+    $ausgaben = $pdo->query(
+        'SELECT k.* FROM kontobewegungen k
+         WHERE k.betrag < 0
+           AND k.id NOT IN (SELECT kontobewegung_id FROM belege WHERE kontobewegung_id IS NOT NULL)
+         ORDER BY k.buchungsdatum'
+    )->fetchAll();
+    if (empty($ausgaben)) {
+        return [];
+    }
+
+    $vorschlaege = [];
+    foreach ($belege as $beleg) {
+        $kandidaten = [];
+        foreach ($ausgaben as $ausgabe) {
+            if (abs(abs((float) $ausgabe['betrag']) - (float) $beleg['betrag']) > 0.009) {
+                continue;
+            }
+            if ($beleg['datum'] !== null) {
+                $diffTage = abs((strtotime($ausgabe['buchungsdatum']) - strtotime($beleg['datum'])) / 86400);
+                if ($diffTage > 10) {
+                    continue;
+                }
+            }
+            $kandidaten[] = $ausgabe;
+        }
+        if (count($kandidaten) === 1) {
+            $vorschlaege[] = ['beleg' => $beleg, 'kontobewegung' => $kandidaten[0]];
+        }
+    }
+    return $vorschlaege;
+}
+
+/**
+ * Prueft, ob alle fuer eine Zuwendungsbestaetigung noetigen Vereinsdaten in
+ * private/config.php tatsaechlich eingetragen sind (nicht nur die leeren
+ * Platzhalter aus config.example.php). Gibt die fehlenden Angaben als
+ * lesbare Liste zurueck - leer, wenn alles vorhanden ist.
+ */
+function fehlendeSpendenbescheinigungsDaten(): array
+{
+    $fehlend = [];
+    if (!defined('FINANZAMT_NAME') || trim((string) FINANZAMT_NAME) === '') {
+        $fehlend[] = 'zuständiges Finanzamt (FINANZAMT_NAME)';
+    }
+    if (!defined('VEREIN_STEUERNUMMER') || trim((string) VEREIN_STEUERNUMMER) === '') {
+        $fehlend[] = 'Steuernummer des Vereins (VEREIN_STEUERNUMMER)';
+    }
+    if (!defined('FREISTELLUNGSBESCHEID_DATUM') || trim((string) FREISTELLUNGSBESCHEID_DATUM) === '' || !DateTime::createFromFormat('Y-m-d', FREISTELLUNGSBESCHEID_DATUM)) {
+        $fehlend[] = 'Datum des Freistellungsbescheids (FREISTELLUNGSBESCHEID_DATUM, Format JJJJ-MM-TT)';
+    }
+    if (!defined('VEREIN_ANSCHRIFT') || trim((string) VEREIN_ANSCHRIFT) === '') {
+        $fehlend[] = 'Vereinsanschrift (VEREIN_ANSCHRIFT)';
+    }
+    return $fehlend;
+}
+
+function istSpendenbescheinigungKonfiguriert(): bool
+{
+    return empty(fehlendeSpendenbescheinigungsDaten());
+}
+
+/**
+ * Wandelt eine nichtnegative ganze Zahl in deutsche Zahlwoerter um - fuer
+ * die Pflichtangabe "Betrag in Worten" auf Zuwendungsbestaetigungen. Deckt
+ * 0 bis 999.999 ab, fuer Spendenbetraege eines Vereins mehr als
+ * ausreichend.
+ */
+function zahlAlsWort(int $n): string
+{
+    static $einer = ['', 'ein', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+    static $teens = ['zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'];
+    static $zehner = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+
+    if ($n === 0) {
+        return 'null';
+    }
+
+    $dreistellig = function (int $x) use ($einer, $teens, $zehner): string {
+        $text = '';
+        $h = intdiv($x, 100);
+        $rest = $x % 100;
+        if ($h > 0) {
+            $text .= $einer[$h] . 'hundert';
+        }
+        if ($rest > 0) {
+            if ($rest < 10) {
+                $text .= $rest === 1 ? 'eins' : $einer[$rest];
+            } elseif ($rest < 20) {
+                $text .= $teens[$rest - 10];
+            } else {
+                $e = $rest % 10;
+                $z = intdiv($rest, 10);
+                $text .= ($e > 0 ? $einer[$e] . 'und' : '') . $zehner[$z];
+            }
+        }
+        return $text;
+    };
+
+    $tausender = intdiv($n, 1000);
+    $rest = $n % 1000;
+
+    $text = '';
+    if ($tausender > 0) {
+        $text .= ($tausender === 1 ? 'ein' : $dreistellig($tausender)) . 'tausend';
+    }
+    $text .= $dreistellig($rest);
+
+    return $text;
+}
+
+/**
+ * Betrag in Worten fuer die Zuwendungsbestaetigung, z.B. 180.50 ->
+ * "Einhundertachtzig Euro und fünfzig Cent".
+ */
+function betragInWorten(float $betrag): string
+{
+    $cents = (int) round($betrag * 100);
+    $euro = intdiv($cents, 100);
+    $rest = $cents % 100;
+
+    $euroWort = $euro === 1 ? 'ein' : zahlAlsWort($euro);
+    $euroWort = mb_strtoupper(mb_substr($euroWort, 0, 1)) . mb_substr($euroWort, 1);
+
+    $text = $euroWort . ' Euro';
+    if ($rest > 0) {
+        $text .= ' und ' . ($rest === 1 ? 'ein' : zahlAlsWort($rest)) . ' Cent';
+    }
+    return $text;
+}

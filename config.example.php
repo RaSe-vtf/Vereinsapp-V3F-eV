@@ -43,6 +43,18 @@ define('SEPA_GLAEUBIGER_ID', 'DE00ZZZ00000000000');
 define('VEREIN_IBAN', 'DE00000000000000000000');
 define('VEREIN_BIC', '');
 
+// --- Spendenbescheinigungen (Zuwendungsbestätigungen nach amtlichem
+// BMF-Muster) ---
+// Erst eintragen, sobald der Freistellungsbescheid (bzw. die vorläufige
+// Bescheinigung der Gemeinnützigkeit) vom Finanzamt tatsächlich vorliegt -
+// ohne diese drei Angaben bleibt der "Bescheinigung erstellen"-Button im
+// Kassenwart-Bereich bewusst inaktiv (siehe fehlendeSpendenbescheinigungsDaten()
+// in includes/functions.php bzw. htdocs/bereich/vorstand/kassenwart/kassenbuecher/spendenbescheinigung.php).
+define('FINANZAMT_NAME', '');
+define('VEREIN_STEUERNUMMER', '');
+define('FREISTELLUNGSBESCHEID_DATUM', ''); // Format: YYYY-MM-DD, z.B. '2025-03-15'
+define('VEREIN_ANSCHRIFT', ''); // z.B. 'Musterstraße 1, 12345 Musterstadt' - Pflichtangabe auf der Bescheinigung
+
 // --- Cronjobs: automatische Verarbeitung fälliger Mitglieder-Austritte und
 // des Rollenwechsels von Kindermitgliedern ---
 // Frei gewähltes Geheimwort, das die Cronjob-Aufrufe (htdocs/cron/austritte.php

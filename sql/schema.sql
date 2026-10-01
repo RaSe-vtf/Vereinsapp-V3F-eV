@@ -186,12 +186,41 @@ CREATE TABLE IF NOT EXISTS kontobewegungen (
     kategorie_id INT UNSIGNED NULL,
     ist_bargeld_verdacht TINYINT(1) NOT NULL DEFAULT 0,
     in_barkasse_uebernommen TINYINT(1) NOT NULL DEFAULT 0,
+    -- Nur relevant, wenn kategorie_id auf die Kategorie "Spenden" zeigt (bei
+    -- einer Einnahme) - Datum, an dem die Zuwendungsbestaetigung ausgestellt
+    -- wurde (manuell eingetragen oder automatisch beim Erzeugen ueber
+    -- spendenbescheinigung.php gesetzt).
+    spendenbescheinigung_ausgestellt_am DATE NULL,
     PRIMARY KEY (id),
     KEY idx_auszug_id (auszug_id),
     KEY idx_buchungsdatum (buchungsdatum),
     KEY idx_kategorie_id (kategorie_id),
     CONSTRAINT fk_kontobewegungen_auszug FOREIGN KEY (auszug_id) REFERENCES kontoauszuege (id) ON DELETE CASCADE,
     CONSTRAINT fk_kontobewegungen_kategorie FOREIGN KEY (kategorie_id) REFERENCES kassenbericht_kategorien (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Belege (Rechnungen/Kassenzettel) fuer Kontobewegungen - bewusst
+-- entkoppelt von einer konkreten Kontobewegung (kontobewegung_id bleibt
+-- NULL, bis zugeordnet): Kontoauszuege treffen oft erst Wochen nach der
+-- eigentlichen Ausgabe ein, der Kassenwart soll Belege aber schon vorher
+-- hochladen koennen. betrag/datum/beschreibung sind optionale, vom
+-- Kassenwart beim Hochladen eingetragene Angaben, die fuer den
+-- automatischen Zuordnungsvorschlag (findeBelegVorschlaege() in
+-- includes/functions.php) genutzt werden.
+CREATE TABLE IF NOT EXISTS belege (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    dateiname VARCHAR(255) NOT NULL,
+    original_dateiname VARCHAR(255) NULL,
+    betrag DECIMAL(10,2) NULL,
+    datum DATE NULL,
+    beschreibung VARCHAR(255) NULL,
+    kontobewegung_id INT UNSIGNED NULL,
+    hochgeladen_von INT UNSIGNED NULL,
+    hochgeladen_am DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_kontobewegung_id (kontobewegung_id),
+    CONSTRAINT fk_belege_kontobewegung FOREIGN KEY (kontobewegung_id) REFERENCES kontobewegungen (id) ON DELETE SET NULL,
+    CONSTRAINT fk_belege_mitglied FOREIGN KEY (hochgeladen_von) REFERENCES mitglieder (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Barkasse: Zugänge entweder als bestätigte Übernahme einer Kontobewegung
@@ -348,3 +377,8 @@ ALTER TABLE mitglieder MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitgli
 ALTER TABLE mitglieder MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied';
 ALTER TABLE antraege MODIFY COLUMN gewuenschte_rolle ENUM('vollmitglied', 'trainingsmitglied', 'foerdermitglied', 'kindermitglied') NOT NULL DEFAULT 'vollmitglied';
 ALTER TABLE beitragsposten MODIFY COLUMN rolle ENUM('vollmitglied', 'trainingsmitglied', 'vorstandsmitglied', 'ehrenmitglied', 'foerdermitglied', 'kindermitglied') NULL;
+
+-- Belege fuer Vereinskonto-Ausgaben (entkoppelt vom Kontoauszug-Zeitpunkt,
+-- siehe Tabellenkommentar oben bei "belege") und Spendenbescheinigungs-
+-- Tracking bei Einnahmen der Kategorie "Spenden".
+ALTER TABLE kontobewegungen ADD COLUMN IF NOT EXISTS spendenbescheinigung_ausgestellt_am DATE NULL;

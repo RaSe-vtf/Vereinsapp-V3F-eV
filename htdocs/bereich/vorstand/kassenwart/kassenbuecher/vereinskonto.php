@@ -99,6 +99,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             setFlash('success', 'Kontoauszug und seine Buchungen wurden gelöscht.');
         }
+    } elseif (($_POST['aktion'] ?? '') === 'beleg_hochladen') {
+        $betragRoh = str_replace(',', '.', trim((string) ($_POST['betrag'] ?? '')));
+        $datum = trim((string) ($_POST['datum'] ?? ''));
+        $beschreibung = trim((string) ($_POST['beschreibung'] ?? ''));
+        try {
+            $belegDateiname = handleBelegUpload($_FILES['beleg'] ?? []);
+            $pdo->prepare(
+                'INSERT INTO belege (dateiname, original_dateiname, betrag, datum, beschreibung, hochgeladen_von)
+                 VALUES (:dateiname, :original, :betrag, :datum, :beschreibung, :mitglied_id)'
+            )->execute([
+                'dateiname' => $belegDateiname,
+                'original' => $_FILES['beleg']['name'] ?? null,
+                'betrag' => $betragRoh !== '' && is_numeric($betragRoh) ? number_format((float) $betragRoh, 2, '.', '') : null,
+                'datum' => $datum !== '' && DateTime::createFromFormat('Y-m-d', $datum) ? $datum : null,
+                'beschreibung' => $beschreibung !== '' ? $beschreibung : null,
+                'mitglied_id' => $mitglied['id'],
+            ]);
+            setFlash('success', 'Beleg wurde hochgeladen. Passende Ausgabe unten zuordnen, sobald der Kontoauszug vorliegt.');
+        } catch (Throwable $e) {
+            setFlash('error', $e->getMessage());
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'beleg_zuordnen' && isset($_POST['beleg_id'], $_POST['kontobewegung_id'])) {
+        $belegId = (int) $_POST['beleg_id'];
+        $kbId = (int) $_POST['kontobewegung_id'];
+        if ($belegId > 0 && $kbId > 0) {
+            $pdo->prepare('UPDATE belege SET kontobewegung_id = :kb WHERE id = :id AND kontobewegung_id IS NULL')
+                ->execute(['kb' => $kbId, 'id' => $belegId]);
+            setFlash('success', 'Beleg wurde der Ausgabe zugeordnet.');
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'beleg_trennen' && isset($_POST['beleg_id'])) {
+        $pdo->prepare('UPDATE belege SET kontobewegung_id = NULL WHERE id = :id')->execute(['id' => (int) $_POST['beleg_id']]);
+        setFlash('success', 'Zuordnung wurde aufgehoben.');
+    } elseif (($_POST['aktion'] ?? '') === 'beleg_loeschen' && isset($_POST['beleg_id'])) {
+        $stmt = $pdo->prepare('SELECT dateiname FROM belege WHERE id = :id');
+        $stmt->execute(['id' => (int) $_POST['beleg_id']]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $pdo->prepare('DELETE FROM belege WHERE id = :id')->execute(['id' => (int) $_POST['beleg_id']]);
+            $pfad = __DIR__ . '/../../../../../private/uploads/belege/' . basename($row['dateiname']);
+            if (is_file($pfad)) {
+                unlink($pfad);
+            }
+            setFlash('success', 'Beleg wurde gelöscht.');
+        }
+    } elseif (($_POST['aktion'] ?? '') === 'spendenbescheinigung_datum_setzen' && isset($_POST['kontobewegung_id'])) {
+        $datum = trim((string) ($_POST['datum'] ?? ''));
+        $gueltig = $datum !== '' ? DateTime::createFromFormat('Y-m-d', $datum) : null;
+        $pdo->prepare('UPDATE kontobewegungen SET spendenbescheinigung_ausgestellt_am = :datum WHERE id = :id')
+            ->execute([
+                'datum' => $gueltig ? $datum : null,
+                'id' => (int) $_POST['kontobewegung_id'],
+            ]);
+        setFlash('success', $gueltig ? 'Ausstellungsdatum gespeichert.' : 'Als noch nicht ausgestellt markiert.');
     }
     $jahrRedirect = $jahr ?? (isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) date('Y'));
     $monatRedirect = $monat ?? (isset($_GET['monat']) ? (int) $_GET['monat'] : (int) date('n'));
@@ -107,6 +160,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 wendeKassenberichtRegelnAufUnkategorisierteAn($pdo);
+
+$belegVorschlaege = findeBelegVorschlaege($pdo);
+$unzugeordneteBelege = $pdo->query('SELECT * FROM belege WHERE kontobewegung_id IS NULL ORDER BY hochgeladen_am DESC')->fetchAll();
+$belegeNachKontobewegung = [];
+foreach ($pdo->query('SELECT * FROM belege WHERE kontobewegung_id IS NOT NULL')->fetchAll() as $beleg) {
+    $belegeNachKontobewegung[(int) $beleg['kontobewegung_id']] = $beleg;
+}
+$spendenKategorieId = (int) ($pdo->query("SELECT id FROM kassenbericht_kategorien WHERE typ = 'einnahme' AND name = 'Spenden' LIMIT 1")->fetchColumn() ?: 0);
+$fehlendeSpendenDaten = fehlendeSpendenbescheinigungsDaten();
 
 $heute = new DateTime();
 $jahrAuswahl = isset($_GET['jahr']) ? (int) $_GET['jahr'] : (int) $heute->format('Y');
@@ -239,6 +301,8 @@ $zurueck = 'index.php';
                             <th>Beteiligter</th>
                             <th>Betrag</th>
                             <th>Kategorie</th>
+                            <th>Beleg</th>
+                            <th>Spendenbescheinigung</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -270,12 +334,153 @@ $zurueck = 'index.php';
                                         </form>
                                     <?php endif; ?>
                                 </td>
+                                <td data-label="Beleg">
+                                    <?php if ((float) $b['betrag'] < 0): ?>
+                                        <?php if (isset($belegeNachKontobewegung[(int) $b['id']])): $zugeordneterBeleg = $belegeNachKontobewegung[(int) $b['id']]; ?>
+                                            <span class="badge badge-angenommen">&#10003; Beleg</span>
+                                            <div style="margin-top:4px;">
+                                                <a href="konto_beleg_datei.php?id=<?= (int) $zugeordneterBeleg['id'] ?>" target="_blank" rel="noopener">ansehen</a>
+                                                <form method="post" class="inline-form" style="display:inline;">
+                                                    <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                                    <input type="hidden" name="aktion" value="beleg_trennen">
+                                                    <input type="hidden" name="beleg_id" value="<?= (int) $zugeordneterBeleg['id'] ?>">
+                                                    <button type="submit" class="btn-link" onclick="return confirm('Zuordnung wirklich aufheben?');">&middot; lösen</button>
+                                                </form>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="badge badge-abgelehnt">Beleg fehlt</span>
+                                            <?php if (!empty($unzugeordneteBelege)): ?>
+                                                <form method="post" class="inline-form" style="margin-top:4px;">
+                                                    <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                                    <input type="hidden" name="aktion" value="beleg_zuordnen">
+                                                    <input type="hidden" name="kontobewegung_id" value="<?= (int) $b['id'] ?>">
+                                                    <select name="beleg_id" onchange="this.value!=='0' && this.form.submit()">
+                                                        <option value="0">hochgeladenen Beleg zuordnen &hellip;</option>
+                                                        <?php foreach ($unzugeordneteBelege as $ub): ?>
+                                                            <option value="<?= (int) $ub['id'] ?>"><?= e($ub['original_dateiname'] ?? $ub['dateiname']) ?><?= $ub['betrag'] !== null ? ' (' . number_format((float) $ub['betrag'], 2, ',', '.') . ' €)' : '' ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </form>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">&ndash;</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td data-label="Spendenbescheinigung">
+                                    <?php if ((float) $b['betrag'] >= 0 && $spendenKategorieId > 0 && (int) $b['kategorie_id'] === $spendenKategorieId): ?>
+                                        <?php if ($b['spendenbescheinigung_ausgestellt_am'] !== null): ?>
+                                            <span class="badge badge-angenommen">ausgestellt <?= e((new DateTime($b['spendenbescheinigung_ausgestellt_am']))->format('d.m.Y')) ?></span>
+                                        <?php else: ?>
+                                            <span class="badge badge-neu">offen</span>
+                                        <?php endif; ?>
+                                        <div style="margin-top:4px;">
+                                            <?php if (empty($fehlendeSpendenDaten)): ?>
+                                                <a href="spendenbescheinigung.php?id=<?= (int) $b['id'] ?>" target="_blank" rel="noopener">Bescheinigung erstellen</a>
+                                            <?php else: ?>
+                                                <span class="text-muted" title="Es fehlen noch: <?= e(implode('; ', $fehlendeSpendenDaten)) ?>">Bescheinigung erstellen (inaktiv)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted">&ndash;</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0;">Belege</h2>
+            <p class="text-muted">Rechnungen/Kassenzettel lassen sich hier jederzeit hochladen, auch bevor der passende Kontoauszug vorliegt &ndash; die Zuordnung zur Ausgabe erfolgt dann separat (automatischer Vorschlag bei übereinstimmendem Betrag, sonst oben in der Buchungsliste manuell).</p>
+
+            <?php if (!empty($belegVorschlaege)): ?>
+                <h3>Zuordnungsvorschläge</h3>
+                <?php foreach ($belegVorschlaege as $vorschlag): $vb = $vorschlag['beleg']; $vk = $vorschlag['kontobewegung']; ?>
+                    <div class="alert alert-warning" style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                        <span>
+                            Beleg „<?= e($vb['original_dateiname'] ?? $vb['dateiname']) ?>"
+                            (<?= number_format((float) $vb['betrag'], 2, ',', '.') ?> €) könnte zur Ausgabe
+                            „<?= e((string) $vk['verwendungszweck']) ?>" vom
+                            <?= e((new DateTime($vk['buchungsdatum']))->format('d.m.Y')) ?>
+                            (<?= number_format(abs((float) $vk['betrag']), 2, ',', '.') ?> €) gehören.
+                        </span>
+                        <form method="post" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                            <input type="hidden" name="aktion" value="beleg_zuordnen">
+                            <input type="hidden" name="beleg_id" value="<?= (int) $vb['id'] ?>">
+                            <input type="hidden" name="kontobewegung_id" value="<?= (int) $vk['id'] ?>">
+                            <button type="submit" class="btn btn-secondary">Ja, zuordnen</button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <h3>Hochgeladene, noch nicht zugeordnete Belege</h3>
+            <?php if (empty($unzugeordneteBelege)): ?>
+                <p class="text-muted">Keine.</p>
+            <?php else: ?>
+                <div style="overflow-x:auto; margin-bottom:20px;">
+                <table class="tabelle-karten">
+                    <thead>
+                        <tr>
+                            <th>Hochgeladen am</th>
+                            <th>Datei</th>
+                            <th>Betrag</th>
+                            <th>Datum</th>
+                            <th>Beschreibung</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($unzugeordneteBelege as $ub): ?>
+                            <tr>
+                                <td data-label="Hochgeladen am"><?= e((new DateTime($ub['hochgeladen_am']))->format('d.m.Y H:i')) ?></td>
+                                <td data-label="Datei"><a href="konto_beleg_datei.php?id=<?= (int) $ub['id'] ?>" target="_blank" rel="noopener"><?= e($ub['original_dateiname'] ?? $ub['dateiname']) ?></a></td>
+                                <td data-label="Betrag"><?= $ub['betrag'] !== null ? number_format((float) $ub['betrag'], 2, ',', '.') . ' €' : '<span class="text-muted">&ndash;</span>' ?></td>
+                                <td data-label="Datum"><?= $ub['datum'] !== null ? e((new DateTime($ub['datum']))->format('d.m.Y')) : '<span class="text-muted">&ndash;</span>' ?></td>
+                                <td data-label="Beschreibung"><?= e((string) $ub['beschreibung']) ?></td>
+                                <td>
+                                    <form method="post" class="inline-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                                        <input type="hidden" name="aktion" value="beleg_loeschen">
+                                        <input type="hidden" name="beleg_id" value="<?= (int) $ub['id'] ?>">
+                                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Diesen Beleg wirklich löschen?');">Löschen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
+            <?php endif; ?>
+
+            <h3>Beleg hochladen</h3>
+            <p class="text-muted">Betrag und Datum sind optional, helfen der App aber bei der automatischen Zuordnung zur passenden Ausgabe.</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= e(getCsrfToken()) ?>">
+                <input type="hidden" name="aktion" value="beleg_hochladen">
+                <div class="form-row">
+                    <div>
+                        <label for="belegBetrag">Betrag <span class="text-muted">(optional, €)</span></label>
+                        <input type="text" id="belegBetrag" name="betrag" inputmode="decimal" placeholder="z.B. 89,90">
+                    </div>
+                    <div>
+                        <label for="belegDatum">Datum <span class="text-muted">(optional)</span></label>
+                        <input type="date" id="belegDatum" name="datum">
+                    </div>
+                </div>
+                <label for="belegBeschreibung">Beschreibung <span class="text-muted">(optional)</span></label>
+                <input type="text" id="belegBeschreibung" name="beschreibung" placeholder="z.B. Reinigungsfirma Mai">
+                <label for="belegDatei">Datei</label>
+                <input type="file" id="belegDatei" name="beleg" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+                <div style="margin-top:12px;">
+                    <button type="submit" class="btn">Hochladen</button>
+                </div>
+            </form>
         </div>
 
         <div class="card">

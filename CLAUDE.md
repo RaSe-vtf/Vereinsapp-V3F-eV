@@ -52,6 +52,23 @@ ergänzen, erledigte Punkte hier entfernen bzw. als erledigt vermerken.
   `htdocs/bereich/vorstand/kassenwart/export.php`). Sobald ein Vereinskonto
   vorliegt, dort eintragen – nicht von selbst nachfragen/andrängen, der
   Nutzer meldet sich dazu.
+- [ ] **Finanzamt-Daten für Spendenbescheinigungen**: Der Verein hat
+  vermutlich noch keinen Freistellungsbescheid vom Finanzamt (siehe
+  Punkt oben zum fehlenden Vereinskonto). `FINANZAMT_NAME`,
+  `VEREIN_STEUERNUMMER`, `FREISTELLUNGSBESCHEID_DATUM` und
+  `VEREIN_ANSCHRIFT` in `private/config.php` stehen deshalb bewusst noch
+  auf Platzhaltern – ohne diese vier Angaben bleibt der
+  "Bescheinigung erstellen"-Knopf bei Spenden-Einnahmen im Kassenwart-
+  Bereich (`htdocs/bereich/vorstand/kassenwart/kassenbuecher/vereinskonto.php`
+  bzw. `spendenbescheinigung.php`) inaktiv, mit konkretem Hinweis, welche
+  Angaben fehlen. Sobald der Freistellungsbescheid vorliegt, dort
+  eintragen – nicht von selbst nachfragen/andrängen, der Nutzer meldet
+  sich dazu. Zusätzlicher Hinweis direkt auf der generierten
+  Bescheinigung (wird beim Drucken ausgeblendet): Der Text folgt dem
+  amtlichen BMF-Muster für Geldzuwendungen, wurde aber nicht gegen die
+  jeweils aktuell gültige Fassung geprüft – vor dem ersten echten
+  Einsatz mit der aktuellen BMF-Fassung bzw. der eigenen Steuerberatung
+  abgleichen.
 - [ ] **Vereinsname**: Aktuell in der App als "Vonsys Tri Family e.V."
   hinterlegt (`VEREIN_NAME`/`MAIL_ABSENDER_NAME` in `config.example.php`
   bzw. `private/config.php`). Falls sich der offizielle Name noch ändert
