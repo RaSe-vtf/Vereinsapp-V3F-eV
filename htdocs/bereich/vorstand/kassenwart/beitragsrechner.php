@@ -463,6 +463,74 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     font-size: 0.78rem;
     color: var(--ink-soft);
   }
+
+  .custom-cost-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .custom-cost-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    padding: 0.5rem 0.6rem;
+  }
+  .custom-cost-row input[type="number"] {
+    width: 90px;
+    flex-shrink: 0;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.9rem;
+    color: var(--ink);
+    padding: 0.5rem 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .custom-cost-row input::-webkit-outer-spin-button,
+  .custom-cost-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .custom-cost-row input[type=number] { -moz-appearance: textfield; }
+  .custom-cost-row .sub {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+  .custom-cost-remove {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--bad);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .custom-cost-remove:hover { background: var(--bad-bg); }
+  .custom-cost-empty {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin: 0 0 0.6rem;
+  }
+  #addCustomCost {
+    font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: var(--surface);
+    color: var(--primary);
+    cursor: pointer;
+  }
+  #addCustomCost:hover { background: var(--track); }
 </style>
 </head>
 <body>
@@ -659,6 +727,13 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     </section>
   </div>
 
+  <section class="card" aria-label="Weitere Fixkosten" style="margin-bottom: 1.5rem;">
+    <h2>Weitere Fixkosten</h2>
+    <p class="hint">Eigene feste Ausgabenposten ergänzen (z.B. Versicherung, Startgelder, Vereinssoftware) — fließen mit in die Kosten pro Jahr und die Kostenherleitung unten ein.</p>
+    <div id="customCostsList"></div>
+    <button type="button" id="addCustomCost">+ Position hinzufügen</button>
+  </section>
+
   <section class="results" aria-label="Ergebnis">
       <div class="status-row">
         <span class="pill" id="statusPill">—</span>
@@ -695,6 +770,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
             <tr><td>STV-Vereinsbeitrag <span class="muted" id="rowStaffelLabel">(Staffel)</span></td><td id="rowStaffel">0 €</td></tr>
             <tr><td>Verwaltungspauschale <span class="muted" id="rowVerwaltungLabel">(15 €/Mitglied)</span></td><td id="rowVerwaltung">0 €</td></tr>
             <tr><td>Schwimmhallenzeit <span class="muted" id="rowHalleLabel">(45 × 120 €, falls eingeplant)</span></td><td id="rowHalle">0 €</td></tr>
+            <tr id="customCostRowsAnchor" hidden><td colspan="2"></td></tr>
             <tr class="subtotal"><td>Kosten gesamt</td><td id="rowCostTotal">0 €</td></tr>
             <tr><td>Beitragseinnahmen <span class="muted" id="incomeRatesLabel">(6 € / 3 € / 3 € pro Monat)</span></td><td id="rowIncome">0 €</td></tr>
             <tr class="result"><td>Überschuss</td><td id="rowSurplus">0 €</td></tr>
@@ -730,6 +806,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
   var decimalIds = rateIds.concat(costRateIds); // rounded to 1 decimal on apply, everything else to whole numbers
   var allIds = ids.concat(floatIds);
   var confirmedCosts = {}; // last "Übernehmen"-confirmed value per manualCostIds field
+  var customCosts = []; // eigene Fixkosten-Positionen: {label, amount}
 
   function loadSaved() {
     try {
@@ -744,15 +821,87 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       if (typeof saved.hallenzeit === 'boolean') {
         document.getElementById('hallenzeit').checked = saved.hallenzeit;
       }
+      if (Array.isArray(saved.customCosts)) {
+        customCosts = saved.customCosts.filter(function (c) {
+          return c && typeof c.label === 'string' && typeof c.amount === 'number';
+        });
+      }
     } catch (e) { /* ignore */ }
   }
 
   function persist(values) {
     try {
       values.hallenzeit = document.getElementById('hallenzeit').checked;
+      values.customCosts = customCosts;
       localStorage.setItem('tf-beitragsrechner', JSON.stringify(values));
     } catch (e) { /* ignore */ }
   }
+
+  function renderCustomCosts() {
+    var list = document.getElementById('customCostsList');
+    list.innerHTML = '';
+    if (customCosts.length === 0) {
+      var empty = document.createElement('p');
+      empty.className = 'custom-cost-empty';
+      empty.textContent = 'Noch keine eigenen Positionen.';
+      list.appendChild(empty);
+      return;
+    }
+    customCosts.forEach(function (cost, index) {
+      var row = document.createElement('div');
+      row.className = 'custom-cost-row';
+
+      var labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.placeholder = 'Bezeichnung';
+      labelInput.value = cost.label;
+      labelInput.setAttribute('aria-label', 'Bezeichnung der Fixkosten-Position');
+      labelInput.addEventListener('input', function () {
+        customCosts[index].label = labelInput.value;
+        recompute();
+      });
+
+      var amountInput = document.createElement('input');
+      amountInput.type = 'number';
+      amountInput.min = '0';
+      amountInput.step = '1';
+      amountInput.inputMode = 'numeric';
+      amountInput.value = cost.amount;
+      amountInput.setAttribute('aria-label', 'Betrag pro Jahr');
+      amountInput.addEventListener('input', function () {
+        var n = parseFloat(amountInput.value);
+        customCosts[index].amount = isNaN(n) || n < 0 ? 0 : n;
+        recompute();
+      });
+
+      var sub = document.createElement('span');
+      sub.className = 'sub';
+      sub.textContent = '€/Jahr';
+
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'custom-cost-remove';
+      removeBtn.setAttribute('aria-label', 'Position entfernen');
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', function () {
+        customCosts.splice(index, 1);
+        renderCustomCosts();
+        recompute();
+      });
+
+      row.appendChild(labelInput);
+      row.appendChild(amountInput);
+      row.appendChild(sub);
+      row.appendChild(removeBtn);
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('addCustomCost').addEventListener('click', function () {
+    customCosts.push({ label: '', amount: 0 });
+    renderCustomCosts();
+    recompute();
+  });
 
   function fmtEUR(n) {
     var sign = n < 0 ? '-' : '';
@@ -842,7 +991,18 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     var verwaltung = total * v.verwaltungRate;
     var hallenzeitOn = document.getElementById('hallenzeit').checked;
     var halle = hallenzeitOn ? (v.hallenTermine * v.hallenPreis) : 0;
-    var costTotal = stv + ref + lsb + vereinsbeitrag + verwaltung + halle;
+    var customTotal = customCosts.reduce(function (sum, c) { return sum + (parseFloat(c.amount) || 0); }, 0);
+    var costTotal = stv + ref + lsb + vereinsbeitrag + verwaltung + halle + customTotal;
+
+    var anchor = document.getElementById('customCostRowsAnchor');
+    document.querySelectorAll('.custom-cost-table-row').forEach(function (row) { row.remove(); });
+    customCosts.forEach(function (cost) {
+      var tr = document.createElement('tr');
+      tr.className = 'custom-cost-table-row';
+      var label = cost.label.trim() === '' ? '(ohne Bezeichnung)' : cost.label;
+      tr.innerHTML = '<td>' + label.replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</td><td>' + fmtEUR(parseFloat(cost.amount) || 0) + '</td>';
+      anchor.parentNode.insertBefore(tr, anchor);
+    });
 
     var halleTotalHint = document.getElementById('halleTotalHint');
     if (hallenzeitOn) {
@@ -973,6 +1133,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     var n = parseFloat(document.getElementById(id).value);
     confirmedCosts[id] = isNaN(n) || n < 0 ? 0 : n;
   });
+  renderCustomCosts();
   recompute();
 })();
 </script>

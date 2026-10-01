@@ -339,7 +339,7 @@ $zurueck = 'index.php';
                                 </td>
                                 <td data-label="Beleg">
                                     <?php if ($b['beleg_dateiname']): ?>
-                                        <a href="beleg_datei.php?id=<?= (int) $b['id'] ?>">ansehen</a>
+                                        <a href="beleg_datei.php?id=<?= (int) $b['id'] ?>" target="_blank" rel="noopener">ansehen</a>
                                     <?php else: ?>
                                         &ndash;
                                     <?php endif; ?>
