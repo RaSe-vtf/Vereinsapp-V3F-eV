@@ -496,6 +496,16 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
   .custom-cost-row input::-webkit-outer-spin-button,
   .custom-cost-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .custom-cost-row input[type=number] { -moz-appearance: textfield; }
+  .custom-cost-row select {
+    flex-shrink: 0;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+    font-size: 0.78rem;
+    color: var(--ink);
+    padding: 0.5rem 0.4rem;
+  }
   .custom-cost-row .sub {
     flex-shrink: 0;
     font-size: 0.78rem;
@@ -824,6 +834,8 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       if (Array.isArray(saved.customCosts)) {
         customCosts = saved.customCosts.filter(function (c) {
           return c && typeof c.label === 'string' && typeof c.amount === 'number';
+        }).map(function (c) {
+          return { label: c.label, amount: c.amount, period: c.period === 'month' ? 'month' : 'year' };
         });
       }
     } catch (e) { /* ignore */ }
@@ -864,19 +876,29 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       var amountInput = document.createElement('input');
       amountInput.type = 'number';
       amountInput.min = '0';
-      amountInput.step = '1';
-      amountInput.inputMode = 'numeric';
+      amountInput.step = '0.01';
+      amountInput.inputMode = 'decimal';
       amountInput.value = cost.amount;
-      amountInput.setAttribute('aria-label', 'Betrag pro Jahr');
+      amountInput.setAttribute('aria-label', 'Betrag');
       amountInput.addEventListener('input', function () {
         var n = parseFloat(amountInput.value);
         customCosts[index].amount = isNaN(n) || n < 0 ? 0 : n;
         recompute();
       });
 
-      var sub = document.createElement('span');
-      sub.className = 'sub';
-      sub.textContent = '€/Jahr';
+      var periodSelect = document.createElement('select');
+      periodSelect.setAttribute('aria-label', 'Zeitraum');
+      ['year', 'month'].forEach(function (p) {
+        var opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p === 'year' ? '€/Jahr' : '€/Monat';
+        if (cost.period === p) opt.selected = true;
+        periodSelect.appendChild(opt);
+      });
+      periodSelect.addEventListener('change', function () {
+        customCosts[index].period = periodSelect.value;
+        recompute();
+      });
 
       var removeBtn = document.createElement('button');
       removeBtn.type = 'button';
@@ -891,14 +913,14 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 
       row.appendChild(labelInput);
       row.appendChild(amountInput);
-      row.appendChild(sub);
+      row.appendChild(periodSelect);
       row.appendChild(removeBtn);
       list.appendChild(row);
     });
   }
 
   document.getElementById('addCustomCost').addEventListener('click', function () {
-    customCosts.push({ label: '', amount: 0 });
+    customCosts.push({ label: '', amount: 0, period: 'year' });
     renderCustomCosts();
     recompute();
   });
@@ -911,6 +933,11 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 
   function fmtRate(n) {
     return n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' €';
+  }
+
+  function customCostYearly(c) {
+    var amount = parseFloat(c.amount) || 0;
+    return c.period === 'month' ? amount * 12 : amount;
   }
 
   function costDisplayText(id, val) {
@@ -991,7 +1018,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
     var verwaltung = total * v.verwaltungRate;
     var hallenzeitOn = document.getElementById('hallenzeit').checked;
     var halle = hallenzeitOn ? (v.hallenTermine * v.hallenPreis) : 0;
-    var customTotal = customCosts.reduce(function (sum, c) { return sum + (parseFloat(c.amount) || 0); }, 0);
+    var customTotal = customCosts.reduce(function (sum, c) { return sum + customCostYearly(c); }, 0);
     var costTotal = stv + ref + lsb + vereinsbeitrag + verwaltung + halle + customTotal;
 
     var anchor = document.getElementById('customCostRowsAnchor');
@@ -1000,7 +1027,11 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       var tr = document.createElement('tr');
       tr.className = 'custom-cost-table-row';
       var label = cost.label.trim() === '' ? '(ohne Bezeichnung)' : cost.label;
-      tr.innerHTML = '<td>' + label.replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</td><td>' + fmtEUR(parseFloat(cost.amount) || 0) + '</td>';
+      var labelHtml = label.replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; });
+      if (cost.period === 'month') {
+        labelHtml += ' <span class="muted">(' + fmtRate(parseFloat(cost.amount) || 0) + '/Monat)</span>';
+      }
+      tr.innerHTML = '<td>' + labelHtml + '</td><td>' + fmtEUR(customCostYearly(cost)) + '</td>';
       anchor.parentNode.insertBefore(tr, anchor);
     });
 
