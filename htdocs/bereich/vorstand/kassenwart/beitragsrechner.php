@@ -557,7 +557,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
   <div class="input-row">
     <section class="card" aria-label="Mitgliederzahlen">
       <h2>Mitgliederzahlen</h2>
-      <p class="hint">Alle Werte assoziieren erwachsene Mitglieder (ab 17/18&nbsp;Jahre) — siehe Annahme unten.</p>
+      <p class="hint">Voll-, Trainings- und Fördermitglieder assoziieren erwachsene Mitglieder (ab 17/18&nbsp;Jahre); Kindermitglieder (0–14&nbsp;Jahre) separat unten — siehe Annahme unten.</p>
 
       <div class="field">
         <label for="voll">Vollmitglieder <span class="sub" id="vollRateHint">— 6&nbsp;€/Monat</span></label>
@@ -586,12 +586,21 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
         </div>
       </div>
 
+      <div class="field">
+        <label for="kinder">Kindermitglieder <span class="sub" id="kinderRateHint">— 1&nbsp;€/Monat</span></label>
+        <div class="stepper">
+          <button type="button" data-target="kinder" data-step="-1" aria-label="Kindermitglieder verringern">−</button>
+          <input id="kinder" type="number" min="0" step="1" value="0" inputmode="numeric" />
+          <button type="button" data-target="kinder" data-step="1" aria-label="Kindermitglieder erhöhen">+</button>
+        </div>
+      </div>
+
       <div class="total-line">
         <span>Mitglieder gesamt</span>
         <strong id="totalMembers">27</strong>
       </div>
 
-      <p class="assumption">Ehrenmitglieder sind beitragsfrei (§ 4 Abs. 5 Satzung) und fließen hier nicht in die Beitragseinnahmen ein, lösen aber weiterhin Verbandsabgaben aus, die der Verein trägt — für diesen Rechner der Einfachheit halber nicht separat erfasst.</p>
+      <p class="assumption">Ehrenmitglieder sind beitragsfrei (§ 4 Abs. 5 Satzung) und fließen hier nicht in die Beitragseinnahmen ein, lösen aber weiterhin Verbandsabgaben aus, die der Verein trägt — für diesen Rechner der Einfachheit halber nicht separat erfasst. Kindermitglieder (0–14 Jahre, Beitragsordnung) zählen mit in die Gesamtmitgliederzahl und lösen wie alle anderen Mitglieder Verbandsabgaben und Verwaltungspauschale aus, da Verbände i.d.R. pro registriertem Mitglied unabhängig vom Alter abrechnen.</p>
     </section>
 
     <section class="card" aria-label="Beitragshöhen">
@@ -624,6 +633,15 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
           <button type="button" data-target="foerderBeitrag" data-step="-0.5" aria-label="Fördermitgliedsbeitrag verringern">−</button>
           <input id="foerderBeitrag" type="number" min="0" step="0.5" value="3" inputmode="decimal" />
           <button type="button" data-target="foerderBeitrag" data-step="0.5" aria-label="Fördermitgliedsbeitrag erhöhen">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="kinderBeitrag">Kindermitgliedsbeitrag <span class="sub">€/Monat</span></label>
+        <div class="stepper">
+          <button type="button" data-target="kinderBeitrag" data-step="-0.5" aria-label="Kindermitgliedsbeitrag verringern">−</button>
+          <input id="kinderBeitrag" type="number" min="0" step="0.5" value="1" inputmode="decimal" />
+          <button type="button" data-target="kinderBeitrag" data-step="0.5" aria-label="Kindermitgliedsbeitrag erhöhen">+</button>
         </div>
       </div>
     </section>
@@ -807,8 +825,8 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 
 <script>
 (function () {
-  var ids = ['voll', 'training', 'foerder'];
-  var rateIds = ['vollBeitrag', 'trainingBeitrag', 'foerderBeitrag'];
+  var ids = ['voll', 'training', 'foerder', 'kinder'];
+  var rateIds = ['vollBeitrag', 'trainingBeitrag', 'foerderBeitrag', 'kinderBeitrag'];
   var costRateIds = ['stvRate', 'refRate', 'lsbRate', 'verwaltungRate'];
   var otherCostIds = ['vereinsbeitrag', 'hallenTermine', 'hallenPreis'];
   var manualCostIds = costRateIds.concat(otherCostIds); // require "Ändern" -> "Übernehmen" instead of live editing
@@ -927,12 +945,12 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 
   function fmtEUR(n) {
     var sign = n < 0 ? '-' : '';
-    var abs = Math.round(Math.abs(n));
-    return sign + abs.toLocaleString('de-DE') + ' €';
+    var abs = Math.abs(n);
+    return sign + abs.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   }
 
   function fmtRate(n) {
-    return n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' €';
+    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   }
 
   function customCostYearly(c) {
@@ -979,14 +997,15 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
 
   function recompute() {
     var v = readValues();
-    var total = v.voll + v.training + v.foerder;
+    var total = v.voll + v.training + v.foerder + v.kinder;
     document.getElementById('totalMembers').textContent = total.toLocaleString('de-DE');
 
     document.getElementById('vollRateHint').textContent = '— ' + fmtRate(v.vollBeitrag) + '/Monat';
     document.getElementById('trainingRateHint').textContent = '— ' + fmtRate(v.trainingBeitrag) + '/Monat';
     document.getElementById('foerderRateHint').textContent = '— ' + fmtRate(v.foerderBeitrag) + '/Monat';
+    document.getElementById('kinderRateHint').textContent = '— ' + fmtRate(v.kinderBeitrag) + '/Monat';
     document.getElementById('incomeRatesLabel').textContent =
-      '(' + fmtRate(v.vollBeitrag) + ' / ' + fmtRate(v.trainingBeitrag) + ' / ' + fmtRate(v.foerderBeitrag) + ' pro Monat)';
+      '(' + fmtRate(v.vollBeitrag) + ' / ' + fmtRate(v.trainingBeitrag) + ' / ' + fmtRate(v.foerderBeitrag) + ' / ' + fmtRate(v.kinderBeitrag) + ' pro Monat)';
 
     var floorPerYear = v.stvRate + v.refRate + v.lsbRate + v.verwaltungRate;
     var floorPerMonth = floorPerYear / 12;
@@ -1042,7 +1061,7 @@ $mitglied = requireVorstand('../../../login.php', '../../index.php');
       halleTotalHint.textContent = 'Deaktiviert — wird nicht in die Kosten eingerechnet.';
     }
 
-    var income = v.voll * v.vollBeitrag * 12 + v.training * v.trainingBeitrag * 12 + v.foerder * v.foerderBeitrag * 12;
+    var income = v.voll * v.vollBeitrag * 12 + v.training * v.trainingBeitrag * 12 + v.foerder * v.foerderBeitrag * 12 + v.kinder * v.kinderBeitrag * 12;
     var surplus = income - costTotal;
     var quote = costTotal > 0 ? (surplus / costTotal) * 100 : null;
 
